@@ -7,7 +7,6 @@ import { AlertsDrawer } from "./AlertsDrawer";
 import { NotificationsDrawer } from "./NotificationsDrawer";
 import { useUnreadAlertsCount } from "@/hooks/useVehicleAlerts";
 import { useUnreadNotificationsCount } from "@/hooks/useNotifications";
-import logoAlerta from "@/assets/logo-alerta.png";
 
 export function Header() {
   const [alertsOpen, setAlertsOpen] = useState(false);
@@ -35,7 +34,7 @@ export function Header() {
         
         {/* Center Logo */}
         <div className="absolute left-1/2 -translate-x-1/2">
-          <img src={logoAlerta} alt="Alerta Rastreamento" className="h-8" />
+          <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-8" />
         </div>
         
         <UserProfile />

@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { newPasswordSchema } from "@/lib/validations/auth";
 import { supabase } from "@/integrations/supabase/client";
-import logoAlerta from "@/assets/logo-alerta.png";
-import logoAlertaLarge from "@/assets/logo-alerta-large.png";
 import loginBg from "@/assets/login-bg.png";
 
 const NovaSenha = () => {
@@ -76,7 +74,7 @@ const NovaSenha = () => {
           <div className="bg-card rounded-xl shadow-lg overflow-hidden">
             {/* Logo Header */}
             <div className="bg-foreground py-6 px-8 flex justify-center">
-              <img src={logoAlerta} alt="Alerta Rastreamento" className="h-10" />
+              <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-10" />
             </div>
 
             {/* Form Content */}
@@ -182,7 +180,7 @@ const NovaSenha = () => {
         className="hidden lg:flex lg:w-1/2 bg-cover bg-center bg-no-repeat items-center justify-center"
         style={{ backgroundImage: `url(${loginBg})` }}
       >
-        <img src={logoAlertaLarge} alt="Alerta Rastreamento" className="h-20" />
+        <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-20" />
       </div>
     </div>
   );

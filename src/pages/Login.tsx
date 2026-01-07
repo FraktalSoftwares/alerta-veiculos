@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { loginSchema } from "@/lib/validations/auth";
-import logoAlerta from "@/assets/logo-alerta.png";
-import logoAlertaLarge from "@/assets/logo-alerta-large.png";
 import loginBg from "@/assets/login-bg.png";
 
 const Login = () => {
@@ -73,7 +71,7 @@ const Login = () => {
           <div className="bg-card rounded-lg shadow-lg overflow-hidden">
             {/* Logo Header */}
             <div className="bg-foreground py-6 px-8 flex justify-center box-content">
-              <img src={logoAlerta} alt="Alerta Rastreamento" className="h-10" style={{ width: '113px', height: '50px' }} />
+              <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-10" style={{ width: '113px', height: '50px' }} />
             </div>
 
             {/* Form Content */}
@@ -152,7 +150,7 @@ const Login = () => {
         className="hidden lg:flex lg:w-1/2 bg-cover bg-center bg-no-repeat items-center justify-center"
         style={{ backgroundImage: `url(${loginBg})` }}
       >
-        <img src={logoAlertaLarge} alt="Alerta Rastreamento" className="h-20" />
+        <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-20" />
       </div>
     </div>
   );
