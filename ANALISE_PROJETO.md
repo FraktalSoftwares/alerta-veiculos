@@ -268,7 +268,6 @@ alerta-veiculos/
 - Porta: 8080
 - Host: `::` (IPv6)
 - Alias: `@` → `./src`
-- Plugin: lovable-tagger (desenvolvimento)
 
 ### TypeScript
 - Path aliases configurados
@@ -374,7 +373,6 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
    - Cobertura de testes muito baixa
 
 4. **Documentação**
-   - README básico (template Lovable)
    - Falta documentação de API/componentes
 
 ---

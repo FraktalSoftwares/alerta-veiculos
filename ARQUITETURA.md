@@ -332,7 +332,7 @@ clients
 3. Preview
    npm run preview
    ↓
-4. Deploy (Lovable/Plataforma)
+4. Deploy (Vercel/Plataforma)
    ↓
 5. Produção
 ```
