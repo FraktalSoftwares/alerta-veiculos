@@ -1,0 +1,10 @@
+project_id = "fjhozukksxzuazuykyhk"
+
+[functions.create-user]
+verify_jwt = false
+
+[functions.create-client-user]
+verify_jwt = true
+
+[functions.process-order]
+verify_jwt = true
