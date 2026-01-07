@@ -149,9 +149,11 @@ Crie um arquivo `.env.local` na raiz do projeto:
 
 ```env
 VITE_SUPABASE_URL=sua_url_do_supabase
-VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_publica_do_supabase
 VITE_GOOGLE_MAPS_API_KEY=sua_chave_do_google_maps
 ```
+
+> **Nota:** As variáveis de ambiente devem começar com `VITE_` para serem expostas no cliente Vite.
 
 4. **Execute as migrações do banco de dados**
 
@@ -210,6 +212,20 @@ Contribuições são bem-vindas! Por favor:
 4. Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
 
+## 🚀 Deploy
+
+### Deploy na Vercel
+
+O projeto está configurado para deploy na Vercel. Consulte o guia completo em [DEPLOY_VERCEL.md](./DEPLOY_VERCEL.md).
+
+**Resumo rápido:**
+1. Conecte seu repositório GitHub à Vercel
+2. Configure as variáveis de ambiente:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - `VITE_GOOGLE_MAPS_API_KEY`
+3. Faça o deploy!
+
 ## 📝 Licença
 
 Este projeto é propriedade da Fraktal Softwares.
@@ -224,3 +240,4 @@ Para mais informações, consulte a documentação em:
 - [Análise do Projeto](./ANALISE_PROJETO.md)
 - [Arquitetura](./ARQUITETURA.md)
 - [Resumo Executivo](./RESUMO_EXECUTIVO.md)
+- [Guia de Deploy na Vercel](./DEPLOY_VERCEL.md)

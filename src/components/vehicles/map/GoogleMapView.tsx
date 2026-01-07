@@ -7,7 +7,7 @@ interface GoogleMapViewProps {
   heading?: number;
 }
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyASmlQ4IsFDRgNlVZTiYw788Tuqdh2_G1c";
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 declare global {
   interface Window {
