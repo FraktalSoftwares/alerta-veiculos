@@ -22,6 +22,7 @@ import Financeiro from "./pages/Financeiro";
 import Despesas from "./pages/Despesas";
 import Loja from "./pages/Loja";
 import Estoque from "./pages/Estoque";
+import Assinaturas from "./pages/Assinaturas";
 import Configuracoes from "./pages/Configuracoes";
 import Usuarios from "./pages/Usuarios";
 import Perfil from "./pages/Perfil";
@@ -107,6 +108,11 @@ const App = () => (
             <Route path="/estoque" element={
               <ProtectedRoute>
                 <Estoque />
+              </ProtectedRoute>
+            } />
+            <Route path="/assinaturas" element={
+              <ProtectedRoute>
+                <Assinaturas />
               </ProtectedRoute>
             } />
             <Route path="/perfil" element={
