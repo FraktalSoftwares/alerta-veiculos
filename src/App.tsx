@@ -13,8 +13,10 @@ import Clientes from "./pages/Clientes";
 import ClienteDetalhes from "./pages/ClienteDetalhes";
 import Veiculos from "./pages/Veiculos";
 import VeiculoMapa from "./pages/VeiculoMapa";
+import VeiculoMapaPublico from "./pages/VeiculoMapaPublico";
 import VeiculoHistorico from "./pages/VeiculoHistorico";
 import VeiculosMapa from "./pages/VeiculosMapa";
+import VeiculoCercas from "./pages/VeiculoCercas";
 import Notificacoes from "./pages/Notificacoes";
 import Financeiro from "./pages/Financeiro";
 import Despesas from "./pages/Despesas";
@@ -39,6 +41,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
             <Route path="/nova-senha" element={<NovaSenha />} />
+            <Route path="/compartilhar/:id" element={<VeiculoMapaPublico />} />
             
             {/* Protected Routes */}
             <Route path="/" element={
@@ -74,6 +77,11 @@ const App = () => (
             <Route path="/veiculos/:id/historico" element={
               <ProtectedRoute>
                 <VeiculoHistorico />
+              </ProtectedRoute>
+            } />
+            <Route path="/veiculos/:id/cercas" element={
+              <ProtectedRoute>
+                <VeiculoCercas />
               </ProtectedRoute>
             } />
             <Route path="/notificacoes" element={
@@ -127,3 +135,4 @@ const App = () => (
 );
 
 export default App;
+

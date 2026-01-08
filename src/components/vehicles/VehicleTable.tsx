@@ -9,10 +9,11 @@ interface VehicleTableProps {
   onEditVehicle?: (vehicle: VehicleDisplay) => void;
   onDeleteVehicle?: (vehicle: VehicleDisplay) => void;
   onBlockVehicle?: (vehicle: VehicleDisplay) => void;
+  onShowDetails?: (vehicle: VehicleDisplay) => void;
   isLoading?: boolean;
 }
 
-export function VehicleTable({ vehicles, onVehicleClick, onEditVehicle, onDeleteVehicle, onBlockVehicle, isLoading }: VehicleTableProps) {
+export function VehicleTable({ vehicles, onVehicleClick, onEditVehicle, onDeleteVehicle, onBlockVehicle, onShowDetails, isLoading }: VehicleTableProps) {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-border overflow-hidden bg-card">
@@ -47,6 +48,7 @@ export function VehicleTable({ vehicles, onVehicleClick, onEditVehicle, onDelete
             onEdit={onEditVehicle}
             onDelete={onDeleteVehicle}
             onBlock={onBlockVehicle}
+            onShowDetails={onShowDetails}
           />
         ))}
       </div>

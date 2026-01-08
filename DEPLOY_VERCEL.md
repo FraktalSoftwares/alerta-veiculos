@@ -42,6 +42,13 @@ VITE_GOOGLE_MAPS_API_KEY
 - **Valor:** Chave da API do Google Maps
 - **Como obter:** [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
 
+```
+VITE_APP_URL
+```
+- **Valor:** URL base da aplicação (para links de compartilhamento)
+- **Exemplo:** `https://alertaveiculos.vercel.app`
+- **Opcional:** Se não configurada, será usado `window.location.origin` automaticamente
+
 ### 3. Configurações de Build
 
 A Vercel detectará automaticamente as seguintes configurações do `vercel.json`:

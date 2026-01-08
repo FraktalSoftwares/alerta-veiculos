@@ -27,6 +27,20 @@ export interface VehicleWithDetails extends VehicleRow {
     id: string;
     name: string;
     phone?: string | null;
+    email?: string | null;
+    document_type?: string | null;
+    document_number?: string | null;
+    addresses?: {
+      id: string;
+      street?: string | null;
+      number?: string | null;
+      complement?: string | null;
+      neighborhood?: string | null;
+      city?: string | null;
+      state?: string | null;
+      zip_code?: string | null;
+      is_primary?: boolean | null;
+    }[];
   };
   equipment?: {
     id: string;

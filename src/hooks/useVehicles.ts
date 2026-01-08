@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { VehicleWithDetails, VehicleFormData, mapVehicleToDisplay, VehicleDisplay } from '@/types/vehicle';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 interface UseVehiclesOptions {
   search?: string;
@@ -77,7 +77,7 @@ export function useVehicle(vehicleId: string | undefined) {
         .from('vehicles')
         .select(`
           *,
-          clients(id, name),
+          clients(id, name, phone, email, document_type, document_number, addresses(id, street, number, complement, neighborhood, city, state, zip_code, is_primary)),
           equipment(id, serial_number, imei, chip_operator, model, products(id, title, model))
         `)
         .eq('id', vehicleId)
@@ -122,6 +122,7 @@ export function useClientVehicles(clientId: string | undefined) {
 
 export function useCreateVehicle() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (formData: VehicleFormData) => {
@@ -148,16 +149,24 @@ export function useCreateVehicle() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['client-vehicles'] });
-      toast.success('Veículo cadastrado com sucesso!');
+      toast({
+        title: 'Sucesso',
+        description: 'Veículo cadastrado com sucesso!',
+      });
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao cadastrar veículo: ${error.message}`);
+      toast({
+        title: 'Erro',
+        description: `Erro ao cadastrar veículo: ${error.message}`,
+        variant: 'destructive',
+      });
     },
   });
 }
 
 export function useUpdateVehicle() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<VehicleFormData> }) => {
@@ -175,16 +184,24 @@ export function useUpdateVehicle() {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['client-vehicles'] });
-      toast.success('Veículo atualizado com sucesso!');
+      toast({
+        title: 'Sucesso',
+        description: 'Veículo atualizado com sucesso!',
+      });
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao atualizar veículo: ${error.message}`);
+      toast({
+        title: 'Erro',
+        description: `Erro ao atualizar veículo: ${error.message}`,
+        variant: 'destructive',
+      });
     },
   });
 }
 
 export function useDeleteVehicle() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -194,19 +211,70 @@ export function useDeleteVehicle() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['client-vehicles'] });
-      toast.success('Veículo excluído com sucesso!');
+      toast({
+        title: 'Sucesso',
+        description: 'Veículo excluído com sucesso!',
+      });
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao excluir veículo: ${error.message}`);
+      toast({
+        title: 'Erro',
+        description: `Erro ao excluir veículo: ${error.message}`,
+        variant: 'destructive',
+      });
     },
   });
 }
 
 export function useBlockVehicle() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, block }: { id: string; block: boolean }) => {
+      // Busca o veículo completo para obter IMEI e protocolo
+      const { data: vehicle, error: vehicleError } = await supabase
+        .from('vehicles')
+        .select(`
+          id,
+          equipment(id, imei, model, products(model))
+        `)
+        .eq('id', id)
+        .maybeSingle();
+
+      if (vehicleError) throw vehicleError;
+      if (!vehicle) throw new Error('Veículo não encontrado');
+
+      // Obtém IMEI e protocolo do equipamento
+      const equipment = vehicle?.equipment?.[0];
+      const imei = equipment?.imei || null;
+      const protocolo = equipment?.products?.model || (equipment as any)?.model || undefined;
+
+      let apiSuccess = false;
+      let apiError: Error | null = null;
+
+      // Se tiver IMEI, usa a API de ações
+      if (imei && imei !== '-') {
+        const { trackingApiClient } = await import('@/integrations/tracking-api/client');
+        
+        try {
+          if (block) {
+            await trackingApiClient.blockVehicle(imei, protocolo);
+          } else {
+            await trackingApiClient.unblockVehicle(imei, protocolo);
+          }
+          apiSuccess = true;
+        } catch (error) {
+          apiError = error instanceof Error ? error : new Error(String(error));
+          console.error('Erro na API de ações:', apiError);
+          // Continua para atualizar o banco mesmo se a API falhar
+        }
+      } else {
+        // Se não tiver IMEI, apenas atualiza o banco
+        console.warn('Veículo sem IMEI, apenas atualizando status no banco');
+      }
+
+      // Atualiza o status no banco de dados
       const { data, error } = await supabase
         .from('vehicles')
         .update({ status: block ? 'blocked' : 'active' })
@@ -215,15 +283,41 @@ export function useBlockVehicle() {
         .single();
 
       if (error) throw error;
-      return data;
+
+      // Se a API falhou mas o banco foi atualizado, retorna com aviso
+      if (imei && imei !== '-' && !apiSuccess && apiError) {
+        return { ...data, imei, protocolo, apiError: apiError.message };
+      }
+
+      return { ...data, imei, protocolo };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle', variables.id] });
-      toast.success(variables.block ? 'Veículo bloqueado!' : 'Veículo desbloqueado!');
+      if (data.imei) {
+        queryClient.invalidateQueries({ queryKey: ['vehicle-connection', data.imei] });
+      }
+      
+      // Se houve erro na API mas o banco foi atualizado, mostra aviso
+      if ((data as any).apiError) {
+        toast({
+          title: 'Aviso',
+          description: `Status atualizado no sistema, mas houve erro na comunicação com o rastreador: ${(data as any).apiError}`,
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'Sucesso',
+          description: variables.block ? 'Veículo bloqueado com sucesso!' : 'Veículo desbloqueado com sucesso!',
+        });
+      }
     },
     onError: (error: Error) => {
-      toast.error(`Erro: ${error.message}`);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao bloquear/desbloquear veículo',
+        variant: 'destructive',
+      });
     },
   });
 }

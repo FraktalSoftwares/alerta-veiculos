@@ -15,18 +15,15 @@ import {
   MoreVertical,
   MapPin,
   Power,
-  Gauge,
   Wifi,
   Lock,
   Unlock,
   User,
-  Circle,
   Share2,
   History,
-  MapPinned,
-  Route,
   Pencil,
   Trash2,
+  Radio,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -38,6 +35,7 @@ interface VehicleTableRowProps {
   onEdit?: (vehicle: VehicleDisplay) => void;
   onDelete?: (vehicle: VehicleDisplay) => void;
   onBlock?: (vehicle: VehicleDisplay) => void;
+  onShowDetails?: (vehicle: VehicleDisplay) => void;
 }
 
 const statusLabels = {
@@ -47,7 +45,7 @@ const statusLabels = {
   bloqueado: "BLOQUEADO",
 };
 
-export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock }: VehicleTableRowProps) {
+export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, onShowDetails }: VehicleTableRowProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -71,30 +69,79 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock }:
     onBlock?.(vehicle);
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!vehicle?.id) return;
+    
+    // Generate public share URL using environment variable or fallback to current origin
+    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    const shareUrl = `${baseUrl}/compartilhar/${vehicle.id}`;
+    
+    try {
+      // Try to use the Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copiado!",
+          description: "O link foi copiado para a área de transferência.",
+        });
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        toast({
+          title: "Link copiado!",
+          description: "O link foi copiado para a área de transferência.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao copiar link:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar o link. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAction = (action: string) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    toast({
-      title: action,
-      description: `Funcionalidade "${action}" será implementada em breve.`,
-    });
+    if (action === "Informações do Cliente" && onShowDetails) {
+      onShowDetails(vehicle);
+    } else {
+      toast({
+        title: action,
+        description: `Funcionalidade "${action}" será implementada em breve.`,
+      });
+    }
   };
 
   // Check real connection status via API
   const { data: connectionData } = useVehicleConnection(vehicle.imei && vehicle.imei !== '-' ? vehicle.imei : null);
   
   // Determine status based on API connection status
-  // If connected via API, show "RASTREANDO", otherwise show "sem-sinal"
+  // If blocked, always show blocked status first
+  const isBlocked = vehicle.status === 'bloqueado';
   const isConnected = connectionData?.conectado === true;
-  const displayStatus = isConnected ? 'rastreando' : 'sem-sinal';
+  // If blocked, show blocked status, otherwise use connection status
+  const displayStatus = isBlocked ? 'bloqueado' : (isConnected ? 'rastreando' : 'sem-sinal');
   const isPoweredOn = isConnected;
   // Use real connection status from API
   const hasSignal = isConnected;
-  const isBlocked = vehicle.status === 'bloqueado';
 
   return (
     <div
       onClick={() => onClick?.(vehicle)}
-      className="grid grid-cols-[1fr_80px_130px_110px_100px_100px_120px_100px_60px] gap-3 px-6 py-3 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors"
+      className={`grid grid-cols-[1fr_80px_130px_110px_100px_100px_120px_100px_60px] gap-3 px-6 py-3 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors ${
+        isBlocked ? 'bg-destructive/5 border-l-4 border-l-destructive' : ''
+      }`}
     >
       {/* Cliente */}
       <div className="flex items-center">
@@ -112,8 +159,11 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock }:
       </div>
 
       {/* Placa / Descrição */}
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
         <span className="text-foreground font-medium">{vehicle.plate}</span>
+        {isBlocked && (
+          <Lock className="h-3.5 w-3.5 text-destructive flex-shrink-0" title="Veículo bloqueado" />
+        )}
       </div>
 
       {/* Rastreador */}
@@ -128,12 +178,20 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock }:
 
       {/* Status Indicators */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1" title={isPoweredOn ? "Ligado" : "Desligado"}>
-          <Power className={`h-3.5 w-3.5 ${isPoweredOn ? 'text-green-500' : 'text-muted-foreground'}`} />
-        </div>
-        <div className="flex items-center" title={hasSignal ? "Com sinal" : "Sem sinal"}>
-          <Wifi className={`h-3.5 w-3.5 ${hasSignal ? 'text-green-500' : 'text-destructive'}`} />
-        </div>
+        {isBlocked ? (
+          <div className="flex items-center gap-1" title="Veículo bloqueado">
+            <Lock className="h-3.5 w-3.5 text-destructive" />
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1" title={isPoweredOn ? "Ligado" : "Desligado"}>
+              <Power className={`h-3.5 w-3.5 ${isPoweredOn ? 'text-green-500' : 'text-muted-foreground'}`} />
+            </div>
+            <div className="flex items-center" title={hasSignal ? "Com sinal" : "Sem sinal"}>
+              <Wifi className={`h-3.5 w-3.5 ${hasSignal ? 'text-green-500' : 'text-destructive'}`} />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Situação */}
@@ -166,26 +224,14 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock }:
               <History className="h-4 w-4 mr-2" />
               Histórico
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleAction("Rotas")} className="cursor-pointer">
-              <Route className="h-4 w-4 mr-2" />
-              Rotas
-            </DropdownMenuItem>
 
             <DropdownMenuSeparator />
 
             {/* Configurações */}
             <DropdownMenuLabel className="text-xs text-muted-foreground">Configurações</DropdownMenuLabel>
-            <DropdownMenuItem onClick={handleAction("Cerca Virtual")} className="cursor-pointer">
-              <Circle className="h-4 w-4 mr-2" />
-              Cerca Virtual
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleAction("Pontos de Interesse")} className="cursor-pointer">
-              <MapPinned className="h-4 w-4 mr-2" />
-              Pontos de Interesse
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleAction("Hodômetro")} className="cursor-pointer">
-              <Gauge className="h-4 w-4 mr-2" />
-              Hodômetro
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/cercas`); }} className="cursor-pointer">
+              <Radio className="h-4 w-4 mr-2" />
+              Cercas Virtuais
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
@@ -216,7 +262,7 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock }:
               <User className="h-4 w-4 mr-2" />
               Informações do Cliente
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleAction("Compartilhar")} className="cursor-pointer">
+            <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
               <Share2 className="h-4 w-4 mr-2" />
               Compartilhar
             </DropdownMenuItem>

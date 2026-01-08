@@ -6,6 +6,22 @@ Sistema completo de rastreamento e gestão de veículos com dashboard, controle 
 
 O **Alerta Veículos** é uma plataforma web full-stack desenvolvida para gerenciar frotas de veículos, clientes, equipamentos de rastreamento, finanças e estoque. O sistema oferece rastreamento em tempo real, visualização em mapas, gestão hierárquica de clientes e usuários, além de módulos completos de financeiro e e-commerce.
 
+## 📖 Glossário de Termos
+
+### IMEI / ESN / Identificador
+- **São a mesma coisa**: Representam o número único de identificação do equipamento de rastreamento
+- **Uso**: Utilizado em todas as chamadas da API de rastreamento para identificar o equipamento
+- **Exemplo**: `"123456789012345"`
+
+### Protocolo (Modelo do Rastreador)
+- **Definição**: Modelo do rastreador instalado no veículo
+- **Valores possíveis**:
+  - `"J16"` ou `"j16"` - Modelo J16
+  - `"8310"` - Modelo 8310
+  - `"310"` - Modelo 310
+- **Importante**: O protocolo é o **modelo do rastreador**, não um protocolo de comunicação
+- **Como obter**: `equipment?.products?.model || equipment?.model`
+
 ## ✨ Funcionalidades Principais
 
 ### 🔐 Autenticação e Autorização
@@ -151,6 +167,7 @@ Crie um arquivo `.env.local` na raiz do projeto:
 VITE_SUPABASE_URL=sua_url_do_supabase
 VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_publica_do_supabase
 VITE_GOOGLE_MAPS_API_KEY=sua_chave_do_google_maps
+VITE_APP_URL=https://alertaveiculos.vercel.app
 ```
 
 > **Nota:** As variáveis de ambiente devem começar com `VITE_` para serem expostas no cliente Vite.

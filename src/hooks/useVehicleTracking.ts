@@ -1,68 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
 
 export interface VehicleTrackingData {
-  id: string;
-  vehicle_id: string;
-  latitude: number;
-  longitude: number;
-  speed: number | null;
-  heading: number | null;
-  ignition: boolean | null;
-  recorded_at: string | null;
-}
-
-export function useVehicleTracking(vehicleId: string) {
-  const queryClient = useQueryClient();
-
-  // Subscribe to real-time updates
-  useEffect(() => {
-    if (!vehicleId) return;
-
-    const channel = supabase
-      .channel(`vehicle-tracking-${vehicleId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'vehicle_tracking_data',
-          filter: `vehicle_id=eq.${vehicleId}`
-        },
-        (payload) => {
-          console.log('Real-time tracking update:', payload);
-          // Invalidate query to refetch latest data
-          queryClient.invalidateQueries({ queryKey: ['vehicle-tracking', vehicleId] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [vehicleId, queryClient]);
-
-  return useQuery({
-    queryKey: ['vehicle-tracking', vehicleId],
-    queryFn: async (): Promise<VehicleTrackingData | null> => {
-      const { data, error } = await supabase
-        .from('vehicle_tracking_data')
-        .select('*')
-        .eq('vehicle_id', vehicleId)
-        .order('recorded_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!vehicleId,
-    refetchInterval: 5000, // Atualiza a cada 5 segundos
-  });
-}
-
-export interface HistoricoData {
   id: string;
   vehicle_id: string;
   latitude: number;
@@ -93,6 +32,150 @@ function getTrackingTableName(model: string | null | undefined): string | null {
   }
   
   return null;
+}
+
+export function useVehicleTracking(vehicleId: string) {
+  return useQuery({
+    queryKey: ['vehicle-tracking', vehicleId],
+    queryFn: async (): Promise<VehicleTrackingData | null> => {
+      if (!vehicleId) return null;
+
+      // Get the vehicle with equipment to find the model and IMEI
+      const { data: vehicle, error: vehicleError } = await supabase
+        .from('vehicles')
+        .select(`
+          id,
+          equipment(
+            id,
+            imei,
+            model,
+            products(model)
+          )
+        `)
+        .eq('id', vehicleId)
+        .maybeSingle();
+
+      if (vehicleError) throw vehicleError;
+      if (!vehicle || !vehicle.equipment || (Array.isArray(vehicle.equipment) && vehicle.equipment.length === 0)) {
+        return null;
+      }
+
+      // Get the equipment data
+      const equipment = Array.isArray(vehicle.equipment) ? vehicle.equipment[0] : vehicle.equipment;
+      // Try to get model from equipment directly first, then from product
+      const model = (equipment as any)?.model || equipment?.products?.model || null;
+      const imei = equipment?.imei || null;
+      
+      if (!imei) {
+        console.warn('Equipamento sem IMEI configurado');
+        return null;
+      }
+      
+      // Get the table name based on model
+      const tableName = getTrackingTableName(model);
+      
+      if (!tableName) {
+        console.warn(`Modelo não mapeado: ${model}. Tabelas disponíveis: pacotes_rastreador_310, pacotes_rastreador_8310, pacotes_rastreador_j16`);
+        return null;
+      }
+
+      const modelLower = model?.toLowerCase().trim() || '';
+
+      // Query the appropriate table using IMEI (identificador field) and get the latest record
+      let query = supabase
+        .from(tableName)
+        .select('*')
+        .eq('identificador', imei);
+
+      // Order by appropriate date field to get the latest record
+      if (modelLower === 'j16') {
+        query = query.order('date_time', { ascending: false });
+      } else {
+        // For 310 and 8310, order by date first (desc), then time (desc), then created_at (desc) as fallback
+        query = query.order('date', { ascending: false });
+        query = query.order('time', { ascending: false });
+        query = query.order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query.limit(1).maybeSingle();
+
+      if (error) {
+        console.error(`Erro ao buscar dados de rastreamento da tabela ${tableName}:`, error);
+        throw error;
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      // Map the data to VehicleTrackingData format based on model
+      let recordedAt: string | null = null;
+      
+      if (modelLower === 'j16') {
+        // J16 has date_time field
+        recordedAt = data.date_time || null;
+      } else {
+        // 310 and 8310 have separate date and time fields
+        if (data.date && data.time) {
+          const dateStr = data.date;
+          const timeStr = data.time;
+          recordedAt = `${dateStr}T${timeStr}`;
+        } else if (data.created_at) {
+          recordedAt = data.created_at;
+        }
+      }
+      
+      // Parse ignition based on model
+      // ignicao: 0 = desligado, 1 ou maior = ligado
+      let ignition: boolean | null = null;
+      if (data.ignicao !== undefined && data.ignicao !== null) {
+        if (typeof data.ignicao === 'string') {
+          // String: "0" = desligado, "1" ou maior = ligado
+          const numValue = parseFloat(data.ignicao);
+          ignition = !isNaN(numValue) ? numValue >= 1 : (data.ignicao.toLowerCase() === 'true' || data.ignicao.toLowerCase() === 'on');
+        } else if (typeof data.ignicao === 'number') {
+          // Number: 0 = desligado, 1 ou maior = ligado
+          ignition = data.ignicao >= 1;
+        } else {
+          // Boolean
+          ignition = Boolean(data.ignicao);
+        }
+      }
+      
+      // Parse heading/direction
+      let heading: number | null = null;
+      if (modelLower === 'j16') {
+        heading = data.direction ? parseFloat(data.direction) : null;
+      } else {
+        // 310 and 8310 use 'crs' field
+        heading = data.crs ? parseFloat(data.crs) : null;
+      }
+
+      return {
+        id: data.id?.toString() || crypto.randomUUID(),
+        vehicle_id: vehicleId,
+        latitude: data.latitude ? parseFloat(data.latitude) : 0,
+        longitude: data.longitude ? parseFloat(data.longitude) : 0,
+        speed: data.speed ? parseFloat(data.speed) : null,
+        heading: heading,
+        ignition: ignition,
+        recorded_at: recordedAt,
+      };
+    },
+    enabled: !!vehicleId,
+    refetchInterval: 5000, // Atualiza a cada 5 segundos
+  });
+}
+
+export interface HistoricoData {
+  id: string;
+  vehicle_id: string;
+  latitude: number;
+  longitude: number;
+  speed: number | null;
+  heading: number | null;
+  ignition: boolean | null;
+  recorded_at: string | null;
 }
 
 export function useVehicleTrackingHistory(

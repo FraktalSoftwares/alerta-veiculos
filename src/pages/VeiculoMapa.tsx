@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Power, Gauge, Wifi, Lock, Unlock, MoreVertical, Navigation, History } from "lucide-react";
-import { useVehicle } from "@/hooks/useVehicles";
+import { ArrowLeft, Power, Wifi, Lock, Unlock, MoreVertical, History, Share2, Radio } from "lucide-react";
+import { useVehicle, useBlockVehicle } from "@/hooks/useVehicles";
 import { useVehicleTracking } from "@/hooks/useVehicleTracking";
 import { useVehicleConnection } from "@/hooks/useVehicleConnection";
 import { Loader2 } from "lucide-react";
@@ -14,6 +15,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { VirtualFenceSidebar } from "@/components/vehicles/VirtualFenceSidebar";
+import { VirtualFenceMapView } from "@/components/vehicles/map/VirtualFenceMapView";
+import { useVirtualFences } from "@/hooks/useVirtualFences";
+import { VirtualFenceDisplay } from "@/types/virtualFence";
 
 const statusLabels = {
   rastreando: "RASTREANDO",
@@ -28,21 +33,110 @@ const VeiculoMapa = () => {
   const { toast } = useToast();
   const { data: vehicle, isLoading: isLoadingVehicle } = useVehicle(id || '');
   const { data: trackingData, isLoading: isLoadingTracking } = useVehicleTracking(id || '');
+  const blockVehicle = useBlockVehicle();
   
   // Get equipment data
   const equipment = vehicle?.equipment?.[0];
+  const equipmentId = equipment?.id || null;
   const imei = equipment?.imei || null;
   const { data: connectionData } = useVehicleConnection(imei);
+  
+  // Virtual fences
+  const [isFenceSidebarOpen, setIsFenceSidebarOpen] = useState(false);
+  const [selectedFenceId, setSelectedFenceId] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isSelectingLocation, setIsSelectingLocation] = useState(false);
+  const { data: fences } = useVirtualFences(equipmentId || undefined);
 
   const handleBack = () => {
     navigate("/veiculos");
   };
 
+  const handleBlockVehicle = () => {
+    if (!id) return;
+    const mappedStatus = mapVehicleStatus(vehicle?.status);
+    const isBlocked = mappedStatus === 'bloqueado' || vehicle?.status === 'blocked';
+    const shouldBlock = !isBlocked;
+    blockVehicle.mutate({ id, block: shouldBlock });
+  };
+
   const handleAction = (action: string) => {
+    if (action === "Cerca Virtual") {
+      setIsFenceSidebarOpen(true);
+    } else {
+      toast({
+        title: action,
+        description: `Funcionalidade "${action}" será implementada em breve.`,
+      });
+    }
+  };
+
+  const handleFenceSelect = (fence: VirtualFenceDisplay) => {
+    setSelectedFenceId(fence.id);
+    // Pode adicionar lógica para centralizar o mapa na cerca
     toast({
-      title: action,
-      description: `Funcionalidade "${action}" será implementada em breve.`,
+      title: 'Cerca selecionada',
+      description: `${fence.name} - ${fence.radius}m de raio`,
     });
+  };
+
+  const handleLocationSelect = () => {
+    setIsSelectingLocation(true);
+    toast({
+      title: 'Selecione no mapa',
+      description: 'Clique no mapa para definir a localização da cerca',
+    });
+  };
+
+  const handleMapLocationClick = (lat: number, lng: number) => {
+    if (isSelectingLocation) {
+      setSelectedLocation({ lat, lng });
+      setIsSelectingLocation(false);
+      toast({
+        title: 'Localização selecionada',
+        description: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      });
+    }
+  };
+
+  const handleShare = async () => {
+    if (!id) return;
+    
+    // Generate public share URL using environment variable or fallback to current origin
+    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    const shareUrl = `${baseUrl}/compartilhar/${id}`;
+    
+    try {
+      // Try to use the Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copiado!",
+          description: "O link foi copiado para a área de transferência.",
+        });
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        toast({
+          title: "Link copiado!",
+          description: "O link foi copiado para a área de transferência.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao copiar link:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar o link. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const isLoading = isLoadingVehicle || isLoadingTracking;
@@ -65,15 +159,17 @@ const VeiculoMapa = () => {
   }
 
   // Determine status based on API connection status
-  // If connected via API, show "RASTREANDO", otherwise show "sem-sinal"
+  // If blocked, always show blocked status first
+  // vehicle.status comes from DB as 'blocked', mapVehicleStatus converts it to 'bloqueado'
+  const mappedStatus = mapVehicleStatus(vehicle.status);
+  const isBlocked = mappedStatus === 'bloqueado' || vehicle.status === 'blocked';
   const isConnected = connectionData?.conectado === true;
-  const displayStatus = isConnected ? 'rastreando' : 'sem-sinal';
-  const isPoweredOn = isConnected;
+  // If blocked, show blocked status, otherwise use connection status
+  const displayStatus = isBlocked ? 'bloqueado' : (isConnected ? 'rastreando' : 'sem-sinal');
+  // Use ignition field from tracking data (boolean or number)
+  const isPoweredOn = trackingData?.ignition === true || (typeof trackingData?.ignition === 'number' && trackingData.ignition >= 1);
   // Use real connection status from API
   const hasSignal = isConnected;
-  const isBlocked = vehicle.status === 'blocked';
-  const speed = trackingData?.speed ?? 0;
-  const heading = trackingData?.heading ?? 0;
 
   // Format last update time
   const lastUpdate = trackingData?.recorded_at 
@@ -108,7 +204,14 @@ const VeiculoMapa = () => {
             <div className="bg-card/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
               <div className="flex items-center gap-3">
                 <div>
-                  <h1 className="font-semibold text-foreground">{vehicle.plate}</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-semibold text-foreground">{vehicle.plate}</h1>
+                    {isBlocked && (
+                      <div title="Veículo bloqueado">
+                        <Lock className="h-4 w-4 text-destructive" />
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">{vehicle.clients?.name || 'Cliente'}</p>
                 </div>
                 <VehicleBadge variant={displayStatus}>
@@ -130,7 +233,7 @@ const VeiculoMapa = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
-              <DropdownMenuItem onClick={() => handleAction("Bloquear veículo")} className="cursor-pointer">
+              <DropdownMenuItem onClick={handleBlockVehicle} className="cursor-pointer" disabled={blockVehicle.isPending}>
                 {isBlocked ? (
                   <>
                     <Unlock className="h-4 w-4 mr-2" />
@@ -143,14 +246,16 @@ const VeiculoMapa = () => {
                   </>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction("Cerca Virtual")} className="cursor-pointer">
-                Cerca Virtual
+              <DropdownMenuItem onClick={() => navigate(`/veiculos/${id}/cercas`)} className="cursor-pointer">
+                <Radio className="h-4 w-4 mr-2" />
+                Cercas Virtuais
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate(`/veiculos/${id}/historico`)} className="cursor-pointer">
                 <History className="h-4 w-4 mr-2" />
                 Histórico
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction("Compartilhar")} className="cursor-pointer">
+              <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
+                <Share2 className="h-4 w-4 mr-2" />
                 Compartilhar
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -159,8 +264,8 @@ const VeiculoMapa = () => {
       </div>
 
       {/* Status bar at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
-        <div className="bg-card/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+      <div className="absolute bottom-0 left-0 right-0 z-10 p-4 flex justify-center">
+        <div className="bg-card/95 backdrop-blur-sm rounded-xl p-4 shadow-lg w-fit">
           {/* Location info */}
           {!iframeUrl && (
             <div className="text-center text-xs text-muted-foreground mb-3 pb-3 border-b border-border">
@@ -173,7 +278,7 @@ const VeiculoMapa = () => {
             </div>
           )}
           
-          <div className="flex items-center justify-around">
+          <div className="flex items-center justify-center gap-6">
             <div className="flex flex-col items-center gap-1">
               <div className={`p-2 rounded-full ${isPoweredOn ? 'bg-green-500/20' : 'bg-muted'}`}>
                 <Power className={`h-5 w-5 ${isPoweredOn ? 'text-green-500' : 'text-muted-foreground'}`} />
@@ -181,22 +286,10 @@ const VeiculoMapa = () => {
               <span className="text-xs text-muted-foreground">{isPoweredOn ? 'Ligado' : 'Desligado'}</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <div className={`p-2 rounded-full ${speed > 0 ? 'bg-blue-500/20' : 'bg-muted'}`}>
-                <Gauge className={`h-5 w-5 ${speed > 0 ? 'text-blue-500' : 'text-muted-foreground'}`} />
-              </div>
-              <span className="text-xs text-muted-foreground">{speed} km/h</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
               <div className={`p-2 rounded-full ${hasSignal ? 'bg-green-500/20' : 'bg-destructive/20'}`}>
                 <Wifi className={`h-5 w-5 ${hasSignal ? 'text-green-500' : 'text-destructive'}`} />
               </div>
               <span className="text-xs text-muted-foreground">{hasSignal ? 'Com sinal' : 'Sem sinal'}</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="p-2 rounded-full bg-muted" style={{ transform: `rotate(${heading}deg)` }}>
-                <Navigation className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <span className="text-xs text-muted-foreground">{heading}°</span>
             </div>
             {isBlocked && (
               <div className="flex flex-col items-center gap-1">
@@ -210,7 +303,7 @@ const VeiculoMapa = () => {
         </div>
       </div>
 
-      {/* Map iframe - fullscreen */}
+      {/* Map - fullscreen */}
       {iframeUrl ? (
         <iframe
           src={iframeUrl}
@@ -239,6 +332,21 @@ const VeiculoMapa = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Virtual Fence Sidebar */}
+      {equipmentId && (
+        <VirtualFenceSidebar
+          equipmentId={equipmentId}
+          isOpen={isFenceSidebarOpen}
+          onClose={() => {
+            setIsFenceSidebarOpen(false);
+            setIsSelectingLocation(false);
+          }}
+          onFenceSelect={handleFenceSelect}
+          onLocationSelect={handleLocationSelect}
+          selectedLocation={selectedLocation}
+        />
       )}
     </div>
   );

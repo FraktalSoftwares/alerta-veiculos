@@ -6,6 +6,8 @@ import { VehiclePagination } from "@/components/vehicles/VehiclePagination";
 import { NewVehicleModal } from "@/components/vehicles/NewVehicleModal";
 import { EditVehicleModal } from "@/components/vehicles/EditVehicleModal";
 import { DeleteVehicleDialog } from "@/components/vehicles/DeleteVehicleDialog";
+import { VehicleDetailsModal } from "@/components/vehicles/VehicleDetailsModal";
+import { VehicleFilterModal } from "@/components/vehicles/VehicleFilterModal";
 import { useVehicles, useBlockVehicle } from "@/hooks/useVehicles";
 import { VehicleDisplay } from "@/types/vehicle";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +19,10 @@ const Veiculos = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleDisplay | null>(null);
+  const [filters, setFilters] = useState<{ status?: string; clientId?: string }>({});
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -25,6 +30,8 @@ const Veiculos = () => {
   
   const { data, isLoading } = useVehicles({
     search: searchValue,
+    status: filters.status,
+    clientId: filters.clientId,
     page: currentPage,
     pageSize: itemsPerPage,
   });
@@ -32,10 +39,17 @@ const Veiculos = () => {
   const blockVehicle = useBlockVehicle();
 
   const handleFilterClick = () => {
-    toast({
-      title: "Filtros",
-      description: "Funcionalidade de filtros será implementada em breve.",
-    });
+    setIsFilterModalOpen(true);
+  };
+
+  const handleApplyFilters = (newFilters: { status?: string; clientId?: string }) => {
+    setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setCurrentPage(1);
   };
 
   const handleNewVehicleClick = () => {
@@ -61,6 +75,25 @@ const Veiculos = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleShowDetails = (vehicle: VehicleDisplay) => {
+    setSelectedVehicle(vehicle);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleShowOnMap = () => {
+    if (selectedVehicle) {
+      navigate(`/veiculos/${selectedVehicle.id}/mapa`);
+      setIsDetailsModalOpen(false);
+    }
+  };
+
+  const handleBlockFromModal = () => {
+    if (selectedVehicle) {
+      const shouldBlock = selectedVehicle.status !== 'bloqueado';
+      blockVehicle.mutate({ id: selectedVehicle.id, block: shouldBlock });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-muted/30">
       <Header />
@@ -72,6 +105,7 @@ const Veiculos = () => {
           onSearchChange={setSearchValue}
           onFilterClick={handleFilterClick}
           onNewVehicleClick={handleNewVehicleClick}
+          hasFilters={!!(filters.status || filters.clientId)}
         />
         
         <VehicleTable 
@@ -80,6 +114,7 @@ const Veiculos = () => {
           onEditVehicle={handleEditVehicle}
           onDeleteVehicle={handleDeleteVehicle}
           onBlockVehicle={handleBlockVehicle}
+          onShowDetails={handleShowDetails}
           isLoading={isLoading}
         />
         
@@ -114,6 +149,22 @@ const Veiculos = () => {
           setSelectedVehicle(null);
         }}
         vehicle={selectedVehicle}
+      />
+
+      <VehicleDetailsModal
+        open={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
+        vehicle={selectedVehicle}
+        onShowOnMap={handleShowOnMap}
+        onBlockVehicle={handleBlockFromModal}
+      />
+
+      <VehicleFilterModal
+        open={isFilterModalOpen}
+        onOpenChange={setIsFilterModalOpen}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
       />
     </div>
   );

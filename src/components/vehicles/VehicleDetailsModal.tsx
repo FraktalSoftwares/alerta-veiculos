@@ -12,14 +12,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Power,
-  Gauge,
+  Wifi,
   WifiOff,
   Clock,
   ChevronDown,
@@ -32,15 +26,19 @@ import {
   ShieldAlert,
   Share2,
   History,
-  Navigation,
-  Route,
-  Milestone,
   Ban,
   Unlock,
+  Mail,
+  ExternalLink,
 } from "lucide-react";
 import { VehicleDisplay } from "@/types/vehicle";
 import { RequirePermission } from "@/components/auth/PermissionGate";
 import { PERMISSIONS } from "@/hooks/useUserPermissions";
+import { useVehicle } from "@/hooks/useVehicles";
+import { useVehicleTracking } from "@/hooks/useVehicleTracking";
+import { useVehicleConnection } from "@/hooks/useVehicleConnection";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface VehicleDetailsModalProps {
   open: boolean;
@@ -59,10 +57,91 @@ export function VehicleDetailsModal({
 }: VehicleDetailsModalProps) {
   const [clientInfoOpen, setClientInfoOpen] = useState(true);
   const [vehicleInfoOpen, setVehicleInfoOpen] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Busca o veículo completo para obter IMEI e protocolo
+  const { data: vehicleFull } = useVehicle(vehicle?.id);
+  const { data: trackingData } = useVehicleTracking(vehicle?.id || '');
+  
+  // Get equipment data for connection status
+  const equipment = vehicleFull?.equipment?.[0];
+  const imei = equipment?.imei || vehicle?.imei || null;
+  const { data: connectionData } = useVehicleConnection(imei && imei !== '-' ? imei : null);
+
+  const handleViewClientDetails = () => {
+    if (vehicleFull?.clients?.id) {
+      navigate(`/clientes/${vehicleFull.clients.id}`);
+      onOpenChange(false);
+    }
+  };
+
+  const handleVirtualFence = () => {
+    if (!vehicle?.id) return;
+    navigate(`/veiculos/${vehicle.id}/cercas`);
+    onOpenChange(false);
+  };
+
+  const handleShare = async () => {
+    if (!vehicle?.id) return;
+    
+    // Generate public share URL using environment variable or fallback to current origin
+    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    const shareUrl = `${baseUrl}/compartilhar/${vehicle.id}`;
+    
+    try {
+      // Try to use the Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copiado!",
+          description: "O link foi copiado para a área de transferência.",
+        });
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        toast({
+          title: "Link copiado!",
+          description: "O link foi copiado para a área de transferência.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao copiar link:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar o link. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleHistory = () => {
+    if (!vehicle?.id) return;
+    navigate(`/veiculos/${vehicle.id}/historico`);
+    onOpenChange(false);
+  };
 
   if (!vehicle) return null;
 
+  // Determine status based on API connection status
   const isBlocked = vehicle.status === 'bloqueado';
+  const isConnected = connectionData?.conectado === true;
+  // Use ignition field from tracking data (boolean or number)
+  const isPoweredOn = trackingData?.ignition === true || (typeof trackingData?.ignition === 'number' && trackingData.ignition >= 1);
+  // Use real connection status from API
+  const hasSignal = isConnected;
+  
+  // Format last update time from tracking data
+  const lastUpdate = trackingData?.recorded_at 
+    ? new Date(trackingData.recorded_at).toLocaleString('pt-BR')
+    : vehicle.lastUpdate || 'Sem dados';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,7 +156,7 @@ export function VehicleDetailsModal({
             <div>
               <p className="font-semibold text-foreground">{vehicle.plate}</p>
               <p className="text-sm text-muted-foreground">{vehicle.imei}</p>
-              <p className="text-xs text-muted-foreground">{vehicle.lastUpdate}</p>
+              <p className="text-xs text-muted-foreground">{lastUpdate}</p>
             </div>
             <Button
               variant="outline"
@@ -93,46 +172,40 @@ export function VehicleDetailsModal({
           {/* Status Indicators */}
           <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-6">
-              {/* Status */}
+              {/* Status - Ligado/Desligado baseado em ignition */}
               <div className="flex flex-col items-center gap-1">
                 <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center ${
-                  vehicle.status === 'rastreando' ? 'border-primary/30' : 'border-destructive/30'
+                  isPoweredOn ? 'border-primary/30' : 'border-destructive/30'
                 }`}>
                   <Power className={`h-6 w-6 ${
-                    vehicle.status === 'rastreando' ? 'text-primary' : 'text-destructive'
+                    isPoweredOn ? 'text-primary' : 'text-destructive'
                   }`} />
                 </div>
                 <span className="text-xs text-muted-foreground capitalize">
-                  {vehicle.status === 'rastreando' ? 'Ligado' : 'Desligado'}
+                  {isPoweredOn ? 'Ligado' : 'Desligado'}
                 </span>
               </div>
 
-              {/* Speed */}
-              <div className="flex flex-col items-center gap-1">
-                <div className="w-14 h-14 rounded-full border-4 border-primary/30 flex items-center justify-center">
-                  <Gauge className="h-6 w-6 text-primary" />
-                </div>
-                <span className="text-xs text-muted-foreground">0 km/h</span>
-              </div>
-
-              {/* GPS Signal */}
+              {/* GPS Signal - baseado em connection status */}
               <div className="flex flex-col items-center gap-1">
                 <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center ${
-                  vehicle.status === 'sem-sinal' ? 'border-amber-400/30' : 'border-primary/30'
+                  hasSignal ? 'border-primary/30' : 'border-amber-400/30'
                 }`}>
-                  <WifiOff className={`h-6 w-6 ${
-                    vehicle.status === 'sem-sinal' ? 'text-amber-500' : 'text-primary'
-                  }`} />
+                  {hasSignal ? (
+                    <Wifi className="h-6 w-6 text-primary" />
+                  ) : (
+                    <WifiOff className="h-6 w-6 text-amber-500" />
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {vehicle.status === 'sem-sinal' ? 'Sem sinal' : 'Com sinal'}
+                  {hasSignal ? 'Com sinal' : 'Sem sinal'}
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
-              <span>Última atualização: {vehicle.lastUpdate}</span>
+              <span>Última atualização: {lastUpdate}</span>
             </div>
           </div>
 
@@ -157,20 +230,6 @@ export function VehicleDetailsModal({
                 )}
               </Button>
             </RequirePermission>
-            <RequirePermission code={PERMISSIONS.VEHICLES_EDIT}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex-1 gap-2">
-                    Mais comandos
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Sirene</DropdownMenuItem>
-                  <DropdownMenuItem>Reiniciar rastreador</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </RequirePermission>
           </div>
 
           {/* Client Information */}
@@ -187,20 +246,84 @@ export function VehicleDetailsModal({
               <div className="p-4 border border-border rounded-lg space-y-3">
                 <div className="flex items-start gap-3">
                   <User className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">Cliente:</p>
-                    <p className="text-sm text-muted-foreground">{vehicle.clientName}</p>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Nome:</p>
+                    <p className="text-sm text-muted-foreground">
+                      {vehicleFull?.clients?.name || vehicle.clientName || 'Não informado'}
+                    </p>
                   </div>
                 </div>
+                {vehicleFull?.clients?.phone && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Telefone:</p>
+                      <p className="text-sm text-muted-foreground">{vehicleFull.clients.phone}</p>
+                    </div>
+                  </div>
+                )}
+                {vehicleFull?.clients?.email && (
+                  <div className="flex items-start gap-3">
+                    <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">E-mail:</p>
+                      <p className="text-sm text-muted-foreground">{vehicleFull.clients.email}</p>
+                    </div>
+                  </div>
+                )}
+                {vehicleFull?.clients?.document_number && (
+                  <div className="flex items-start gap-3">
+                    <User className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        {vehicleFull.clients.document_type === 'cpf' ? 'CPF' : 
+                         vehicleFull.clients.document_type === 'cnpj' ? 'CNPJ' : 
+                         'Documento'}:
+                      </p>
+                      <p className="text-sm text-muted-foreground">{vehicleFull.clients.document_number}</p>
+                    </div>
+                  </div>
+                )}
+                {vehicleFull?.clients?.addresses && vehicleFull.clients.addresses.length > 0 && (() => {
+                  const primaryAddress = vehicleFull.clients.addresses.find(addr => addr.is_primary) || vehicleFull.clients.addresses[0];
+                  return (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Endereço:</p>
+                        <p className="text-sm text-muted-foreground">
+                          {primaryAddress.street && `${primaryAddress.street}${primaryAddress.number ? `, ${primaryAddress.number}` : ''}`}
+                          {primaryAddress.complement && ` - ${primaryAddress.complement}`}
+                          {primaryAddress.neighborhood && `, ${primaryAddress.neighborhood}`}
+                          {primaryAddress.city && primaryAddress.state && `, ${primaryAddress.city} - ${primaryAddress.state}`}
+                          {primaryAddress.zip_code && ` (${primaryAddress.zip_code})`}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="flex items-start gap-3">
                   <Car className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">Veículo</p>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Veículo:</p>
                     <p className="text-sm text-muted-foreground">
                       {vehicle.brand} {vehicle.model} {vehicle.year ? `(${vehicle.year})` : ''}
                     </p>
                   </div>
                 </div>
+                {vehicleFull?.clients?.id && (
+                  <div className="pt-2 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleViewClientDetails}
+                      className="w-full gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Ver detalhes completos do cliente
+                    </Button>
+                  </div>
+                )}
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -255,29 +378,32 @@ export function VehicleDetailsModal({
         {/* Footer Actions */}
         <div className="border-t border-border p-4">
           <div className="grid grid-cols-3 gap-2">
-            <Button variant="ghost" size="sm" className="flex flex-col gap-1 h-auto py-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex flex-col gap-1 h-auto py-2"
+              onClick={handleVirtualFence}
+            >
               <ShieldAlert className="h-4 w-4" />
               <span className="text-xs">Cerca Virtual</span>
             </Button>
-            <Button variant="ghost" size="sm" className="flex flex-col gap-1 h-auto py-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex flex-col gap-1 h-auto py-2"
+              onClick={handleShare}
+            >
               <Share2 className="h-4 w-4" />
               <span className="text-xs">Compartilhar</span>
             </Button>
-            <Button variant="ghost" size="sm" className="flex flex-col gap-1 h-auto py-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex flex-col gap-1 h-auto py-2"
+              onClick={handleHistory}
+            >
               <History className="h-4 w-4" />
               <span className="text-xs">Histórico</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="flex flex-col gap-1 h-auto py-2">
-              <Navigation className="h-4 w-4" />
-              <span className="text-xs">Pontos de Interesse</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="flex flex-col gap-1 h-auto py-2">
-              <Route className="h-4 w-4" />
-              <span className="text-xs">Rotas</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="flex flex-col gap-1 h-auto py-2">
-              <Milestone className="h-4 w-4" />
-              <span className="text-xs">Hodômetro</span>
             </Button>
           </div>
         </div>
