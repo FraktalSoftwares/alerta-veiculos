@@ -1,6 +1,6 @@
 import { VehicleTrackingData } from '@/hooks/useVehicleTracking';
 import { Button } from '@/components/ui/button';
-import { MapPin, Navigation, Gauge, Power } from 'lucide-react';
+import { MapPin, Gauge, Power } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -67,10 +67,6 @@ export function HistoryTrackingCard({
         <div className="flex items-center gap-1 text-muted-foreground">
           <MapPin className="h-3 w-3" />
           <span>Lat: {point.latitude.toFixed(6)}</span>
-        </div>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <Navigation className="h-3 w-3" />
-          <span>Direção: {point.heading ?? 0}°</span>
         </div>
         <div className="flex items-center gap-1 text-muted-foreground">
           <MapPin className="h-3 w-3" />

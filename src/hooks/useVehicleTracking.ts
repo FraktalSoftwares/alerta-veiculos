@@ -228,21 +228,13 @@ export function useVehicleTrackingHistory(
         return [];
       }
 
+      const modelLower = model?.toLowerCase().trim() || '';
+
       // Query the appropriate table using IMEI (identificador field)
       let query = supabase
         .from(tableName)
         .select('*')
-        .eq('identificador', imei)
-        .limit(limit);
-
-      // Determine date field based on table/model
-      let dateField: string;
-      if (modelLower === 'j16') {
-        dateField = 'date_time';
-      } else {
-        // For 310 and 8310, we need to combine date and time fields
-        dateField = 'created_at'; // Fallback to created_at
-      }
+        .eq('identificador', imei);
       
       // Filter by date range
       if (startDate) {
@@ -274,7 +266,8 @@ export function useVehicleTrackingHistory(
         query = query.order('created_at', { ascending: true });
       }
 
-      const { data, error } = await query;
+      // Apply limit after filtering and ordering
+      const { data, error } = await query.limit(limit);
 
       if (error) {
         console.error(`Erro ao buscar histórico da tabela ${tableName}:`, error);
