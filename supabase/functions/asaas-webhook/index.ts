@@ -157,6 +157,10 @@ async function handlePaymentConfirmed(supabase: any, payment: any) {
           status: 'paid',
           payment_method: mapPaymentMethod(payment.billingType),
           reference_month: new Date().toISOString().split('T')[0],
+          metadata: {
+            asaas_payment_id: payment.id,
+            subscription_id: sub.id,
+          },
         });
 
         // Criar histórico
@@ -187,11 +191,11 @@ async function handlePaymentConfirmed(supabase: any, payment: any) {
     .eq('id', subscriptionPayment.id);
 
   // Criar registro financeiro se ainda não existe
+  // Verificar por metadata para evitar duplicados
   const { data: existingFinance } = await supabase
     .from('finance_records')
     .select('id')
-    .eq('description', `Pagamento assinatura - ${payment.description || ''}`)
-    .eq('amount', payment.value)
+    .eq('metadata->>asaas_payment_id', payment.id)
     .limit(1);
 
   if (!existingFinance || existingFinance.length === 0) {
@@ -205,6 +209,10 @@ async function handlePaymentConfirmed(supabase: any, payment: any) {
       status: 'paid',
       payment_method: mapPaymentMethod(payment.billingType),
       reference_month: new Date().toISOString().split('T')[0],
+      metadata: {
+        asaas_payment_id: payment.id,
+        subscription_id: subscriptionPayment.subscription_id,
+      },
     });
   }
 

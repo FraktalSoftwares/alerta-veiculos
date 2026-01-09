@@ -10,6 +10,7 @@ import { EditFinanceModal } from "@/components/finance/EditFinanceModal";
 import { DeleteFinanceDialog } from "@/components/finance/DeleteFinanceDialog";
 import { useFinanceRecords, useFinanceSummary } from "@/hooks/useFinance";
 import { FinanceRecordDisplay } from "@/types/finance";
+import { PERMISSIONS } from "@/hooks/useUserPermissions";
 
 const Despesas = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,6 +61,7 @@ const Despesas = () => {
           title="Despesas"
           onNewClick={handleNewClick}
           newButtonLabel="Cadastrar nova despesa"
+          createPermission={PERMISSIONS.FINANCE_EXPENSES}
         />
         
         {/* Summary Cards */}

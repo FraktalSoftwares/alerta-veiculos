@@ -1,6 +1,62 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.86.2';
-import { getAsaasClient } from '../asaas-client/index.ts';
+
+// AsaasClient inline (copiado de asaas-client/index.ts)
+class AsaasClient {
+  private baseUrl: string;
+  private apiKey: string;
+
+  constructor(config: { apiKey: string; environment: 'production' | 'sandbox' }) {
+    this.apiKey = config.apiKey;
+    this.baseUrl = config.environment === 'production' 
+      ? 'https://www.asaas.com/api/v3'
+      : 'https://sandbox.asaas.com/api/v3';
+  }
+
+  private async request<T>(method: string, endpoint: string, data?: any): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers: Record<string, string> = {
+      'access_token': this.apiKey,
+      'Content-Type': 'application/json',
+    };
+
+    const options: RequestInit = { method, headers };
+    if (data && method !== 'GET') {
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(url, options);
+    const result = await response.json();
+
+    if (!response.ok) {
+      const errorMessage = result.errors?.[0]?.description || 
+                          result.message || 
+                          `Asaas API error: ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return result;
+  }
+
+  async createCustomer(data: any): Promise<any> {
+    return this.request('POST', '/customers', data);
+  }
+
+  async createSubscription(data: any): Promise<any> {
+    return this.request('POST', '/subscriptions', data);
+  }
+
+  async cancelSubscription(subscriptionId: string): Promise<any> {
+    return this.request('DELETE', `/subscriptions/${subscriptionId}`);
+  }
+}
+
+function getAsaasClient(apiKey: string, environment: string): AsaasClient {
+  return new AsaasClient({
+    apiKey,
+    environment: environment as 'production' | 'sandbox',
+  });
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -97,7 +153,18 @@ serve(async (req) => {
       );
     }
 
-    const asaasClient = getAsaasClient(asaasConfig.api_key, asaasConfig.environment);
+    // Ler API Key dos Secrets do Supabase (NÃO do banco de dados)
+    const apiKey = Deno.env.get(asaasConfig.secret_name || 'ASAAS_API_KEY');
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'ASAAS_API_KEY não configurada nos Secrets do Supabase. Configure em Settings → Edge Functions → Secrets.' 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const asaasClient = getAsaasClient(apiKey, asaasConfig.environment);
 
     // 3. Criar ou buscar customer no Asaas
     let asaasCustomerId = client.asaas_customer_id;

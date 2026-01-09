@@ -10,6 +10,7 @@ import { EditFinanceModal } from "@/components/finance/EditFinanceModal";
 import { DeleteFinanceDialog } from "@/components/finance/DeleteFinanceDialog";
 import { useFinanceRecords, useFinanceSummary } from "@/hooks/useFinance";
 import { FinanceRecordDisplay } from "@/types/finance";
+import { PERMISSIONS } from "@/hooks/useUserPermissions";
 
 const Financeiro = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,6 +61,7 @@ const Financeiro = () => {
           title="Receitas"
           onNewClick={handleNewClick}
           newButtonLabel="Gerar nova receita"
+          createPermission={PERMISSIONS.FINANCE_REVENUE}
         />
         
         {/* Summary Cards */}

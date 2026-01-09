@@ -22,6 +22,7 @@ export function EditFinanceModal({ isOpen, onClose, record }: EditFinanceModalPr
     description: "",
     amount: "",
     status: "pending" as "pending" | "paid" | "overdue" | "cancelled",
+    paymentDate: "",
   });
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export function EditFinanceModal({ isOpen, onClose, record }: EditFinanceModalPr
         description: record.description || "",
         amount: formatCurrency(record.amount),
         status: record.status,
+        paymentDate: record.paymentDate || "",
       });
     }
   }, [record]);
@@ -45,6 +47,7 @@ export function EditFinanceModal({ isOpen, onClose, record }: EditFinanceModalPr
         description: formData.description,
         amount: parseCurrency(formData.amount),
         status: formData.status,
+        paymentDate: formData.paymentDate || undefined,
       });
       onClose();
     } catch (error) {
@@ -104,6 +107,18 @@ export function EditFinanceModal({ isOpen, onClose, record }: EditFinanceModalPr
               </SelectContent>
             </Select>
           </div>
+
+          {formData.status === "paid" && (
+            <div className="space-y-2">
+              <Label htmlFor="edit-payment-date">Data de Pagamento</Label>
+              <Input
+                id="edit-payment-date"
+                type="date"
+                value={formData.paymentDate}
+                onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>

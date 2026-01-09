@@ -1,6 +1,54 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.86.2';
-import { getAsaasClient } from '../asaas-client/index.ts';
+
+// AsaasClient inline (copiado de asaas-client/index.ts)
+class AsaasClient {
+  private baseUrl: string;
+  private apiKey: string;
+
+  constructor(config: { apiKey: string; environment: 'production' | 'sandbox' }) {
+    this.apiKey = config.apiKey;
+    this.baseUrl = config.environment === 'production' 
+      ? 'https://www.asaas.com/api/v3'
+      : 'https://sandbox.asaas.com/api/v3';
+  }
+
+  private async request<T>(method: string, endpoint: string, data?: any): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers: Record<string, string> = {
+      'access_token': this.apiKey,
+      'Content-Type': 'application/json',
+    };
+
+    const options: RequestInit = { method, headers };
+    if (data && method !== 'GET') {
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(url, options);
+    const result = await response.json();
+
+    if (!response.ok) {
+      const errorMessage = result.errors?.[0]?.description || 
+                          result.message || 
+                          `Asaas API error: ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return result;
+  }
+
+  async cancelSubscription(subscriptionId: string): Promise<any> {
+    return this.request('DELETE', `/subscriptions/${subscriptionId}`);
+  }
+}
+
+function getAsaasClient(apiKey: string, environment: string): AsaasClient {
+  return new AsaasClient({
+    apiKey,
+    environment: environment as 'production' | 'sandbox',
+  });
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,13 +97,7 @@ serve(async (req) => {
     // Buscar assinatura
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .select(`
-        *,
-        asaas_configuration!inner(
-          api_key,
-          environment
-        )
-      `)
+      .select('*')
       .eq('id', subscriptionId)
       .eq('owner_id', user.id)
       .single();
@@ -75,12 +117,35 @@ serve(async (req) => {
       );
     }
 
+    // Buscar configuração do Asaas separadamente
+    const { data: asaasConfig, error: configError } = await supabase
+      .from('asaas_configuration')
+      .select('*')
+      .eq('owner_id', subscription.owner_id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (configError || !asaasConfig) {
+      return new Response(
+        JSON.stringify({ error: 'Configuração do Asaas não encontrada' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Ler API Key dos Secrets do Supabase (NÃO do banco de dados)
+    const apiKey = Deno.env.get(asaasConfig.secret_name || 'ASAAS_API_KEY');
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'ASAAS_API_KEY não configurada nos Secrets do Supabase' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Cancelar no Asaas
     if (subscription.asaas_subscription_id) {
-      const asaasClient = getAsaasClient(
-        (subscription.asaas_configuration as any).api_key,
-        (subscription.asaas_configuration as any).environment
-      );
+      const asaasClient = getAsaasClient(apiKey, asaasConfig.environment);
       
       try {
         await asaasClient.cancelSubscription(subscription.asaas_subscription_id);

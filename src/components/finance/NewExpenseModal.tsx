@@ -43,7 +43,15 @@ export function NewExpenseModal({ open, onOpenChange, onSubmit }: NewExpenseModa
 
   const handleSubmit = () => {
     const amount = parseValue(formData.valor);
-    if (amount <= 0) return;
+    if (amount <= 0) {
+      // Toast de erro seria melhor, mas por enquanto apenas retorna
+      return;
+    }
+
+    // Validação básica: pelo menos descrição ou fornecedor
+    if (!formData.descricao && !formData.fornecedor) {
+      return;
+    }
 
     createRecord.mutate(
       {

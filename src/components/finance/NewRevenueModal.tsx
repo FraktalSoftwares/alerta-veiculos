@@ -50,8 +50,72 @@ export function NewRevenueModal({ open, onOpenChange, onSubmit }: NewRevenueModa
 
   const handleSubmit = () => {
     const amount = parseValue(valor);
-    if (amount <= 0) return;
+    if (amount <= 0) {
+      // Toast de erro seria melhor, mas por enquanto apenas retorna
+      return;
+    }
 
+    // Validação de parcelamento
+    if (parcelamento) {
+      if (!qtdParcelas || parseInt(qtdParcelas) <= 0) {
+        return;
+      }
+      if (!modoParcelamento) {
+        return;
+      }
+      if (parseInt(qtdParcelas) > 60) {
+        return; // Limitar a 60 parcelas
+      }
+    }
+
+    // Se parcelamento está ativo, criar múltiplos registros
+    if (parcelamento && qtdParcelas && modoParcelamento) {
+      const numParcelas = parseInt(qtdParcelas) || 1;
+      if (numParcelas <= 0 || numParcelas > 60) {
+        // Limitar a 60 parcelas
+        return;
+      }
+
+      // Calcular valor por parcela
+      // "dividido": valor total dividido pelo número de parcelas
+      // "fixo": valor fixo por parcela (o valor informado é o valor de cada parcela)
+      const valorParcela = modoParcelamento === "dividido" 
+        ? amount / numParcelas 
+        : amount; // No modo fixo, o valor informado já é o valor de cada parcela
+
+      const vencimentoBase = vencimento ? new Date(vencimento) : new Date();
+      
+      // Criar todas as parcelas sequencialmente
+      const createParcelas = async () => {
+        try {
+          for (let i = 0; i < numParcelas; i++) {
+            const parcelaVencimento = new Date(vencimentoBase);
+            parcelaVencimento.setMonth(parcelaVencimento.getMonth() + i);
+            
+            await createRecord.mutateAsync({
+              type: "revenue",
+              clientId: clienteId || undefined,
+              description: `${descricao || observacoes || "Cobrança"} - Parcela ${i + 1}/${numParcelas}`,
+              amount: valorParcela,
+              dueDate: parcelaVencimento.toISOString().split('T')[0],
+              paymentMethod: formaCobranca || undefined,
+              category: "Cobrança",
+            });
+          }
+
+          onOpenChange(false);
+          onSubmit?.();
+          resetForm();
+        } catch (error) {
+          // Error is handled by the mutation
+        }
+      };
+
+      createParcelas();
+      return;
+    }
+
+    // Criar registro único (sem parcelamento)
     createRecord.mutate(
       {
         type: "revenue",
@@ -180,30 +244,59 @@ export function NewRevenueModal({ open, onOpenChange, onSubmit }: NewRevenueModa
 
           {/* Parcelamento Options */}
           {parcelamento && (
-            <div className="grid grid-cols-[120px_1fr_auto] gap-4 items-end">
-              <div className="space-y-2">
-                <Label htmlFor="qtd-parcelas">Qtd parcelas</Label>
-                <Input
-                  id="qtd-parcelas"
-                  value={qtdParcelas}
-                  onChange={(e) => setQtdParcelas(e.target.value)}
-                />
+            <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
+              <div className="grid grid-cols-[120px_1fr] gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="qtd-parcelas">Qtd parcelas</Label>
+                  <Input
+                    id="qtd-parcelas"
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={qtdParcelas}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 60)) {
+                        setQtdParcelas(val);
+                      }
+                    }}
+                    placeholder="12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modo-parcelamento">Modo de parcelamento</Label>
+                  <Select value={modoParcelamento} onValueChange={setModoParcelamento}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o modo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dividido">
+                        Valor total dividido pelo número de parcelas
+                      </SelectItem>
+                      <SelectItem value="fixo">
+                        Valor fixo por parcela (valor informado × parcelas)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="modo-parcelamento">Modo de parcelamento</Label>
-                <Select value={modoParcelamento} onValueChange={setModoParcelamento}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Valor total dividido pelo número de parcelas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dividido">Valor total dividido pelo número de parcelas</SelectItem>
-                    <SelectItem value="fixo">Valor fixo por parcela</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button variant="outline" className="h-10">
-                Calcular parcelas
-              </Button>
+              {modoParcelamento && qtdParcelas && valor && (
+                <div className="text-sm text-muted-foreground">
+                  {modoParcelamento === "dividido" ? (
+                    <>
+                      <strong>Valor por parcela:</strong> {formatCurrency(parseValue(valor) / (parseInt(qtdParcelas) || 1))}
+                      <br />
+                      <strong>Total:</strong> {formatCurrency(parseValue(valor))}
+                    </>
+                  ) : (
+                    <>
+                      <strong>Valor por parcela:</strong> {formatCurrency(parseValue(valor))}
+                      <br />
+                      <strong>Total:</strong> {formatCurrency(parseValue(valor) * (parseInt(qtdParcelas) || 1))}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

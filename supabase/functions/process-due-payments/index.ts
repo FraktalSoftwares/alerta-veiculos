@@ -20,12 +20,8 @@ serve(async (req) => {
       .select(`
         *,
         subscriptions!inner(
-          *,
-          asaas_configuration!inner(
-            auto_retry_failed_payments,
-            max_retry_attempts,
-            retry_interval_days
-          )
+          id,
+          owner_id
         )
       `)
       .eq('status', 'pending')
@@ -43,7 +39,21 @@ serve(async (req) => {
     for (const payment of overduePayments || []) {
       try {
         const subscription = payment.subscriptions;
-        const config = subscription.asaas_configuration;
+        
+        // Buscar configuração do Asaas separadamente
+        const { data: config } = await supabase
+          .from('asaas_configuration')
+          .select('*')
+          .eq('owner_id', subscription.owner_id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        // Usar valores padrão se não houver configuração
+        const maxRetries = config?.max_retry_attempts || 3;
+        const retryInterval = config?.retry_interval_days || 3;
+        const autoRetry = config?.auto_retry_failed_payments ?? true;
 
         // Marcar como vencido
         await supabase
@@ -62,11 +72,8 @@ serve(async (req) => {
         });
 
         // Se auto_retry está ativo e ainda há tentativas
-        const maxRetries = config?.max_retry_attempts || 3;
-        const retryInterval = config?.retry_interval_days || 3;
-
         if (
-          config?.auto_retry_failed_payments &&
+          autoRetry &&
           payment.retry_count < maxRetries
         ) {
           // Incrementar retry

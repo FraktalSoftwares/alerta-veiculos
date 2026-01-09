@@ -24,6 +24,8 @@ export function useFinanceRecords(options: UseFinanceRecordsOptions = {}) {
   return useQuery({
     queryKey: ["finance-records", user?.id, type, page, limit, search],
     queryFn: async () => {
+      if (!user) throw new Error("Usuário não autenticado");
+
       const offset = (page - 1) * limit;
 
       let query = supabase
@@ -38,6 +40,7 @@ export function useFinanceRecords(options: UseFinanceRecordsOptions = {}) {
         `,
           { count: "exact" }
         )
+        .eq("owner_id", user.id) // ✅ FILTRAR POR OWNER_ID
         .eq("type", type)
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
@@ -77,9 +80,12 @@ export function useFinanceSummary(type: FinanceType = "revenue") {
   return useQuery({
     queryKey: ["finance-summary", user?.id, type],
     queryFn: async () => {
+      if (!user) throw new Error("Usuário não autenticado");
+
       const { data, error } = await supabase
         .from("finance_records")
         .select("amount, status")
+        .eq("owner_id", user.id) // ✅ FILTRAR POR OWNER_ID
         .eq("type", type);
 
       if (error) throw error;

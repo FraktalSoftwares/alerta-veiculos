@@ -142,8 +142,12 @@ export function formatCurrency(value: string | number): string {
 }
 
 export function parseCurrency(value: string): number {
-  const cleaned = value.replace(/[^\d,]/g, "").replace(",", ".");
-  return parseFloat(cleaned) || 0;
+  // Remove R$, espaços e pontos (milhares)
+  let cleaned = value.replace(/[R$\s]/g, "");
+  // Substitui vírgula por ponto para parseFloat
+  cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 // Date: DD/MM/YYYY
