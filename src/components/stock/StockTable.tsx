@@ -14,10 +14,12 @@ interface StockTableProps {
 export function StockTable({ equipments, onEquipmentClick, onEditEquipment, onDeleteEquipment, isLoading }: StockTableProps) {
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <StockTableHeader />
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <div className="min-w-[800px]">
+          <StockTableHeader />
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
         </div>
       </div>
     );
@@ -25,28 +27,32 @@ export function StockTable({ equipments, onEquipmentClick, onEditEquipment, onDe
 
   if (equipments.length === 0) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <StockTableHeader />
-        <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Nenhum equipamento encontrado</p>
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <div className="min-w-[800px]">
+          <StockTableHeader />
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Nenhum equipamento encontrado</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden bg-card">
-      <StockTableHeader />
-      <div className="divide-y divide-border">
-        {equipments.map((equipment, index) => (
-          <StockTableRow
-            key={`${equipment.id}-${index}`}
-            equipment={equipment}
-            onClick={onEquipmentClick}
-            onEdit={onEditEquipment}
-            onDelete={onDeleteEquipment}
-          />
-        ))}
+    <div className="rounded-lg border border-border overflow-x-auto bg-card">
+      <div className="min-w-[800px]">
+        <StockTableHeader />
+        <div className="divide-y divide-border">
+          {equipments.map((equipment, index) => (
+            <StockTableRow
+              key={`${equipment.id}-${index}`}
+              equipment={equipment}
+              onClick={onEquipmentClick}
+              onEdit={onEditEquipment}
+              onDelete={onDeleteEquipment}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

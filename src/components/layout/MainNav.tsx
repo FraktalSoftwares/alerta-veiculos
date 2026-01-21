@@ -2,6 +2,7 @@ import { Home, Users, Car, Bell, TrendingUp, Store, Package, Settings, LucideIco
 import { NavItem } from "./NavItem";
 import { useHasAnyPermission, PERMISSIONS } from "@/hooks/useUserPermissions";
 import { useAuth } from "@/contexts/AuthContext";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface NavItemConfig {
   to: string;
@@ -74,28 +75,32 @@ const navItems: NavItemConfig[] = [
   },
 ];
 
-function NavItemWithPermission({ item }: { item: NavItemConfig }) {
+function NavItemWithPermission({ 
+  item, 
+  variant = "horizontal", 
+  onClose 
+}: { 
+  item: NavItemConfig; 
+  variant?: "horizontal" | "vertical"; 
+  onClose?: () => void;
+}) {
   const { profile } = useAuth();
   const hasPermission = useHasAnyPermission(item.permissions || []);
 
-  // Admin always sees everything
   const isAdmin = profile?.user_type === "admin";
   
-  // If no permissions required, always show
   if (!item.permissions || item.permissions.length === 0) {
-    return <NavItem {...item} />;
+    return <NavItem {...item} variant={variant} onClose={onClose} />;
   }
 
-  // Show item if user is admin or has required permissions
   if (isAdmin || hasPermission) {
-    // Filter sub-items based on permissions
     const filteredSubItems = item.subItems?.filter((subItem) => {
       if (!subItem.permissions || subItem.permissions.length === 0) return true;
       if (isAdmin) return true;
       return subItem.permissions.some((p) => hasPermission);
     });
 
-    return <NavItem {...item} subItems={filteredSubItems} />;
+    return <NavItem {...item} subItems={filteredSubItems} variant={variant} onClose={onClose} />;
   }
 
   return null;
@@ -103,10 +108,40 @@ function NavItemWithPermission({ item }: { item: NavItemConfig }) {
 
 export function MainNav() {
   return (
-    <nav className="flex items-center justify-center gap-2 border-b-2 border-border bg-background px-6 h-[60px]">
+    <nav className="hidden md:flex items-center justify-center gap-2 border-b-2 border-border bg-background px-4 sm:px-6 h-[60px]">
       {navItems.map((item) => (
         <NavItemWithPermission key={item.to} item={item} />
       ))}
     </nav>
+  );
+}
+
+interface MainNavSheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function MainNavSheet({ open, onOpenChange }: MainNavSheetProps) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="left" className="w-full max-w-[280px] p-0">
+        <SheetHeader className="p-4 border-b border-border">
+          <SheetTitle className="text-left flex items-center gap-2">
+            <img src="/logo_alerta.png" alt="Alerta" className="h-6" />
+            Menu
+          </SheetTitle>
+        </SheetHeader>
+        <nav className="flex flex-col py-2 overflow-y-auto max-h-[calc(100vh-80px)]">
+          {navItems.map((item) => (
+            <NavItemWithPermission 
+              key={item.to} 
+              item={item} 
+              variant="vertical" 
+              onClose={() => onOpenChange(false)} 
+            />
+          ))}
+        </nav>
+      </SheetContent>
+    </Sheet>
   );
 }

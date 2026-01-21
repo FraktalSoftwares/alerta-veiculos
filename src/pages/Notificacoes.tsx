@@ -38,7 +38,7 @@ const Notificacoes = () => {
     <div className="min-h-screen bg-muted/30">
       <Header />
       
-      <main className="px-[50px] py-8">
+      <main className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8">
         <h1 className="text-2xl font-bold font-heading text-foreground mb-6">Notificações</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

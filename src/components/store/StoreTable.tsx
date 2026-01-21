@@ -14,14 +14,16 @@ interface StoreTableProps {
 export function StoreTable({ products, onProductClick, onEditProduct, onDeleteProduct, isLoading }: StoreTableProps) {
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <StoreTableHeader />
-        <div className="divide-y divide-border">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="px-6 py-4">
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ))}
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <div className="min-w-[800px]">
+          <StoreTableHeader />
+          <div className="divide-y divide-border">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="px-6 py-4">
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -29,28 +31,32 @@ export function StoreTable({ products, onProductClick, onEditProduct, onDeletePr
 
   if (products.length === 0) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <StoreTableHeader />
-        <div className="px-6 py-12 text-center text-muted-foreground">
-          Nenhum produto encontrado
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <div className="min-w-[800px]">
+          <StoreTableHeader />
+          <div className="px-6 py-12 text-center text-muted-foreground">
+            Nenhum produto encontrado
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden bg-card">
-      <StoreTableHeader />
-      <div className="divide-y divide-border">
-        {products.map((product) => (
-          <StoreTableRow
-            key={product.id}
-            product={product}
-            onClick={onProductClick}
-            onEdit={onEditProduct}
-            onDelete={onDeleteProduct}
-          />
-        ))}
+    <div className="rounded-lg border border-border overflow-x-auto bg-card">
+      <div className="min-w-[800px]">
+        <StoreTableHeader />
+        <div className="divide-y divide-border">
+          {products.map((product) => (
+            <StoreTableRow
+              key={product.id}
+              product={product}
+              onClick={onProductClick}
+              onEdit={onEditProduct}
+              onDelete={onDeleteProduct}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

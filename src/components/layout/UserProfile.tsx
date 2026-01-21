@@ -31,15 +31,15 @@ export function UserProfile() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-3 outline-none hover:opacity-80 transition-opacity">
-          <div className="text-right">
-            <p className="text-sm font-semibold text-background">{displayName}</p>
-            <p className="text-xs text-background/80">{displayEmail}</p>
+        <button className="flex items-center gap-2 sm:gap-3 outline-none hover:opacity-80 transition-opacity shrink-0">
+          <div className="hidden md:block text-right">
+            <p className="text-sm font-semibold text-background truncate max-w-[120px]">{displayName}</p>
+            <p className="text-xs text-background/80 truncate max-w-[120px]">{displayEmail}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-background/20 border-2 border-background/40 flex items-center justify-center">
-            <User className="h-5 w-5 text-background" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-background/20 border-2 border-background/40 flex items-center justify-center">
+            <User className="h-4 w-4 sm:h-5 sm:w-5 text-background" />
           </div>
-          <ChevronDown className="h-4 w-4 text-background" />
+          <ChevronDown className="h-4 w-4 text-background hidden sm:block" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="min-w-[180px] bg-card border border-border rounded-md shadow-md z-50">

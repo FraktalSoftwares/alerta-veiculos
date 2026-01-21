@@ -14,7 +14,7 @@ export function RoleListItem({ role, isSelected, onClick }: RoleListItemProps) {
     <button
       onClick={() => onClick(role)}
       className={cn(
-        "w-full flex items-center justify-between p-4 border-b border-border hover:bg-muted/50 transition-colors text-left",
+        "w-full flex items-center justify-between p-3.5 sm:p-4 border-b border-border hover:bg-muted/50 transition-colors text-left min-h-[48px]",
         isSelected && "bg-muted/50"
       )}
     >

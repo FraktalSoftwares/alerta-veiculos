@@ -109,37 +109,38 @@ export default function VeiculoCercas() {
     <div className="min-h-screen bg-muted/30">
       <Header />
       
-      <main className="px-[50px] py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+      <main className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8">
+        <div className="flex flex-col gap-4 sm:gap-0 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={handleBack}
+              className="shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-semibold">Cercas Virtuais</h1>
-              <p className="text-sm text-muted-foreground">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-semibold truncate">Cercas Virtuais</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 {vehicle.plate} - {vehicle.clients?.name || 'Cliente'}
               </p>
             </div>
           </div>
-          <Button onClick={handleCreate} className="gap-2">
+          <Button onClick={handleCreate} className="gap-2 w-full sm:w-auto shrink-0">
             <Plus className="h-4 w-4" />
             Nova Cerca
           </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-4 sm:mb-6">
             <TabsTrigger value="list">Lista</TabsTrigger>
             <TabsTrigger value="map">Mapa</TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="space-y-4">
-            <div className="bg-card rounded-lg border border-border p-6">
+            <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
               <VirtualFenceList
                 equipmentId={equipmentId}
                 onFenceSelect={handleFenceSelect}
@@ -148,7 +149,7 @@ export default function VeiculoCercas() {
           </TabsContent>
 
           <TabsContent value="map" className="space-y-4">
-            <div className="bg-card rounded-lg border border-border overflow-hidden" style={{ height: '600px' }}>
+            <div className="bg-card rounded-lg border border-border overflow-hidden min-h-[280px] h-[50vh] sm:h-[500px] lg:h-[600px]">
               <VirtualFenceMapView
                 latitude={mapCenter.lat}
                 longitude={mapCenter.lng}

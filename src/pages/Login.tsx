@@ -66,17 +66,17 @@ const Login = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-muted/30 p-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center bg-muted/30 p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md">
           <div className="bg-card rounded-lg shadow-lg overflow-hidden">
             {/* Logo Header */}
-            <div className="bg-foreground py-6 px-8 flex justify-center box-content">
-              <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-10" style={{ width: '113px', height: '50px' }} />
+            <div className="bg-foreground py-4 sm:py-6 px-4 sm:px-8 flex justify-center box-content">
+              <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-8 sm:h-10 w-[90px] sm:w-[113px]" />
             </div>
 
             {/* Form Content */}
-            <div className="p-8">
-              <h1 className="text-2xl font-semibold text-center text-foreground mb-8">
+            <div className="p-4 sm:p-6 lg:p-8">
+              <h1 className="text-xl sm:text-2xl font-semibold text-center text-foreground mb-6 sm:mb-8">
                 Boas vindas novamente!
               </h1>
 

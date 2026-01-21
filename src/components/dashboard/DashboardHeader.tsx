@@ -43,10 +43,10 @@ export function DashboardHeader({
   const endDateValue = parseDate(endDate);
 
   return (
-    <div className="flex items-center justify-between mb-6">
-      <h1 className="text-2xl font-bold font-heading text-foreground">Dashboard</h1>
+    <div className="flex flex-col gap-4 sm:gap-0 sm:flex-row sm:items-center sm:justify-between mb-6">
+      <h1 className="text-xl sm:text-2xl font-bold font-heading text-foreground">Dashboard</h1>
       
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 sm:gap-4">
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">Início</label>
           <Popover>
@@ -54,7 +54,7 @@ export function DashboardHeader({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-36 justify-start text-left font-normal bg-card border-border",
+                  "w-full sm:w-36 justify-start text-left font-normal bg-card border-border",
                   !startDateValue && "text-muted-foreground"
                 )}
               >
@@ -82,7 +82,7 @@ export function DashboardHeader({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-36 justify-start text-left font-normal bg-card border-border",
+                  "w-full sm:w-36 justify-start text-left font-normal bg-card border-border",
                   !endDateValue && "text-muted-foreground"
                 )}
               >
@@ -103,7 +103,7 @@ export function DashboardHeader({
           </Popover>
         </div>
         
-        <Button onClick={onFilter} className="mt-5 bg-foreground text-background hover:bg-foreground/90 gap-2">
+        <Button onClick={onFilter} className="sm:mt-5 bg-foreground text-background hover:bg-foreground/90 gap-2">
           <Filter className="h-4 w-4" />
           Filtrar Período
         </Button>

@@ -20,7 +20,7 @@ export function StockPagination({
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   return (
-    <div className="flex items-center justify-center gap-2 py-4">
+    <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 py-4">
       <Button
         variant="ghost"
         size="icon"
@@ -40,7 +40,7 @@ export function StockPagination({
         <ChevronLeft className="h-4 w-4" />
       </Button>
       
-      <span className="text-sm text-muted-foreground px-4">
+      <span className="text-xs sm:text-sm text-muted-foreground px-2 sm:px-4 whitespace-nowrap">
         {startItem} a {endItem} de {totalItems.toLocaleString('pt-BR')}
       </span>
       

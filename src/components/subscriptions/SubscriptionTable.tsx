@@ -18,14 +18,16 @@ export function SubscriptionTable({
 }: SubscriptionTableProps) {
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <SubscriptionTableHeader />
-        <div className="divide-y divide-border">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="px-6 py-4">
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ))}
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <div className="min-w-[750px]">
+          <SubscriptionTableHeader />
+          <div className="divide-y divide-border">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="px-6 py-4">
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -33,27 +35,31 @@ export function SubscriptionTable({
 
   if (subscriptions.length === 0) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <SubscriptionTableHeader />
-        <div className="px-6 py-12 text-center text-muted-foreground">
-          Nenhuma assinatura encontrada
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <div className="min-w-[750px]">
+          <SubscriptionTableHeader />
+          <div className="px-6 py-12 text-center text-muted-foreground">
+            Nenhuma assinatura encontrada
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden bg-card">
-      <SubscriptionTableHeader />
-      <div className="divide-y divide-border">
-        {subscriptions.map((subscription) => (
-          <SubscriptionTableRow
-            key={subscription.id}
-            subscription={subscription}
-            onCancel={onCancel}
-            onViewDetails={onViewDetails}
-          />
-        ))}
+    <div className="rounded-lg border border-border overflow-x-auto bg-card">
+      <div className="min-w-[750px]">
+        <SubscriptionTableHeader />
+        <div className="divide-y divide-border">
+          {subscriptions.map((subscription) => (
+            <SubscriptionTableRow
+              key={subscription.id}
+              subscription={subscription}
+              onCancel={onCancel}
+              onViewDetails={onViewDetails}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

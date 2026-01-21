@@ -28,7 +28,7 @@ export function VehicleMapFilters({ activeFilter, onFilterChange, filterCounts }
     { label: "DESLIGADOS", count: filterCounts?.desligados || 0, variant: "desligados" },
   ];
   const getFilterStyles = (variant: FilterOption["variant"], isActive: boolean) => {
-    const baseStyles = "text-xs font-medium px-3 py-1.5 rounded-md transition-all";
+    const baseStyles = "text-xs font-medium px-2 sm:px-3 py-1.5 rounded-md transition-all";
     
     switch (variant) {
       case "todos":
@@ -47,19 +47,19 @@ export function VehicleMapFilters({ activeFilter, onFilterChange, filterCounts }
   };
 
   return (
-    <div className="p-4 border-b border-border">
-      <p className="text-sm text-muted-foreground mb-3">Selecione para filtrar</p>
-      <div className="flex flex-wrap gap-2 items-center">
+    <div className="p-3 sm:p-4 border-b border-border shrink-0">
+      <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">Selecione para filtrar</p>
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
         {filterOptions.map((filter) => (
           <button
             key={filter.variant}
             onClick={() => onFilterChange(filter.variant)}
-            className={getFilterStyles(filter.variant, activeFilter === filter.variant)}
+            className={`${getFilterStyles(filter.variant, activeFilter === filter.variant)} min-h-[44px] shrink-0`}
           >
             {filter.label}: {filter.count}
           </button>
         ))}
-        <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5">
+        <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5 min-h-[44px] shrink-0 text-xs">
           <span>Mais Filtros</span>
           <Filter className="h-3.5 w-3.5" />
         </Button>

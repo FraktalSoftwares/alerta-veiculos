@@ -16,7 +16,7 @@ export function StoreSearch({ value, onChange, placeholder = "Buscar produto" }:
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground w-56 focus-visible:ring-primary"
+        className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground w-full sm:w-56 focus-visible:ring-primary"
       />
     </div>
   );

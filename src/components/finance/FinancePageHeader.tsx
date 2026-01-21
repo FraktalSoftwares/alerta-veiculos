@@ -17,10 +17,10 @@ export function FinancePageHeader({
   createPermission = PERMISSIONS.FINANCE_REVENUE,
 }: FinancePageHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <h1 className="text-2xl font-bold font-heading text-foreground">{title}</h1>
+    <div className="flex flex-col gap-4 sm:gap-0 sm:flex-row sm:items-center sm:justify-between mb-6">
+      <h1 className="text-xl sm:text-2xl font-bold font-heading text-foreground">{title}</h1>
       <RequirePermission code={createPermission}>
-        <Button onClick={onNewClick} className="bg-foreground text-background hover:bg-foreground/90 gap-2">
+        <Button onClick={onNewClick} className="w-full sm:w-auto bg-foreground text-background hover:bg-foreground/90 gap-2">
           <Plus className="h-4 w-4" />
           {newButtonLabel}
         </Button>

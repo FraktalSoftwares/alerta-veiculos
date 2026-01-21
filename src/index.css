@@ -85,4 +85,9 @@
   .glass-effect {
     @apply bg-card/80 backdrop-blur-md;
   }
+
+  /* Scroll suave em tabelas no iOS */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
 }

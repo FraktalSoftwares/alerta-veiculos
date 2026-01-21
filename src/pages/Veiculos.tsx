@@ -98,7 +98,7 @@ const Veiculos = () => {
     <div className="min-h-screen bg-muted/30">
       <Header />
       
-      <main className="px-[50px] py-8">
+      <main className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8">
         <VehiclePageHeader
           title="Gestão de Veículos"
           searchValue={searchValue}

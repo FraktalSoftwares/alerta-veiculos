@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { LucideIcon, ChevronDown } from "lucide-react";
+import { LucideIcon, ChevronDown, ChevronRight } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +18,61 @@ interface NavItemProps {
   icon: LucideIcon;
   label: string;
   subItems?: SubMenuItem[];
+  variant?: "horizontal" | "vertical";
+  onClose?: () => void;
 }
 
-export function NavItem({ to, icon: Icon, label, subItems }: NavItemProps) {
+export function NavItem({ to, icon: Icon, label, subItems, variant = "horizontal", onClose }: NavItemProps) {
   const location = useLocation();
   const isActive = location.pathname === to || subItems?.some(item => location.pathname === item.to);
 
+  const handleNav = () => onClose?.();
+
+  // Layout vertical (Sheet mobile)
+  if (variant === "vertical") {
+    if (subItems && subItems.length > 0) {
+      return (
+        <div className="border-b border-border last:border-b-0">
+          <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {label}
+          </div>
+          {subItems.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={handleNav}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 text-sm transition-colors",
+                location.pathname === item.to
+                  ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <ChevronRight className="h-4 w-4 shrink-0" />
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <Link
+        to={to}
+        onClick={handleNav}
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-l-2 border-transparent",
+          isActive
+            ? "bg-primary/10 text-primary border-primary"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        {label}
+      </Link>
+    );
+  }
+
+  // Layout horizontal (desktop)
   if (subItems && subItems.length > 0) {
     return (
       <DropdownMenu>

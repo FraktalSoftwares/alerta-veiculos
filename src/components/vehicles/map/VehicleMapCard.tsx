@@ -63,61 +63,59 @@ export function VehicleMapCard({
   };
 
   return (
-    <div className={`border rounded-lg bg-card p-4 transition-all ${isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}>
+    <div className={`border rounded-xl bg-card p-3 sm:p-4 transition-all ${isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
-        <span className="text-sm font-medium text-foreground">{plate}</span>
-        <span className="text-xs text-muted-foreground">{imei}</span>
+      <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3 pb-2 border-b border-border">
+        <span className="text-sm font-medium text-foreground truncate">{plate}</span>
+        <span className="text-xs text-muted-foreground truncate shrink-0">{imei}</span>
       </div>
 
       {/* Content */}
-      <div className="flex gap-4">
-        {/* Left column */}
-        <div className="flex-1 space-y-1.5">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <User className="h-3.5 w-3.5" />
-            <span>{clientName}</span>
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        {/* Left + Right columns: empilha no mobile */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-1 min-w-0">
+          <div className="flex-1 space-y-1.5 min-w-0">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+              <User className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{clientName}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+              <Phone className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{phone}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+              <Car className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{vehicleType}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="h-3.5 w-3.5" />
-            <span>{phone}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Car className="h-3.5 w-3.5" />
-            <span>{vehicleType}</span>
-          </div>
-        </div>
-
-        {/* Right column */}
-        <div className="flex-1 space-y-1.5">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Star className="h-3.5 w-3.5" />
-            <span>{carrier} - {system}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Star className="h-3.5 w-3.5" />
-            <span>{tracker}</span>
+          <div className="flex-1 space-y-1.5 min-w-0">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+              <Star className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{carrier} - {system}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+              <Star className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{tracker}</span>
+            </div>
           </div>
         </div>
 
         {/* Location button */}
-        <div className="flex flex-col items-center justify-center">
+        <div className="flex items-center justify-center shrink-0">
           <button
             onClick={onShowLocation}
-            className="flex flex-col items-center gap-1 text-primary hover:text-primary/80 transition-colors"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-primary" />
-            </div>
-            <span className="text-xs">Mostrar localização</span>
+            <MapPin className="h-5 w-5 shrink-0" />
+            <span className="text-sm font-medium">Mostrar localização</span>
           </button>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
-        <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${getStatusStyles()}`} />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-2 sm:mt-3 pt-2 border-t border-border">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusStyles()}`} />
           <span className="text-xs text-muted-foreground">{getStatusLabel()}</span>
           <span className="text-xs text-muted-foreground">{lastUpdate}</span>
         </div>
@@ -125,9 +123,9 @@ export function VehicleMapCard({
           variant="outline"
           size="sm"
           onClick={onMoreInfo}
-          className="text-xs gap-1.5 h-7"
+          className="text-xs gap-1.5 min-h-[44px] sm:min-h-0 sm:h-7 min-w-0 w-full sm:w-auto"
         >
-          <Info className="h-3.5 w-3.5" />
+          <Info className="h-3.5 w-3.5 shrink-0" />
           Mais Informações
         </Button>
       </div>

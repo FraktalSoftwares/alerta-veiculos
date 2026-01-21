@@ -34,11 +34,11 @@ export function RevenueChart({ startDate, endDate }: RevenueChartProps) {
   const yAxisMax = Math.ceil(maxValue * 1.2);
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 mb-6">
-      <h2 className="text-lg font-bold font-heading text-foreground mb-6">Receita mensal</h2>
+    <div className="bg-card border border-border rounded-xl p-4 sm:p-6 mb-6">
+      <h2 className="text-base sm:text-lg font-bold font-heading text-foreground mb-4 sm:mb-6">Receita mensal</h2>
       
-      <div className="flex gap-8">
-        <div className="flex flex-col items-start justify-center min-w-[140px]">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
+        <div className="flex flex-col items-start justify-center min-w-0 sm:min-w-[140px]">
           <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-2">
             <Car className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -52,7 +52,7 @@ export function RevenueChart({ startDate, endDate }: RevenueChartProps) {
           <p className="text-xs text-muted-foreground">No período selecionado</p>
         </div>
         
-        <div className="flex-1 h-[250px]">
+        <div className="flex-1 w-full h-[220px] sm:h-[250px]">
           {isLoading ? (
             <div className="w-full h-full flex items-center justify-center">
               <Skeleton className="w-full h-full" />

@@ -14,6 +14,7 @@ interface VehicleMapSidebarProps {
   onShowLocation: (vehicleId: string) => void;
   isLoading?: boolean;
   selectedVehicleId?: string | null;
+  variant?: "sidebar" | "sheet";
 }
 
 export function VehicleMapSidebar({ 
@@ -22,7 +23,8 @@ export function VehicleMapSidebar({
   onFilterChange, 
   onShowLocation,
   isLoading,
-  selectedVehicleId
+  selectedVehicleId,
+  variant = "sidebar",
 }: VehicleMapSidebarProps) {
   const navigate = useNavigate();
 
@@ -121,14 +123,20 @@ export function VehicleMapSidebar({
   };
 
   return (
-    <div className="w-[580px] bg-background border-r border-border flex flex-col h-full">
+    <div 
+      className={
+        variant === "sheet"
+          ? "w-full bg-background flex flex-col h-full"
+          : "w-[400px] lg:w-[520px] xl:w-[580px] bg-background border-r border-border flex flex-col h-full shrink-0"
+      }
+    >
       <VehicleMapFilters
         activeFilter={activeFilter}
         onFilterChange={onFilterChange}
         filterCounts={filterCounts}
       />
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-3">
+      <ScrollArea className="flex-1 min-h-0">
+        <div className={`p-3 sm:p-4 space-y-3 ${variant === "sheet" ? "pb-[max(1rem,env(safe-area-inset-bottom,0px))]" : ""}`}>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />

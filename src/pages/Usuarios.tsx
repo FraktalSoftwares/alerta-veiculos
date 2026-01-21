@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,11 @@ function EditUserModal({ open, onOpenChange, user }: EditUserModalProps) {
   const assignRole = useAssignUserRole();
   const [selectedRole, setSelectedRole] = useState(user?.admin_role_id || "");
 
+  // Atualiza o role quando abrir para outro usuário
+  useEffect(() => {
+    if (user) setSelectedRole(user.admin_role_id || "");
+  }, [user?.id, user?.admin_role_id]);
+
   const handleSave = async () => {
     if (!user || !selectedRole) return;
     
@@ -42,11 +47,11 @@ function EditUserModal({ open, onOpenChange, user }: EditUserModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[400px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Função - {user?.full_name}</DialogTitle>
+          <DialogTitle className="pr-8 text-base sm:text-lg">Editar Função — {user?.full_name}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-2 sm:py-4">
           <div className="space-y-2">
             <Label>Função Administrativa</Label>
             <Select
@@ -66,11 +71,11 @@ function EditUserModal({ open, onOpenChange, user }: EditUserModalProps) {
             </Select>
           </div>
         </div>
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={assignRole.isPending}>
+          <Button onClick={handleSave} disabled={assignRole.isPending} className="w-full sm:w-auto">
             {assignRole.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
           </Button>
         </div>
@@ -116,20 +121,23 @@ const Usuarios = () => {
     <div className="min-h-screen bg-muted/30">
       <Header />
 
-      <main className="px-[50px] py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold font-heading text-foreground">Usuários</h1>
-          <div className="flex items-center gap-3">
+      <main className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8">
+        <div className="flex flex-col gap-4 sm:gap-0 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold font-heading text-foreground">Usuários</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Gerencie funções e acessos dos usuários</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar usuário"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                className="pl-10 w-[250px] bg-background"
+                className="pl-10 w-full sm:w-[250px] bg-background"
               />
             </div>
-            <Button onClick={handleNewUserClick} className="gap-2">
+            <Button onClick={handleNewUserClick} className="gap-2 w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               Novo Usuário
             </Button>
@@ -141,7 +149,7 @@ const Usuarios = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center py-20 text-center px-4">
             <p className="text-muted-foreground mb-2">Nenhum usuário encontrado</p>
             <p className="text-sm text-muted-foreground">
               {searchValue ? 'Tente uma busca diferente' : 'Clique em "Novo Usuário" para adicionar'}
@@ -152,21 +160,19 @@ const Usuarios = () => {
             {filteredUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 bg-card border border-border rounded-lg hover:shadow-sm transition-shadow"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-card border border-border rounded-xl hover:shadow-sm hover:border-border/80 transition-all"
               >
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
                     <AvatarImage src={user.avatar_url} />
-                    <AvatarFallback className="bg-muted text-muted-foreground">
+                    <AvatarFallback className="bg-muted text-muted-foreground text-sm">
                       {user.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <span className="font-medium text-foreground">{user.full_name}</span>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
-                    </div>
-                    <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground truncate">{user.full_name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs mt-1.5 w-fit">
                       {user.admin_role_name || getUserTypeLabel(user.user_type)}
                     </Badge>
                   </div>
@@ -175,9 +181,9 @@ const Usuarios = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleEditUser(user)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="shrink-0 self-end sm:self-center text-muted-foreground hover:text-foreground hover:bg-muted min-h-[44px] min-w-[44px]"
                 >
-                  <Pencil className="h-5 w-5" />
+                  <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </div>
             ))}

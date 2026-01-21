@@ -33,17 +33,17 @@ export function UserRoleSection() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-base sm:text-lg font-semibold text-foreground">
           Usuários e Funções
         </h2>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar usuário..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            className="pl-10 w-64 bg-background"
+            className="pl-10 w-full sm:w-64 bg-background"
           />
         </div>
       </div>

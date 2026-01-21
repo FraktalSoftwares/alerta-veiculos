@@ -61,15 +61,15 @@ export default function Assinaturas() {
     <div className="min-h-screen bg-muted/30">
       <Header />
       
-      <main className="px-[50px] py-8">
-        <div className="flex items-center justify-between mb-6">
+      <main className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8">
+        <div className="flex flex-col gap-4 sm:gap-0 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Assinaturas</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Assinaturas</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
               Gerencie as assinaturas dos seus clientes
             </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>
+          <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Nova Assinatura
           </Button>

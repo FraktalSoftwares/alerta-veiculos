@@ -28,25 +28,25 @@ export function RoleDetails({
   );
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold font-heading text-foreground">{role.name}</h2>
-        <span className="text-sm text-muted-foreground">
-          {selectedPermissions} / {totalPermissions} funções selecionadas
+    <div className="bg-card border border-border rounded-xl p-4 sm:p-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold font-heading text-foreground truncate">{role.name}</h2>
+        <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
+          {selectedPermissions} / {totalPermissions} permissões
         </span>
       </div>
 
-      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg mb-6">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 bg-muted/30 rounded-lg mb-4 sm:mb-6">
+        <div className="flex flex-col gap-1 min-w-0">
           <span className="text-sm font-medium text-foreground">Ativar função administrativa</span>
           <RoleBadge variant={role.isActive ? "ativo" : "inativo"} />
         </div>
-        <Switch checked={role.isActive} onCheckedChange={onToggleActive} />
+        <Switch checked={role.isActive} onCheckedChange={onToggleActive} className="shrink-0" />
       </div>
 
-      <h3 className="text-lg font-semibold text-foreground mb-4">Funcionalidades do usuário:</h3>
+      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Funcionalidades do usuário</h3>
 
-      <div className="space-y-3 mb-6">
+      <div className="space-y-3 mb-4 sm:mb-6">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-14 w-full" />

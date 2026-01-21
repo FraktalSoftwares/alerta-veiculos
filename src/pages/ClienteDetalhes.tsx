@@ -70,7 +70,7 @@ export default function ClienteDetalhes() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="px-[50px] py-6">
+      <main className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         <ClientDetailHeader 
           client={client} 
           onNewVehicleClick={handleNewVehicleClick} 

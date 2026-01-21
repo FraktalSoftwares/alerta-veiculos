@@ -37,7 +37,7 @@ export function StatCard({ icon: Icon, label, value, variant }: StatCardProps) {
   const styles = variantStyles[variant];
 
   return (
-    <div className={cn("rounded-xl border p-6 flex flex-col items-center text-center", styles.bg)}>
+    <div className={cn("rounded-xl border p-4 sm:p-6 flex flex-col items-center text-center", styles.bg)}>
       <div className={cn("w-12 h-12 rounded-full flex items-center justify-center mb-3", styles.iconBg)}>
         <Icon className="h-6 w-6 text-white" />
       </div>

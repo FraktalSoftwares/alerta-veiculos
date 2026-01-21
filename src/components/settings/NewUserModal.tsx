@@ -111,14 +111,14 @@ export function NewUserModal({ open, onOpenChange }: NewUserModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-center text-lg font-semibold">
+          <DialogTitle className="text-center text-base sm:text-lg font-semibold pr-8">
             Adicionar Usuário
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-2 sm:py-4 overflow-y-auto flex-1 min-h-0">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome<span className="text-destructive">*</span></Label>
             <Input
@@ -190,11 +190,11 @@ export function NewUserModal({ open, onOpenChange }: NewUserModalProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-4">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 pt-4 border-t border-border mt-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading} className="w-full sm:w-auto">
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} className="gap-2" disabled={isLoading}>
+          <Button onClick={handleSubmit} className="gap-2 w-full sm:w-auto" disabled={isLoading}>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

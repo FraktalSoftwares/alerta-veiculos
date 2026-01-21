@@ -24,7 +24,7 @@ export function RoleList({ roles, selectedRole, onRoleSelect, isLoading }: RoleL
 
   if (roles.length === 0) {
     return (
-      <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground">
+      <div className="bg-card border border-border rounded-xl p-6 sm:p-8 text-center text-muted-foreground text-sm sm:text-base">
         Nenhuma função administrativa cadastrada
       </div>
     );

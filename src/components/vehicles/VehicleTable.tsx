@@ -16,10 +16,12 @@ interface VehicleTableProps {
 export function VehicleTable({ vehicles, onVehicleClick, onEditVehicle, onDeleteVehicle, onBlockVehicle, onShowDetails, isLoading }: VehicleTableProps) {
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <VehicleTableHeader />
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <div className="min-w-[800px]">
+          <VehicleTableHeader />
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
         </div>
       </div>
     );
@@ -27,30 +29,34 @@ export function VehicleTable({ vehicles, onVehicleClick, onEditVehicle, onDelete
 
   if (vehicles.length === 0) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <VehicleTableHeader />
-        <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Nenhum veículo encontrado</p>
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <div className="min-w-[800px]">
+          <VehicleTableHeader />
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Nenhum veículo encontrado</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden bg-card">
-      <VehicleTableHeader />
-      <div className="divide-y divide-border">
-        {vehicles.map((vehicle, index) => (
-          <VehicleTableRow
-            key={`${vehicle.id}-${index}`}
-            vehicle={vehicle}
-            onClick={onVehicleClick}
-            onEdit={onEditVehicle}
-            onDelete={onDeleteVehicle}
-            onBlock={onBlockVehicle}
-            onShowDetails={onShowDetails}
-          />
-        ))}
+    <div className="rounded-lg border border-border overflow-x-auto bg-card">
+      <div className="min-w-[800px]">
+        <VehicleTableHeader />
+        <div className="divide-y divide-border">
+          {vehicles.map((vehicle, index) => (
+            <VehicleTableRow
+              key={`${vehicle.id}-${index}`}
+              vehicle={vehicle}
+              onClick={onVehicleClick}
+              onEdit={onEditVehicle}
+              onDelete={onDeleteVehicle}
+              onBlock={onBlockVehicle}
+              onShowDetails={onShowDetails}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
