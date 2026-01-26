@@ -47,10 +47,12 @@ export function UserProfile() {
           <UserCog className="h-4 w-4" />
           Meu Perfil
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleSettings} className="cursor-pointer gap-2 py-2">
-          <Settings className="h-4 w-4" />
-          Configurações
-        </DropdownMenuItem>
+        {profile?.user_type !== 'motorista' && (
+          <DropdownMenuItem onClick={handleSettings} className="cursor-pointer gap-2 py-2">
+            <Settings className="h-4 w-4" />
+            Configurações
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-2 py-2 text-destructive focus:text-destructive">
           <LogOut className="h-4 w-4" />

@@ -52,3 +52,7 @@ Thumbs.db
 # Lock files (opcional - descomente se não quiser versionar)
 # package-lock.json
 # bun.lockb
+
+# Arquivos sensíveis (chaves de API)
+arquivosApple/
+arquivosGoogle/
