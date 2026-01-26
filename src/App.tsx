@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import EsqueceuSenha from "./pages/EsqueceuSenha";
 import NovaSenha from "./pages/NovaSenha";
+import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+import TermosUso from "./pages/TermosUso";
 import Clientes from "./pages/Clientes";
 import ClienteDetalhes from "./pages/ClienteDetalhes";
 import Veiculos from "./pages/Veiculos";
@@ -43,6 +45,8 @@ const App = () => (
             <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
             <Route path="/nova-senha" element={<NovaSenha />} />
             <Route path="/compartilhar/:id" element={<VeiculoMapaPublico />} />
+            <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+            <Route path="/termos-uso" element={<TermosUso />} />
             
             {/* Protected Routes */}
             <Route path="/" element={

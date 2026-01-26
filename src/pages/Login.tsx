@@ -140,6 +140,28 @@ const Login = () => {
                   )}
                 </Button>
               </form>
+
+              {/* Links para Termos de Uso e Política de Privacidade */}
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
+                  <span>Ao fazer login, você concorda com os</span>
+                  <div className="flex gap-2">
+                    <Link
+                      to="/termos-uso"
+                      className="text-foreground underline hover:text-primary transition-colors"
+                    >
+                      Termos de Uso
+                    </Link>
+                    <span>e</span>
+                    <Link
+                      to="/politica-privacidade"
+                      className="text-foreground underline hover:text-primary transition-colors"
+                    >
+                      Política de Privacidade
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
