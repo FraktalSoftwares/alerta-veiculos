@@ -205,12 +205,28 @@ export function useDeleteVehicle() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Desvincular equipamentos do veículo antes de excluir
+      const { error: equipmentError } = await supabase
+        .from('equipment')
+        .update({ vehicle_id: null })
+        .eq('vehicle_id', id);
+      if (equipmentError) throw equipmentError;
+
+      // Desvincular itens de assinatura do veículo antes de excluir
+      const { error: subscriptionError } = await supabase
+        .from('subscription_items')
+        .update({ vehicle_id: null })
+        .eq('vehicle_id', id);
+      if (subscriptionError) throw subscriptionError;
+
+      // Agora excluir o veículo (historico, vehicle_alerts e vehicle_tracking_data possuem CASCADE)
       const { error } = await supabase.from('vehicles').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['client-vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['equipment'] });
       toast({
         title: 'Sucesso',
         description: 'Veículo excluído com sucesso!',

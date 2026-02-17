@@ -32,11 +32,14 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
 
   useEffect(() => {
     if (client) {
+      const docType = (client.document_type === "cnpj") ? "cnpj" : "cpf";
+      const rawDoc = client.document_number || "";
+      const rawPhone = client.phone || "";
       setFormData({
         name: client.name,
-        document_type: (client.document_type === "cnpj") ? "cnpj" : "cpf",
-        document_number: client.document_number || "",
-        phone: client.phone || "",
+        document_type: docType,
+        document_number: docType === "cnpj" ? formatCNPJ(rawDoc) : formatCPF(rawDoc),
+        phone: formatPhone(rawPhone),
         email: client.email || "",
         client_type: client.client_type === "associacao" ? "associacao" 
           : client.client_type === "franqueado" ? "franqueado"
@@ -59,21 +62,40 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
     setFormData({ ...formData, phone: formatted });
   };
 
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, boolean> = {};
+    if (!formData.name.trim()) newErrors.name = true;
+
+    const docDigits = formData.document_number.replace(/\D/g, "");
+    const requiredDocLen = formData.document_type === "cpf" ? 11 : 14;
+    if (docDigits.length !== requiredDocLen) newErrors.document_number = true;
+
+    const phoneDigits = formData.phone.replace(/\D/g, "");
+    if (phoneDigits.length < 10) newErrors.phone = true;
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Preencha todos os campos obrigatórios corretamente");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!client) return;
     
-    if (!formData.name) {
-      toast.error("Nome é obrigatório");
-      return;
-    }
+    if (!validate()) return;
 
     try {
       await updateClient.mutateAsync({ 
         id: client.id, 
         data: formData 
       });
+      setErrors({});
       onClose();
     } catch (error) {
       // Error is handled by the mutation
@@ -98,9 +120,11 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setErrors((prev) => ({ ...prev, name: false })); }}
                 placeholder="Nome do cliente"
+                className={errors.name ? "border-destructive ring-destructive/30 ring-2" : ""}
               />
+              {errors.name && <p className="text-xs text-destructive">Nome é obrigatório</p>}
             </div>
 
             <div className="space-y-2">
@@ -122,23 +146,33 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-document_number">Documento</Label>
+              <Label htmlFor="edit-document_number">
+                Documento<span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="edit-document_number"
                 value={formData.document_number}
-                onChange={(e) => handleDocumentChange(e.target.value)}
+                onChange={(e) => { handleDocumentChange(e.target.value); setErrors((prev) => ({ ...prev, document_number: false })); }}
                 placeholder={formData.document_type === "cpf" ? "000.000.000-00" : "00.000.000/0000-00"}
+                maxLength={formData.document_type === "cpf" ? 14 : 18}
+                className={errors.document_number ? "border-destructive ring-destructive/30 ring-2" : ""}
               />
+              {errors.document_number && <p className="text-xs text-destructive">{formData.document_type === "cpf" ? "CPF inválido (11 dígitos)" : "CNPJ inválido (14 dígitos)"}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-phone">Telefone</Label>
+              <Label htmlFor="edit-phone">
+                Telefone<span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="edit-phone"
                 value={formData.phone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
+                onChange={(e) => { handlePhoneChange(e.target.value); setErrors((prev) => ({ ...prev, phone: false })); }}
                 placeholder="(00) 00000-0000"
+                maxLength={15}
+                className={errors.phone ? "border-destructive ring-destructive/30 ring-2" : ""}
               />
+              {errors.phone && <p className="text-xs text-destructive">Telefone inválido (mín. 10 dígitos)</p>}
             </div>
 
             <div className="space-y-2">

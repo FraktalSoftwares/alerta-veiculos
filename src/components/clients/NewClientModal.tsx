@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,15 +7,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateClient, useCreateAddress, useUpsertBillingSettings } from "@/hooks/useClients";
-import { useUpsertCustomization, useUploadClientAsset, useCreateClientUser } from "@/hooks/useClientAccess";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Check, Search, Eye, EyeOff, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatCPF, formatCNPJ, formatPhone, formatCEP, isValidEmail } from "@/lib/formatters";
+import { formatCPF, formatCNPJ, formatPhone, formatCEP, isValidEmail, isValidCPF, isValidCNPJ } from "@/lib/formatters";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllowedUserTypesToCreate, getDefaultUserTypeForCreation } from "@/lib/userTypeHierarchy";
+import { useAdminRoles } from "@/hooks/useSettings";
 
 interface ViaCepResponse {
   cep: string;
@@ -40,7 +40,6 @@ const STEPS = [
   { id: 5, label: "Acesso e opções" },
 ];
 
-// Generate random password
 const generateRandomPassword = () => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
   let password = "";
@@ -51,18 +50,14 @@ const generateRandomPassword = () => {
 };
 
 export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
-  const { profile } = useAuth();
-  const createClient = useCreateClient();
-  const createAddress = useCreateAddress();
-  const upsertBilling = useUpsertBillingSettings();
-  const upsertCustomization = useUpsertCustomization();
-  const uploadAsset = useUploadClientAsset();
-  const createClientUser = useCreateClientUser();
-  
+  const queryClient = useQueryClient();
+  const { user, profile } = useAuth();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [createdClientId, setCreatedClientId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Get allowed user types based on current user's type
   const allowedUserTypes = useMemo(() => {
     return getAllowedUserTypesToCreate(profile?.user_type);
   }, [profile?.user_type]);
@@ -70,7 +65,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
   const defaultUserType = useMemo(() => {
     return getDefaultUserTypeForCreation(profile?.user_type);
   }, [profile?.user_type]);
-  
+
   // Step 1 - Dados Básicos
   const [dadosBasicos, setDadosBasicos] = useState({
     name: "",
@@ -79,9 +74,16 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
     phone: "",
     email: "",
     birth_date: "",
-    client_type: defaultUserType as "associacao" | "franqueado" | "frotista" | "motorista",
+    client_type: "motorista" as "associacao" | "franqueado" | "frotista" | "motorista",
     status: "active" as "active" | "inactive" | "blocked",
   });
+
+  // Sync defaultUserType when profile loads asynchronously
+  useEffect(() => {
+    if (defaultUserType) {
+      setDadosBasicos(prev => ({ ...prev, client_type: defaultUserType as "associacao" | "franqueado" | "frotista" | "motorista" }));
+    }
+  }, [defaultUserType]);
 
   // Step 2 - Endereço
   const [endereco, setEndereco] = useState({
@@ -103,7 +105,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const data: ViaCepResponse = await response.json();
-      
+
       if (data.erro) {
         toast.error("CEP não encontrado");
         return;
@@ -128,15 +130,15 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
   const handleCepChange = (value: string) => {
     const formatted = formatCEP(value);
     setEndereco({ ...endereco, zip_code: formatted });
-    
+
     if (formatted.replace(/\D/g, "").length === 8) {
       searchCep(formatted);
     }
   };
 
   const handleDocumentChange = (value: string) => {
-    const formatted = dadosBasicos.document_type === "cpf" 
-      ? formatCPF(value) 
+    const formatted = dadosBasicos.document_type === "cpf"
+      ? formatCPF(value)
       : formatCNPJ(value);
     setDadosBasicos({ ...dadosBasicos, document_number: formatted });
   };
@@ -171,13 +173,16 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
     create_login: true,
     email: "",
     password: generateRandomPassword(),
+    admin_role_id: "" as string,
     send_welcome_email: false,
   });
   const [showPassword, setShowPassword] = useState(false);
+  const { data: adminRoles = [] } = useAdminRoles();
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
     }
@@ -186,6 +191,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
   const handleFaviconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (faviconPreview) URL.revokeObjectURL(faviconPreview);
       setFaviconFile(file);
       setFaviconPreview(URL.createObjectURL(file));
     }
@@ -194,6 +200,8 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
   const resetForm = () => {
     setCurrentStep(1);
     setCreatedClientId(null);
+    setErrors({});
+    setIsSaving(false);
     setDadosBasicos({
       name: "",
       document_type: "cpf",
@@ -201,7 +209,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
       phone: "",
       email: "",
       birth_date: "",
-      client_type: defaultUserType as "associacao" | "franqueado" | "frotista" | "motorista",
+      client_type: (defaultUserType as "associacao" | "franqueado" | "frotista" | "motorista") || "motorista",
       status: "active",
     });
     setEndereco({
@@ -225,6 +233,8 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
       logo_url: null,
       favicon_url: null,
     });
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    if (faviconPreview) URL.revokeObjectURL(faviconPreview);
     setLogoFile(null);
     setFaviconFile(null);
     setLogoPreview(null);
@@ -233,90 +243,52 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
       create_login: true,
       email: "",
       password: generateRandomPassword(),
+      admin_role_id: "",
       send_welcome_email: false,
     });
     setShowPassword(false);
   };
 
-  const handleNext = async () => {
+  // Navigation — only validates, NO API calls
+  const handleNext = () => {
     if (currentStep === 1) {
-      if (!dadosBasicos.name || !dadosBasicos.document_number || !dadosBasicos.phone) {
-        toast.error("Preencha os campos obrigatórios");
+      const newErrors: Record<string, boolean> = {};
+      if (!dadosBasicos.name.trim()) newErrors.name = true;
+
+      const docDigits = dadosBasicos.document_number.replace(/\D/g, "");
+      const requiredDocLen = dadosBasicos.document_type === "cpf" ? 11 : 14;
+      if (docDigits.length !== requiredDocLen) {
+        newErrors.document_number = true;
+      } else {
+        const isDocValid = dadosBasicos.document_type === "cpf"
+          ? isValidCPF(docDigits)
+          : isValidCNPJ(docDigits);
+        if (!isDocValid) newErrors.document_number = true;
+      }
+
+      const phoneDigits = dadosBasicos.phone.replace(/\D/g, "");
+      if (phoneDigits.length < 10) newErrors.phone = true;
+
+      if (!dadosBasicos.birth_date) newErrors.birth_date = true;
+
+      setErrors(newErrors);
+      if (Object.keys(newErrors).length > 0) {
+        toast.error("Preencha os campos obrigatórios corretamente");
         return;
       }
 
-      try {
-        const result = await createClient.mutateAsync(dadosBasicos);
-        setCreatedClientId(result.id);
-        // Pre-fill email for access
-        if (dadosBasicos.email) {
-          setAcesso(prev => ({ ...prev, email: dadosBasicos.email }));
-        }
-        setCurrentStep(2);
-      } catch (error) {
-        // Error handled by mutation
+      // Pre-fill email for access step
+      if (dadosBasicos.email && !acesso.email) {
+        setAcesso(prev => ({ ...prev, email: dadosBasicos.email }));
       }
-    } else if (currentStep === 2 && createdClientId) {
-      if (endereco.street || endereco.city) {
-        try {
-          await createAddress.mutateAsync({ clientId: createdClientId, data: endereco });
-        } catch (error) {
-          // Continue even with error
-        }
-      }
-      setCurrentStep(3);
-    } else if (currentStep === 3 && createdClientId) {
-      try {
-        await upsertBilling.mutateAsync({ clientId: createdClientId, data: cobranca });
-      } catch (error) {
-        // Continue even with error
-      }
-      setCurrentStep(4);
-    } else if (currentStep === 4 && createdClientId) {
-      // Save customization
-      try {
-        let logoUrl = customizacao.logo_url;
-        let faviconUrl = customizacao.favicon_url;
-
-        // Upload logo if selected
-        if (logoFile) {
-          logoUrl = await uploadAsset.mutateAsync({ 
-            clientId: createdClientId, 
-            file: logoFile, 
-            type: "logo" 
-          });
-        }
-
-        // Upload favicon if selected
-        if (faviconFile) {
-          faviconUrl = await uploadAsset.mutateAsync({ 
-            clientId: createdClientId, 
-            file: faviconFile, 
-            type: "favicon" 
-          });
-        }
-
-        await upsertCustomization.mutateAsync({
-          client_id: createdClientId,
-          primary_color: customizacao.primary_color,
-          secondary_color: customizacao.secondary_color,
-          logo_url: logoUrl,
-          favicon_url: faviconUrl,
-        });
-      } catch (error) {
-        // Continue even with error
-      }
-      setCurrentStep(5);
     }
+
+    setCurrentStep(currentStep + 1);
   };
 
+  // Final save — ALL records created here
   const handleFinish = async () => {
-    if (!createdClientId) {
-      toast.error("Erro: Cliente não criado");
-      return;
-    }
-
-    // Create user access if enabled
+    // Validate step 5 if creating login
     if (acesso.create_login) {
       if (!acesso.email || !isValidEmail(acesso.email)) {
         toast.error("Digite um email válido para o acesso");
@@ -326,33 +298,159 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
         toast.error("A senha deve ter pelo menos 6 caracteres");
         return;
       }
-
-      try {
-        await createClientUser.mutateAsync({
-          client_id: createdClientId,
-          email: acesso.email,
-          password: acesso.password,
-        });
-        toast.success("Cliente e acesso criados com sucesso!");
-      } catch (error) {
-        // Error handled by mutation, but don't close modal
-        return;
-      }
-    } else {
-      toast.success("Cliente cadastrado com sucesso!");
     }
 
-    resetForm();
-    onClose();
+    if (!user) {
+      toast.error("Usuário não autenticado");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      let clientId = createdClientId;
+
+      // 1. Create client (skip if retrying after partial failure)
+      if (!clientId) {
+        const { data: client, error: clientError } = await supabase
+          .from("clients")
+          .insert({
+            owner_id: user.id,
+            name: dadosBasicos.name.trim(),
+            document_type: dadosBasicos.document_type,
+            document_number: dadosBasicos.document_number.replace(/\D/g, ""),
+            phone: dadosBasicos.phone.replace(/\D/g, ""),
+            email: dadosBasicos.email || null,
+            birth_date: dadosBasicos.birth_date || null,
+            client_type: dadosBasicos.client_type,
+            status: dadosBasicos.status,
+          })
+          .select()
+          .single();
+
+        if (clientError) throw new Error(`Erro ao criar cliente: ${clientError.message}`);
+        clientId = client.id;
+        setCreatedClientId(clientId);
+      }
+
+      // 2. Create address (if any field is filled)
+      const hasAddressData = endereco.zip_code || endereco.street || endereco.number ||
+                             endereco.city || endereco.neighborhood || endereco.state;
+      if (hasAddressData) {
+        // Remove existing address from a previous failed attempt
+        await supabase.from("addresses").delete().eq("client_id", clientId);
+
+        const { error: addressError } = await supabase
+          .from("addresses")
+          .insert({
+            client_id: clientId,
+            zip_code: endereco.zip_code.replace(/\D/g, "") || null,
+            street: endereco.street || null,
+            number: endereco.number || null,
+            complement: endereco.complement || null,
+            neighborhood: endereco.neighborhood || null,
+            city: endereco.city || null,
+            state: endereco.state || null,
+          });
+
+        if (addressError) throw new Error(`Erro ao salvar endereço: ${addressError.message}`);
+      }
+
+      // 3. Save billing settings (upsert is safe for retries)
+      const { error: billingError } = await supabase
+        .from("billing_settings")
+        .upsert({
+          client_id: clientId,
+          billing_day: cobranca.billing_day,
+          payment_method: cobranca.payment_method,
+          auto_billing: cobranca.auto_billing,
+          notes: cobranca.notes || null,
+        }, { onConflict: "client_id" });
+
+      if (billingError) throw new Error(`Erro ao salvar cobrança: ${billingError.message}`);
+
+      // 4. Save customization (upload assets first)
+      let logoUrl = customizacao.logo_url;
+      let faviconUrl = customizacao.favicon_url;
+
+      if (logoFile) {
+        const fileExt = logoFile.name.split(".").pop();
+        const logoPath = `${clientId}/logo-${Date.now()}.${fileExt}`;
+        const { error: logoUploadError } = await supabase.storage
+          .from("client-assets")
+          .upload(logoPath, logoFile, { upsert: true });
+        if (logoUploadError) throw new Error(`Erro ao fazer upload do logo: ${logoUploadError.message}`);
+        const { data: { publicUrl } } = supabase.storage.from("client-assets").getPublicUrl(logoPath);
+        logoUrl = publicUrl;
+      }
+
+      if (faviconFile) {
+        const fileExt = faviconFile.name.split(".").pop();
+        const faviconPath = `${clientId}/favicon-${Date.now()}.${fileExt}`;
+        const { error: faviconUploadError } = await supabase.storage
+          .from("client-assets")
+          .upload(faviconPath, faviconFile, { upsert: true });
+        if (faviconUploadError) throw new Error(`Erro ao fazer upload do favicon: ${faviconUploadError.message}`);
+        const { data: { publicUrl } } = supabase.storage.from("client-assets").getPublicUrl(faviconPath);
+        faviconUrl = publicUrl;
+      }
+
+      const { error: customError } = await supabase
+        .from("client_customization")
+        .upsert({
+          client_id: clientId,
+          primary_color: customizacao.primary_color,
+          secondary_color: customizacao.secondary_color,
+          logo_url: logoUrl,
+          favicon_url: faviconUrl,
+        }, { onConflict: "client_id" });
+
+      if (customError) throw new Error(`Erro ao salvar customização: ${customError.message}`);
+
+      // 5. Create user access if enabled
+      if (acesso.create_login) {
+        const { data: result, error: funcError } = await supabase.functions.invoke("create-client-user", {
+          body: {
+            client_id: clientId,
+            email: acesso.email,
+            password: acesso.password,
+            admin_role_id: acesso.admin_role_id || undefined,
+            send_welcome_email: acesso.send_welcome_email,
+          },
+        });
+
+        if (funcError) throw new Error(`Erro ao criar acesso: ${funcError.message}`);
+        if (result?.error) throw new Error(result.error);
+
+        if (acesso.send_welcome_email && result?.welcome_email?.sent) {
+          toast.success("Cliente cadastrado e e-mail de boas-vindas enviado!");
+        } else if (acesso.send_welcome_email && !result?.welcome_email?.sent) {
+          toast.success("Cliente cadastrado com sucesso!");
+          toast.warning("Não foi possível enviar o e-mail de boas-vindas. Verifique a configuração do serviço de e-mail.");
+        } else {
+          toast.success("Cliente cadastrado com sucesso!");
+        }
+      } else {
+        toast.success("Cliente cadastrado com sucesso!");
+      }
+
+      // Invalidate queries to refresh client list
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+
+      resetForm();
+      onClose();
+    } catch (error: any) {
+      toast.error(error?.message || "Erro ao finalizar cadastro. Tente novamente.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClose = () => {
+    if (isSaving) return;
     resetForm();
     onClose();
   };
-
-  const isLoading = createClient.isPending || createAddress.isPending || upsertBilling.isPending || 
-                    upsertCustomization.isPending || uploadAsset.isPending || createClientUser.isPending;
 
   const renderStepIndicator = () => (
     <div className="flex items-center justify-center gap-2 mb-6">
@@ -392,17 +490,19 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
           <Input
             id="name"
             value={dadosBasicos.name}
-            onChange={(e) => setDadosBasicos({ ...dadosBasicos, name: e.target.value })}
+            onChange={(e) => { setDadosBasicos({ ...dadosBasicos, name: e.target.value }); setErrors((prev) => ({ ...prev, name: false })); }}
             placeholder="Nome do cliente"
+            className={errors.name ? "border-destructive ring-destructive/30 ring-2" : ""}
           />
+          {errors.name && <p className="text-xs text-destructive">Nome é obrigatório</p>}
         </div>
 
         <div className="space-y-2">
           <Label>Tipo do Documento<span className="text-destructive">*</span></Label>
           <Select
             value={dadosBasicos.document_type}
-            onValueChange={(value: "cpf" | "cnpj") => 
-              setDadosBasicos({ ...dadosBasicos, document_type: value })
+            onValueChange={(value: "cpf" | "cnpj") =>
+              setDadosBasicos({ ...dadosBasicos, document_type: value, document_number: "" })
             }
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -417,18 +517,24 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
           <Label>Documento<span className="text-destructive">*</span></Label>
           <Input
             value={dadosBasicos.document_number}
-            onChange={(e) => handleDocumentChange(e.target.value)}
+            onChange={(e) => { handleDocumentChange(e.target.value); setErrors((prev) => ({ ...prev, document_number: false })); }}
             placeholder={dadosBasicos.document_type === "cpf" ? "000.000.000-00" : "00.000.000/0000-00"}
+            maxLength={dadosBasicos.document_type === "cpf" ? 14 : 18}
+            className={errors.document_number ? "border-destructive ring-destructive/30 ring-2" : ""}
           />
+          {errors.document_number && <p className="text-xs text-destructive">{dadosBasicos.document_type === "cpf" ? "CPF inválido" : "CNPJ inválido"}</p>}
         </div>
 
         <div className="space-y-2">
           <Label>Telefone<span className="text-destructive">*</span></Label>
           <Input
             value={dadosBasicos.phone}
-            onChange={(e) => handlePhoneChange(e.target.value)}
+            onChange={(e) => { handlePhoneChange(e.target.value); setErrors((prev) => ({ ...prev, phone: false })); }}
             placeholder="(00) 00000-0000"
+            maxLength={15}
+            className={errors.phone ? "border-destructive ring-destructive/30 ring-2" : ""}
           />
+          {errors.phone && <p className="text-xs text-destructive">Telefone inválido (mín. 10 dígitos)</p>}
         </div>
 
         <div className="space-y-2">
@@ -442,19 +548,21 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
         </div>
 
         <div className="space-y-2">
-          <Label>Data de Nascimento</Label>
+          <Label>Data de Nascimento<span className="text-destructive">*</span></Label>
           <Input
             type="date"
             value={dadosBasicos.birth_date}
-            onChange={(e) => setDadosBasicos({ ...dadosBasicos, birth_date: e.target.value })}
+            onChange={(e) => { setDadosBasicos({ ...dadosBasicos, birth_date: e.target.value }); setErrors((prev) => ({ ...prev, birth_date: false })); }}
+            className={errors.birth_date ? "border-destructive ring-destructive/30 ring-2" : ""}
           />
+          {errors.birth_date && <p className="text-xs text-destructive">Data de nascimento é obrigatória</p>}
         </div>
 
         <div className="space-y-2">
           <Label>Status</Label>
           <Select
             value={dadosBasicos.status}
-            onValueChange={(value: "active" | "inactive" | "blocked") => 
+            onValueChange={(value: "active" | "inactive" | "blocked") =>
               setDadosBasicos({ ...dadosBasicos, status: value })
             }
           >
@@ -631,7 +739,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
   const renderStep4 = () => (
     <div className="space-y-6">
       <h3 className="font-semibold text-lg">Customização</h3>
-      
+
       {/* Colors */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -683,7 +791,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
                 variant="ghost"
                 size="icon"
                 className="absolute -top-2 -right-2 h-6 w-6 bg-destructive text-destructive-foreground rounded-full"
-                onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                onClick={() => { if (logoPreview) URL.revokeObjectURL(logoPreview); setLogoFile(null); setLogoPreview(null); }}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -710,7 +818,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
                 variant="ghost"
                 size="icon"
                 className="absolute -top-2 -right-2 h-6 w-6 bg-destructive text-destructive-foreground rounded-full"
-                onClick={() => { setFaviconFile(null); setFaviconPreview(null); }}
+                onClick={() => { if (faviconPreview) URL.revokeObjectURL(faviconPreview); setFaviconFile(null); setFaviconPreview(null); }}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -728,7 +836,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
       {/* Preview */}
       <div className="p-4 border rounded-lg">
         <Label className="text-sm text-muted-foreground mb-2 block">Pré-visualização do Header</Label>
-        <div 
+        <div
           className="h-12 rounded flex items-center px-4 gap-3"
           style={{ backgroundColor: customizacao.primary_color }}
         >
@@ -748,7 +856,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
   const renderStep5 = () => (
     <div className="space-y-6">
       <h3 className="font-semibold text-lg">Acesso e Opções</h3>
-      
+
       {/* User Access Section */}
       <div className="space-y-4 p-4 border rounded-lg">
         <div className="flex items-center justify-between">
@@ -809,6 +917,30 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
               </p>
             </div>
 
+            <div className="space-y-2">
+              <Label>Função Administrativa</Label>
+              <Select
+                value={acesso.admin_role_id}
+                onValueChange={(value) => setAcesso({ ...acesso, admin_role_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma função (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {adminRoles
+                    .filter((role) => role.isActive)
+                    .map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Define quais permissões o usuário terá no sistema.
+              </p>
+            </div>
+
             <div className="flex items-center justify-between pt-2">
               <div>
                 <Label>Enviar Email de Boas-vindas</Label>
@@ -853,25 +985,32 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
             type="button"
             variant="outline"
             onClick={() => currentStep > 1 ? setCurrentStep(currentStep - 1) : handleClose()}
+            disabled={isSaving}
           >
             {currentStep === 1 ? "Cancelar" : "Voltar"}
           </Button>
-          
+
           {currentStep < 5 ? (
             <Button
               onClick={handleNext}
               className="bg-foreground hover:bg-foreground/90 text-background"
-              disabled={isLoading}
             >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Próximo"}
+              Próximo
             </Button>
           ) : (
             <Button
               onClick={handleFinish}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              disabled={isLoading}
+              disabled={isSaving}
             >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Finalizar Cadastro"}
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                "Finalizar Cadastro"
+              )}
             </Button>
           )}
         </div>

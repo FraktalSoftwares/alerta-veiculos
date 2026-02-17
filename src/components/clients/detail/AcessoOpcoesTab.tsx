@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil, Camera, Upload, Mail, Save, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { 
   useClientCustomization, 
@@ -11,6 +12,7 @@ import {
   useSendPasswordReset,
   useUpdateClientEmail 
 } from "@/hooks/useClientAccess";
+import { useAdminRoles } from "@/hooks/useSettings";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +43,7 @@ export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [adminRoleId, setAdminRoleId] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showEditEmailDialog, setShowEditEmailDialog] = useState(false);
   const [editEmail, setEditEmail] = useState("");
@@ -56,6 +59,7 @@ export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
   const createClientUser = useCreateClientUser();
   const sendPasswordReset = useSendPasswordReset();
   const updateClientEmail = useUpdateClientEmail();
+  const { data: adminRoles = [] } = useAdminRoles();
 
   // Initialize colors from customization data
   useEffect(() => {
@@ -123,10 +127,12 @@ export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
       client_id: client.id,
       email: newEmail,
       password: newPassword,
+      admin_role_id: adminRoleId || undefined,
     });
 
     setNewEmail("");
     setNewPassword("");
+    setAdminRoleId("");
     setShowCreateUser(false);
   };
 
@@ -405,6 +411,30 @@ export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Função Administrativa</Label>
+                  <Select
+                    value={adminRoleId}
+                    onValueChange={(value) => setAdminRoleId(value)}
+                  >
+                    <SelectTrigger className="border-border">
+                      <SelectValue placeholder="Selecione uma função (opcional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {adminRoles
+                        .filter((role) => role.isActive)
+                        .map((role) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            {role.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Define quais permissões o usuário terá no sistema.
+                  </p>
                 </div>
 
                 <div className="flex gap-2 pt-4">

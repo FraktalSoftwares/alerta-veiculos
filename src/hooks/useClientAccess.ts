@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface ClientCustomization {
   id: string;
@@ -16,6 +16,8 @@ interface CreateUserData {
   client_id: string;
   email: string;
   password: string;
+  admin_role_id?: string;
+  send_welcome_email?: boolean;
 }
 
 // Fetch client customization
@@ -53,17 +55,10 @@ export function useUpsertCustomization() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['client-customization', variables.client_id] });
-      toast({
-        title: 'Customização salva',
-        description: 'As alterações foram salvas com sucesso.',
-      });
+      toast.success('Customização salva com sucesso!');
     },
     onError: (error) => {
-      toast({
-        title: 'Erro ao salvar',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(`Erro ao salvar customização: ${error.message}`);
     },
   });
 }
@@ -88,11 +83,7 @@ export function useUploadClientAsset() {
       return publicUrl;
     },
     onError: (error) => {
-      toast({
-        title: 'Erro no upload',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(`Erro no upload: ${error.message}`);
     },
   });
 }
@@ -114,17 +105,10 @@ export function useCreateClientUser() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['client', variables.client_id] });
-      toast({
-        title: 'Acesso criado',
-        description: 'O usuário foi criado com sucesso.',
-      });
+      toast.success('Acesso criado com sucesso!');
     },
     onError: (error) => {
-      toast({
-        title: 'Erro ao criar acesso',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(`Erro ao criar acesso: ${error.message}`);
     },
   });
 }
@@ -140,17 +124,10 @@ export function useSendPasswordReset() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({
-        title: 'E-mail enviado',
-        description: 'Um e-mail de redefinição de senha foi enviado.',
-      });
+      toast.success('E-mail de redefinição de senha enviado!');
     },
     onError: (error) => {
-      toast({
-        title: 'Erro ao enviar e-mail',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(`Erro ao enviar e-mail: ${error.message}`);
     },
   });
 }
@@ -170,17 +147,10 @@ export function useUpdateClientEmail() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['client', variables.clientId] });
-      toast({
-        title: 'E-mail atualizado',
-        description: 'O e-mail foi atualizado com sucesso.',
-      });
+      toast.success('E-mail atualizado com sucesso!');
     },
     onError: (error) => {
-      toast({
-        title: 'Erro ao atualizar',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(`Erro ao atualizar e-mail: ${error.message}`);
     },
   });
 }

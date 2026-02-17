@@ -16,6 +16,7 @@ interface NewVehicleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preselectedClientId?: string;
+  preselectedClientName?: string;
 }
 
 interface SelectedEquipment {
@@ -69,14 +70,14 @@ const COMANDOS_OPTIONS = [
   { id: "bloquear", label: "Bloquear / desbloquear veículo", defaultChecked: true },
 ];
 
-export function NewVehicleModal({ open, onOpenChange, preselectedClientId }: NewVehicleModalProps) {
+export function NewVehicleModal({ open, onOpenChange, preselectedClientId, preselectedClientName }: NewVehicleModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [clientSearch, setClientSearch] = useState("");
   const [equipmentSearch, setEquipmentSearch] = useState("");
   const [responsavelSearch, setResponsavelSearch] = useState("");
   const [responsavelTipoFilter, setResponsavelTipoFilter] = useState<string>("");
   const [formData, setFormData] = useState<VehicleFormData>({
-    cliente: "",
+    cliente: preselectedClientName || "",
     clienteId: preselectedClientId || "",
     rastreadorId: "",
     rastreadorInfo: "",
@@ -92,6 +93,17 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId }: New
     alertas: ALERTAS_OPTIONS.filter(a => a.defaultChecked).map(a => a.id),
     comandos: COMANDOS_OPTIONS.filter(c => c.defaultChecked).map(c => c.id),
   });
+
+  // Sync preselected client when modal opens or props change
+  useEffect(() => {
+    if (open && preselectedClientId) {
+      setFormData(prev => ({
+        ...prev,
+        clienteId: preselectedClientId,
+        cliente: preselectedClientName || "",
+      }));
+    }
+  }, [open, preselectedClientId, preselectedClientName]);
 
   const { toast } = useToast();
   const createVehicle = useCreateVehicle();
@@ -167,7 +179,7 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId }: New
           setCurrentStep(1);
           setEquipmentSearch("");
           setFormData({
-            cliente: "",
+            cliente: preselectedClientName || "",
             clienteId: preselectedClientId || "",
             rastreadorId: "",
             rastreadorInfo: "",
@@ -319,36 +331,45 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId }: New
                 <h3 className="text-lg font-semibold mb-4">Selecionar cliente</h3>
                 <div className="space-y-2">
                   <Label className="text-sm text-muted-foreground">Buscar cliente</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      value={formData.cliente || clientSearch}
-                      onChange={(e) => {
-                        setClientSearch(e.target.value);
-                        if (formData.cliente) {
-                          setFormData(prev => ({ ...prev, cliente: "", clienteId: "" }));
-                        }
-                      }}
-                      placeholder="Digite o nome do cliente"
-                      className="bg-background pl-10"
-                    />
-                  </div>
-                  {clientSearch && clientsData?.clients && clientsData.clients.length > 0 && (
-                    <div className="border border-border rounded-md mt-2 max-h-40 overflow-y-auto">
-                      {clientsData.clients.map(client => (
-                        <button
-                          key={client.id}
-                          type="button"
-                          onClick={() => selectClient(client.id, client.name)}
-                          className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm"
-                        >
-                          {client.name}
-                        </button>
-                      ))}
+                  {preselectedClientId && formData.clienteId === preselectedClientId ? (
+                    <div className="flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-md">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span className="text-sm flex-1">{formData.cliente}</span>
                     </div>
-                  )}
-                  {formData.clienteId && (
-                    <p className="text-xs text-muted-foreground">Cliente selecionado: {formData.cliente}</p>
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={formData.cliente || clientSearch}
+                          onChange={(e) => {
+                            setClientSearch(e.target.value);
+                            if (formData.cliente) {
+                              setFormData(prev => ({ ...prev, cliente: "", clienteId: "" }));
+                            }
+                          }}
+                          placeholder="Digite o nome do cliente"
+                          className="bg-background pl-10"
+                        />
+                      </div>
+                      {clientSearch && clientsData?.clients && clientsData.clients.length > 0 && (
+                        <div className="border border-border rounded-md mt-2 max-h-40 overflow-y-auto">
+                          {clientsData.clients.map(client => (
+                            <button
+                              key={client.id}
+                              type="button"
+                              onClick={() => selectClient(client.id, client.name)}
+                              className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm"
+                            >
+                              {client.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {formData.clienteId && (
+                        <p className="text-xs text-muted-foreground">Cliente selecionado: {formData.cliente}</p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -489,9 +510,21 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId }: New
                   <div className="space-y-2">
                     <Label className="text-sm text-muted-foreground">Hodômetro</Label>
                     <Input
+                      type="number"
+                      min="0"
                       placeholder="0"
                       value={formData.hodometro}
-                      onChange={(e) => setFormData({ ...formData, hodometro: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || (/^\d+$/.test(value) && Number(value) >= 0)) {
+                          setFormData({ ...formData, hodometro: value });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "-" || e.key === "e" || e.key === "E" || e.key === "+" || e.key === ".") {
+                          e.preventDefault();
+                        }
+                      }}
                       className="bg-background"
                     />
                   </div>

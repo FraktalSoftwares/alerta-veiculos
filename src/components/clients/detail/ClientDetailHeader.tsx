@@ -9,10 +9,18 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { ClientWithDetails } from "@/types/client";
+import { formatCPF, formatCNPJ } from "@/lib/formatters";
 
 interface ClientDetailHeaderProps {
   client?: ClientWithDetails;
   onNewVehicleClick: () => void;
+}
+
+function formatDocument(docNumber: string | null, docType: string | null): string {
+  if (!docNumber) return "";
+  const digits = docNumber.replace(/\D/g, "");
+  if (docType === "cnpj" || digits.length > 11) return formatCNPJ(digits);
+  return formatCPF(digits);
 }
 
 export function ClientDetailHeader({ client, onNewVehicleClick }: ClientDetailHeaderProps) {
@@ -25,7 +33,7 @@ export function ClientDetailHeader({ client, onNewVehicleClick }: ClientDetailHe
           </h1>
           {client?.document_number && (
             <p className="text-sm text-muted-foreground mt-1">
-              {client.document_type?.toUpperCase()}: {client.document_number}
+              {client.document_type?.toUpperCase()}: {formatDocument(client.document_number, client.document_type)}
             </p>
           )}
         </div>

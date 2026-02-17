@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Código de verificação - Alerta Rastreamento</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F4F5F7; font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #F4F5F7; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; margin: 0 auto;">
+
+          <!-- Logo Header -->
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <img src="{{ .SiteURL }}/logo_alerta.png" alt="Alerta Rastreamento" height="40" style="display: block; height: 40px; width: auto;">
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color: #FFFFFF; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); overflow: hidden;">
+
+              <!-- Orange Accent Bar -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="height: 4px; background-color: #FF8C00;"></td>
+                </tr>
+              </table>
+
+              <!-- Content -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding: 40px 36px;">
+
+                    <!-- Icon -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                      <tr>
+                        <td style="width: 48px; height: 48px; background-color: #EFF6FF; border-radius: 12px; text-align: center; line-height: 48px; font-size: 24px;">
+                          &#128737;
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Heading -->
+                    <h1 style="margin: 0 0 12px 0; font-family: 'Source Sans 3', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 22px; font-weight: 700; color: #1F2937; line-height: 1.3;">
+                      Código de verificação
+                    </h1>
+
+                    <!-- Text -->
+                    <p style="margin: 0 0 28px 0; font-size: 15px; color: #6B7280; line-height: 1.6;">
+                      Para prosseguir com a ação solicitada no <strong style="color: #1F2937;">Alerta Rastreamento</strong>, precisamos confirmar sua identidade. Use o código abaixo para se reautenticar.
+                    </p>
+
+                    <!-- OTP Code -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 28px;">
+                      <tr>
+                        <td align="center">
+                          <table role="presentation" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="background-color: #F9FAFB; border: 2px dashed #E5E7EB; border-radius: 12px; padding: 20px 40px; text-align: center;">
+                                <p style="margin: 0 0 6px 0; font-size: 12px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                                  Seu código
+                                </p>
+                                <p style="margin: 0; font-family: 'Source Sans 3', 'Courier New', monospace; font-size: 36px; font-weight: 700; color: #1F2937; letter-spacing: 8px;">
+                                  {{ .Token }}
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Security Notice -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 28px;">
+                      <tr>
+                        <td style="background-color: #FFFBF0; border: 1px solid #FFE4B5; border-radius: 8px; padding: 14px 16px;">
+                          <p style="margin: 0; font-size: 13px; color: #92600E; line-height: 1.5;">
+                            <strong>Atenção:</strong> Este código tem validade limitada. Não compartilhe este código com ninguém. Nossa equipe nunca pedirá seu código.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Divider -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                      <tr>
+                        <td style="height: 1px; background-color: #E5E7EB;"></td>
+                      </tr>
+                    </table>
+
+                    <!-- Extra Info -->
+                    <p style="margin: 0; font-size: 13px; color: #9CA3AF; line-height: 1.6;">
+                      Se você não solicitou este código, sua conta pode estar em risco. Recomendamos alterar sua senha imediatamente e entrar em contato com nosso suporte em <a href="mailto:contato@alertarastreamento.com.br" style="color: #FF8C00; text-decoration: underline;">contato@alertarastreamento.com.br</a>.
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 28px 16px; text-align: center;">
+              <p style="margin: 0 0 4px 0; font-size: 12px; color: #9CA3AF;">
+                &copy; {{ now.Format "2006" }} Alerta Rastreamento. Todos os direitos reservados.
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #9CA3AF;">
+                Este código foi gerado automaticamente. Não responda a este e-mail.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

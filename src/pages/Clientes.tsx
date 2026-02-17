@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { ClientPageHeader } from "@/components/clients/ClientPageHeader";
@@ -7,9 +7,17 @@ import { ClientPagination } from "@/components/clients/ClientPagination";
 import { NewClientModal } from "@/components/clients/NewClientModal";
 import { EditClientModal } from "@/components/clients/EditClientModal";
 import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
+import { ClientFilterModal, ClientFilterValues } from "@/components/clients/ClientFilterModal";
 import { useClients } from "@/hooks/useClients";
 import { ClientDisplay } from "@/types/client";
 import { Loader2 } from "lucide-react";
+
+const DEFAULT_FILTERS: ClientFilterValues = {
+  trackerStatuses: ["tracked", "no_signal", "offline", "blocked"],
+  clientStatus: undefined,
+  dateFrom: "",
+  dateTo: "",
+};
 
 const Clientes = () => {
   const [searchValue, setSearchValue] = useState("");
@@ -17,20 +25,38 @@ const Clientes = () => {
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientDisplay | null>(null);
+  const [filters, setFilters] = useState<ClientFilterValues>(DEFAULT_FILTERS);
   const navigate = useNavigate();
   
   const itemsPerPage = 100;
+
+  // Check if any filter is active (different from defaults)
+  const hasActiveFilters =
+    filters.clientStatus !== undefined ||
+    filters.trackerStatuses.length < 4 ||
+    filters.dateFrom !== "" ||
+    filters.dateTo !== "";
 
   const { data, isLoading, error } = useClients({
     search: searchValue,
     page: currentPage,
     pageSize: itemsPerPage,
+    status: filters.clientStatus,
+    trackerStatuses: filters.trackerStatuses,
+    dateFrom: filters.dateFrom || undefined,
+    dateTo: filters.dateTo || undefined,
   });
 
   const handleFilterClick = () => {
-    // TODO: Implement filter modal
+    setIsFilterModalOpen(true);
   };
+
+  const handleApplyFilters = useCallback((newFilters: ClientFilterValues) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  }, []);
 
   const handleNewClientClick = () => {
     setIsNewClientModalOpen(true);
@@ -61,6 +87,7 @@ const Clientes = () => {
           onSearchChange={setSearchValue}
           onFilterClick={handleFilterClick}
           onNewClientClick={handleNewClientClick}
+          hasFilters={hasActiveFilters}
         />
         
         {isLoading ? (
@@ -119,6 +146,13 @@ const Clientes = () => {
           setSelectedClient(null);
         }}
         client={selectedClient}
+      />
+
+      <ClientFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onApply={handleApplyFilters}
+        initialValues={filters}
       />
     </div>
   );

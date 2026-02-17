@@ -175,8 +175,8 @@ export function useMonthlyRevenue(startDateStr?: string, endDateStr?: string) {
         .select("amount, payment_date, due_date, status")
         .eq("type", "revenue")
         .eq("status", "paid")
-        .gte("payment_date", startDate)
-        .lte("payment_date", endDate);
+        .gte("due_date", startDate)
+        .lte("due_date", endDate);
 
       if (error) throw error;
 
@@ -191,8 +191,9 @@ export function useMonthlyRevenue(startDateStr?: string, endDateStr?: string) {
       }));
 
       records?.forEach(record => {
-        if (record.payment_date) {
-          const date = new Date(record.payment_date);
+        const dateStr = record.payment_date || record.due_date;
+        if (dateStr) {
+          const date = new Date(dateStr);
           const monthIndex = date.getMonth();
           monthlyData[monthIndex].value += Number(record.amount) || 0;
         }

@@ -52,7 +52,10 @@ export function DeleteVehicleDialog({ isOpen, onClose, vehicle }: DeleteVehicleD
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleDelete}
+            onClick={(e) => {
+              e.preventDefault();
+              handleDelete();
+            }}
             disabled={deleteVehicle.isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

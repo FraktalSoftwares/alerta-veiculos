@@ -9,17 +9,19 @@ import { CobrancaTab } from "@/components/clients/detail/CobrancaTab";
 import { VeiculosTab } from "@/components/clients/detail/VeiculosTab";
 import { ClientesTab } from "@/components/clients/detail/ClientesTab";
 import { AcessoOpcoesTab } from "@/components/clients/detail/AcessoOpcoesTab";
+import { NewVehicleModal } from "@/components/vehicles/NewVehicleModal";
 import { useClient } from "@/hooks/useClients";
 import { Loader2 } from "lucide-react";
 
 export default function ClienteDetalhes() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("dados-basicos");
+  const [isNewVehicleModalOpen, setIsNewVehicleModalOpen] = useState(false);
   
   const { data: client, isLoading, error } = useClient(id);
 
   const handleNewVehicleClick = () => {
-    // TODO: Implement new vehicle modal
+    setIsNewVehicleModalOpen(true);
   };
 
   const renderTabContent = () => {
@@ -78,6 +80,13 @@ export default function ClienteDetalhes() {
         <ClientDetailTabs activeTab={activeTab} onTabChange={setActiveTab} />
         {renderTabContent()}
       </main>
+
+      <NewVehicleModal
+        open={isNewVehicleModalOpen}
+        onOpenChange={setIsNewVehicleModalOpen}
+        preselectedClientId={client.id}
+        preselectedClientName={client.name}
+      />
     </div>
   );
 }

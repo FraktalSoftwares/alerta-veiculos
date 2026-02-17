@@ -9,9 +9,7 @@ interface ClientesTabProps {
 
 export function ClientesTab({ parentClientId }: ClientesTabProps) {
   const navigate = useNavigate();
-  // Note: This would need a filter for parent_client_id when the backend supports it
-  // For now, we'll show all clients as a placeholder
-  const { data, isLoading } = useClients({ pageSize: 50 });
+  const { data, isLoading } = useClients({ pageSize: 50, parentClientId });
 
   if (isLoading) {
     return (

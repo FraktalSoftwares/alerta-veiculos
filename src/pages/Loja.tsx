@@ -11,7 +11,6 @@ import { CheckoutDrawer } from "@/components/store/CheckoutDrawer";
 import { CartProvider } from "@/components/store/CartContext";
 import { useProducts } from "@/hooks/useProducts";
 import { ProductDisplay } from "@/types/product";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 const LojaContent = () => {
@@ -21,7 +20,6 @@ const LojaContent = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductDisplay | null>(null);
-  const { toast } = useToast();
   const { profile } = useAuth();
 
   const isAdmin = profile?.user_type === 'admin';
@@ -34,13 +32,6 @@ const LojaContent = () => {
 
   const handleNewProductClick = () => {
     setIsModalOpen(true);
-  };
-
-  const handleProductClick = (product: ProductDisplay) => {
-    toast({
-      title: "Produto selecionado",
-      description: `${product.title} - ${product.brand || "Sem marca"}`,
-    });
   };
 
   const handleEditProduct = (product: ProductDisplay) => {
@@ -69,7 +60,6 @@ const LojaContent = () => {
         {isAdmin ? (
           <StoreTable 
             products={products} 
-            onProductClick={handleProductClick}
             onEditProduct={handleEditProduct}
             onDeleteProduct={handleDeleteProduct}
             isLoading={isLoading}

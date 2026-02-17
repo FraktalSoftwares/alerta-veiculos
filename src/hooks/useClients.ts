@@ -10,14 +10,18 @@ interface UseClientsOptions {
   clientType?: string;
   page?: number;
   pageSize?: number;
+  trackerStatuses?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+  parentClientId?: string;
 }
 
 export function useClients(options: UseClientsOptions = {}) {
   const { user } = useAuth();
-  const { search = '', status, clientType, page = 1, pageSize = 100 } = options;
+  const { search = '', status, clientType, page = 1, pageSize = 100, trackerStatuses, dateFrom, dateTo, parentClientId } = options;
 
   return useQuery({
-    queryKey: ['clients', { search, status, clientType, page, pageSize, userId: user?.id }],
+    queryKey: ['clients', { search, status, clientType, page, pageSize, trackerStatuses, dateFrom, dateTo, parentClientId, userId: user?.id }],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
@@ -35,6 +39,18 @@ export function useClients(options: UseClientsOptions = {}) {
 
       if (clientType) {
         query = query.eq('client_type', clientType as 'admin' | 'associacao' | 'franqueado' | 'frotista' | 'motorista');
+      }
+
+      if (parentClientId) {
+        query = query.eq('parent_client_id', parentClientId);
+      }
+
+      // Filter by last update date range
+      if (dateFrom) {
+        query = query.gte('updated_at', `${dateFrom}T00:00:00`);
+      }
+      if (dateTo) {
+        query = query.lte('updated_at', `${dateTo}T23:59:59`);
       }
 
       const from = (page - 1) * pageSize;
@@ -68,6 +84,7 @@ export function useClients(options: UseClientsOptions = {}) {
         tracked: number;
         noSignal: number;
         offline: number;
+        blocked: number;
         lastUpdate: string | null;
       }>();
 
@@ -79,6 +96,7 @@ export function useClients(options: UseClientsOptions = {}) {
             tracked: 0,
             noSignal: 0,
             offline: 0,
+            blocked: 0,
             lastUpdate: null,
           });
         }
@@ -92,6 +110,8 @@ export function useClients(options: UseClientsOptions = {}) {
           stats.noSignal++;
         } else if (vehicle.status === 'inactive' || vehicle.status === 'maintenance') {
           stats.offline++;
+        } else if (vehicle.status === 'blocked') {
+          stats.blocked++;
         }
 
         // Atualizar última atualização (mais recente)
@@ -103,12 +123,13 @@ export function useClients(options: UseClientsOptions = {}) {
       });
 
       // Mapear clientes com suas estatísticas
-      const clients: ClientDisplay[] = (data || []).map((client) => {
+      let clients: ClientDisplay[] = (data || []).map((client) => {
         const stats = statsByClient.get(client.id) || {
           total: 0,
           tracked: 0,
           noSignal: 0,
           offline: 0,
+          blocked: 0,
           lastUpdate: null,
         };
 
@@ -121,6 +142,21 @@ export function useClients(options: UseClientsOptions = {}) {
           vehicles_last_update: stats.lastUpdate,
         });
       });
+
+      // Filter by tracker statuses (post-query filtering based on vehicle stats)
+      if (trackerStatuses && trackerStatuses.length > 0 && trackerStatuses.length < 4) {
+        clients = clients.filter((client) => {
+          const stats = statsByClient.get(client.id);
+          if (!stats) return false;
+
+          return (
+            (trackerStatuses.includes('tracked') && stats.tracked > 0) ||
+            (trackerStatuses.includes('no_signal') && stats.noSignal > 0) ||
+            (trackerStatuses.includes('offline') && stats.offline > 0) ||
+            (trackerStatuses.includes('blocked') && stats.blocked > 0)
+          );
+        });
+      }
 
       return {
         clients,
