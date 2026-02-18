@@ -1,9 +1,9 @@
 import { Database } from '@/integrations/supabase/types';
 
 export type NotificationRow = Database['public']['Tables']['notifications']['Row'];
+export type NotificationTemplateRow = Database['public']['Tables']['notification_templates']['Row'];
 export type UserType = Database['public']['Enums']['user_type'];
 
-// UI display type
 export interface NotificationDisplay {
   id: string;
   title: string;
@@ -17,7 +17,6 @@ export interface NotificationDisplay {
   isRead: boolean;
 }
 
-// Extended notification type with relationships
 export interface NotificationWithDetails extends NotificationRow {
   profiles?: {
     id: string;
@@ -25,13 +24,32 @@ export interface NotificationWithDetails extends NotificationRow {
   };
 }
 
-// Form types
 export interface NotificationFormData {
   title: string;
   message: string;
   target_type: 'all' | 'user_type' | 'specific';
   target_user_type?: UserType;
   target_user_ids?: string[];
+  notification_type?: string;
+  save_as_template?: boolean;
+}
+
+export interface NotificationTemplateDisplay {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  createdAt: string;
+  targetType: string | null;
+  targetUserType: UserType | null;
+  notificationType: string | null;
+}
+
+export interface NotificationTemplateFormData {
+  title: string;
+  message: string;
+  target_type?: string;
+  target_user_type?: UserType;
   notification_type?: string;
 }
 

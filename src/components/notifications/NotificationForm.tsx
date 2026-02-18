@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, Bookmark } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -11,50 +13,98 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TemplateButton } from "./TemplateButton";
-import { useCreateNotification } from "@/hooks/useNotifications";
-import { UserType } from "@/types/notification";
+import { UserType, NotificationTemplateDisplay } from "@/types/notification";
+
+export interface NotificationFormSubmitData {
+  title: string;
+  message: string;
+  targetType: 'all' | 'user_type';
+  targetUserType: UserType;
+  saveAsTemplate: boolean;
+  scheduleEnabled: boolean;
+  scheduleDate: string;
+  scheduleTime: string;
+}
 
 interface NotificationFormProps {
   onTemplateClick: () => void;
+  onSubmit: (data: NotificationFormSubmitData) => void;
+  templateData?: NotificationTemplateDisplay | null;
+  isPending?: boolean;
+  resetKey?: number;
 }
 
-export function NotificationForm({ onTemplateClick }: NotificationFormProps) {
+export function NotificationForm({
+  onTemplateClick,
+  onSubmit,
+  templateData,
+  isPending = false,
+  resetKey = 0,
+}: NotificationFormProps) {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [targetType, setTargetType] = useState<'all' | 'user_type'>('all');
   const [targetUserType, setTargetUserType] = useState<UserType>('motorista');
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
 
-  const createNotification = useCreateNotification();
+  useEffect(() => {
+    if (resetKey > 0) {
+      setTitle("");
+      setMessage("");
+      setTargetType('all');
+      setTargetUserType('motorista');
+      setScheduleEnabled(false);
+      setScheduleDate("");
+      setScheduleTime("");
+      setSaveAsTemplate(false);
+    }
+  }, [resetKey]);
+
+  useEffect(() => {
+    if (templateData) {
+      setTitle(templateData.title);
+      setMessage(templateData.message);
+      if (templateData.targetType === 'all' || templateData.targetType === 'user_type') {
+        setTargetType(templateData.targetType);
+      }
+      if (templateData.targetUserType) {
+        setTargetUserType(templateData.targetUserType);
+      }
+    }
+  }, [templateData]);
 
   const handleSubmit = () => {
-    if (!title || !message) {
-      return;
-    }
+    if (!title || !message) return;
 
-    createNotification.mutate({
+    onSubmit({
       title,
       message,
-      target_type: targetType,
-      target_user_type: targetType === 'user_type' ? targetUserType : undefined,
-      notification_type: 'general',
-    }, {
-      onSuccess: () => {
-        setTitle("");
-        setMessage("");
-        setTargetType('all');
-      }
+      targetType,
+      targetUserType,
+      saveAsTemplate,
+      scheduleEnabled,
+      scheduleDate,
+      scheduleTime,
     });
   };
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-      <TemplateButton onClick={onTemplateClick} />
+      <button
+        onClick={onTemplateClick}
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
+      >
+        <Bookmark className="h-4 w-4" />
+        Escolher Um Modelo
+      </button>
 
       <div className="space-y-2">
-        <Label htmlFor="title">Título *</Label>
+        <Label htmlFor="notif-title">Título *</Label>
         <Input
-          id="title"
+          id="notif-title"
           placeholder="Dê um título para a notificação"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -63,9 +113,9 @@ export function NotificationForm({ onTemplateClick }: NotificationFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="message">Mensagem *</Label>
+        <Label htmlFor="notif-message">Mensagem *</Label>
         <Textarea
-          id="message"
+          id="notif-message"
           placeholder="Digite a mensagem que será enviada"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -106,26 +156,63 @@ export function NotificationForm({ onTemplateClick }: NotificationFormProps) {
         )}
       </div>
 
-      <Button 
-        onClick={handleSubmit} 
-        disabled={createNotification.isPending || !title || !message}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Switch
+            id="schedule-toggle"
+            checked={scheduleEnabled}
+            onCheckedChange={setScheduleEnabled}
+          />
+          <Label htmlFor="schedule-toggle" className="cursor-pointer">
+            Agendar envio
+          </Label>
+        </div>
+
+        {scheduleEnabled && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="schedule-date">Data do envio</Label>
+              <Input
+                id="schedule-date"
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                className="bg-background border-border"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="schedule-time">Hora do envio</Label>
+              <Input
+                id="schedule-time"
+                type="time"
+                value={scheduleTime}
+                onChange={(e) => setScheduleTime(e.target.value)}
+                className="bg-background border-border"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="save-template"
+          checked={saveAsTemplate}
+          onCheckedChange={(checked) => setSaveAsTemplate(checked === true)}
+        />
+        <Label htmlFor="save-template" className="cursor-pointer text-sm">
+          Salvar mensagem como modelo
+        </Label>
+      </div>
+
+      <Button
+        onClick={handleSubmit}
+        disabled={isPending || !title || !message}
         className="w-full bg-foreground text-background hover:bg-foreground/90 gap-2"
       >
-        {createNotification.isPending ? 'Enviando...' : 'Enviar notificação'}
+        {isPending ? 'Enviando...' : 'Enviar notificação'}
         <Check className="h-4 w-4" />
       </Button>
     </div>
   );
-}
-
-export interface NotificationFormData {
-  title: string;
-  message: string;
-  target: string;
-  status: string;
-  expiresIn: string;
-  scheduleEnabled: boolean;
-  scheduleDate: string;
-  scheduleTime: string;
-  saveAsTemplate: boolean;
 }

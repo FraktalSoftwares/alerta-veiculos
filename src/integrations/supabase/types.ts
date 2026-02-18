@@ -452,6 +452,50 @@ export type Database = {
           },
         ]
       }
+      notification_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          notification_type: string | null
+          target_type: string | null
+          target_user_type: Database["public"]["Enums"]["user_type"] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          notification_type?: string | null
+          target_type?: string | null
+          target_user_type?: Database["public"]["Enums"]["user_type"] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          notification_type?: string | null
+          target_type?: string | null
+          target_user_type?: Database["public"]["Enums"]["user_type"] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
