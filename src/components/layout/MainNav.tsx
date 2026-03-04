@@ -1,6 +1,6 @@
 import { Home, Users, Car, Bell, TrendingUp, Store, Package, Settings, LucideIcon } from "lucide-react";
 import { NavItem } from "./NavItem";
-import { useHasAnyPermission, PERMISSIONS } from "@/hooks/useUserPermissions";
+import { useHasAnyPermission, useUserPermissions, PERMISSIONS } from "@/hooks/useUserPermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -85,8 +85,8 @@ function NavItemWithPermission({
   onClose?: () => void;
 }) {
   const { profile } = useAuth();
+  const { data: userPerms } = useUserPermissions();
   const hasPermission = useHasAnyPermission(item.permissions || []);
-
   const isAdmin = profile?.user_type === "admin";
   
   if (!item.permissions || item.permissions.length === 0) {
@@ -97,7 +97,7 @@ function NavItemWithPermission({
     const filteredSubItems = item.subItems?.filter((subItem) => {
       if (!subItem.permissions || subItem.permissions.length === 0) return true;
       if (isAdmin) return true;
-      return subItem.permissions.some((p) => hasPermission);
+      return subItem.permissions.some((p) => userPerms?.permissionCodes.has(p));
     });
 
     return <NavItem {...item} subItems={filteredSubItems} variant={variant} onClose={onClose} />;

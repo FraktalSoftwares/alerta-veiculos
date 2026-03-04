@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { useHasPermission, useHasAnyPermission } from "@/hooks/useUserPermissions";
+import { useHasPermission, useHasAnyPermission, useHasAllPermissions } from "@/hooks/useUserPermissions";
 
 interface PermissionGateProps {
   permission?: string;
@@ -9,15 +9,6 @@ interface PermissionGateProps {
   children: ReactNode;
 }
 
-/**
- * Component that conditionally renders children based on user permissions
- * 
- * @param permission - Single permission code to check
- * @param permissions - Array of permission codes to check
- * @param requireAll - If true, user must have ALL permissions. If false (default), user needs ANY permission
- * @param fallback - Optional fallback UI to render when permission check fails
- * @param children - Content to render when permission check passes
- */
 export function PermissionGate({
   permission,
   permissions,
@@ -26,23 +17,18 @@ export function PermissionGate({
   children,
 }: PermissionGateProps) {
   const singlePermission = useHasPermission(permission || "");
-  const multiplePermissions = useHasAnyPermission(permissions || []);
+  const multipleAny = useHasAnyPermission(permissions || []);
+  const multipleAll = useHasAllPermissions(permissions || []);
 
-  // Single permission check
   if (permission) {
     return singlePermission ? <>{children}</> : <>{fallback}</>;
   }
 
-  // Multiple permissions check
   if (permissions && permissions.length > 0) {
-    if (requireAll) {
-      const hasAll = permissions.every((p) => useHasPermission(p));
-      return hasAll ? <>{children}</> : <>{fallback}</>;
-    }
-    return multiplePermissions ? <>{children}</> : <>{fallback}</>;
+    const hasPermissions = requireAll ? multipleAll : multipleAny;
+    return hasPermissions ? <>{children}</> : <>{fallback}</>;
   }
 
-  // No permission specified, render children
   return <>{children}</>;
 }
 

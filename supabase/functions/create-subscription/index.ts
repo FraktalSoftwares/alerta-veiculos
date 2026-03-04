@@ -111,6 +111,21 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('user_type')
+      .eq('id', user.id)
+      .single();
+
+    const allowedTypes = ['admin', 'associacao', 'franqueado'];
+    if (!callerProfile || !allowedTypes.includes(callerProfile.user_type)) {
+      return new Response(
+        JSON.stringify({ error: 'Você não tem permissão para criar assinaturas' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body: CreateSubscriptionRequest = await req.json();
 
     // 1. Buscar cliente

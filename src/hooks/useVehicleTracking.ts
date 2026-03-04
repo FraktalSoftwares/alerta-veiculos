@@ -236,23 +236,28 @@ export function useVehicleTrackingHistory(
         .select('*')
         .eq('identificador', imei);
       
-      // Filter by date range
+      // Filter by date range using local timezone formatting to avoid UTC shift
+      const toLocalDateStr = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
       if (startDate) {
         if (modelLower === 'j16') {
-          query = query.gte('date_time', startDate.toISOString());
+          const startStr = `${toLocalDateStr(startDate)}T${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}:${String(startDate.getSeconds()).padStart(2, '0')}`;
+          query = query.gte('date_time', startStr);
         } else {
-          // For 310 and 8310, filter by date field (they have separate date and time)
-          const startDateStr = startDate.toISOString().split('T')[0];
-          query = query.gte('date', startDateStr);
+          query = query.gte('date', toLocalDateStr(startDate));
         }
       }
       if (endDate) {
         if (modelLower === 'j16') {
-          query = query.lte('date_time', endDate.toISOString());
+          const endStr = `${toLocalDateStr(endDate)}T${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}:${String(endDate.getSeconds()).padStart(2, '0')}`;
+          query = query.lte('date_time', endStr);
         } else {
-          // For 310 and 8310, filter by date field
-          const endDateStr = endDate.toISOString().split('T')[0];
-          query = query.lte('date', endDateStr);
+          query = query.lte('date', toLocalDateStr(endDate));
         }
       }
       

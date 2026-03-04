@@ -1,67 +1,93 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { VehicleTrackingData } from '@/hooks/useVehicleTracking';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
+import { batchReverseGeocode } from '@/utils/geocoding';
+import { buildReportRows } from '@/utils/trackingReport';
 
 interface ExportButtonProps {
   data: VehicleTrackingData[];
   vehiclePlate: string;
+  startDate: Date;
+  endDate: Date;
   disabled?: boolean;
 }
 
-export function ExportButton({ data, vehiclePlate, disabled }: ExportButtonProps) {
-  const handleExport = () => {
+export function ExportButton({ data, vehiclePlate, startDate, endDate, disabled }: ExportButtonProps) {
+  const [isExporting, setIsExporting] = useState(false);
+  const [progress, setProgress] = useState('');
+
+  const handleExport = async () => {
     if (!data.length) return;
+    setIsExporting(true);
 
-    // Prepare data for export
-    const exportData = data.map((point, index) => ({
-      'Nº': index + 1,
-      'Data/Hora': point.recorded_at 
-        ? format(new Date(point.recorded_at), 'dd/MM/yyyy HH:mm:ss')
-        : '-',
-      'Latitude': point.latitude,
-      'Longitude': point.longitude,
-      'Velocidade (km/h)': point.speed ?? 0,
-      'Direção (°)': point.heading ?? 0,
-      'Ignição': point.ignition ? 'Ligada' : 'Desligada',
-    }));
+    try {
+      setProgress('Obtendo endereços...');
+      const addressMap = await batchReverseGeocode(
+        data,
+        (done, total) => setProgress(`Endereços: ${done}/${total}`)
+      );
 
-    // Create workbook and worksheet
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(exportData);
+      setProgress('Gerando planilha...');
+      const rows = buildReportRows(data, addressMap);
 
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 6 },   // Nº
-      { wch: 20 },  // Data/Hora
-      { wch: 14 },  // Latitude
-      { wch: 14 },  // Longitude
-      { wch: 16 },  // Velocidade
-      { wch: 12 },  // Direção
-      { wch: 12 },  // Ignição
-    ];
+      const exportData = rows.map((row, i) => ({
+        'Nº': i + 1,
+        'Data': row.data,
+        'Velocidade': row.velocidade,
+        'Ignição': row.ignicao,
+        'Tempo de parada': row.tempoParada,
+        'Endereço': row.endereco,
+      }));
 
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(wb, ws, 'Histórico');
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
 
-    // Generate filename
-    const today = format(new Date(), 'dd-MM-yyyy');
-    const filename = `historico_${vehiclePlate.replace(/[^a-zA-Z0-9]/g, '_')}_${today}.xlsx`;
+      ws['!cols'] = [
+        { wch: 6 },
+        { wch: 20 },
+        { wch: 16 },
+        { wch: 12 },
+        { wch: 18 },
+        { wch: 50 },
+      ];
 
-    // Download file
-    XLSX.writeFile(wb, filename);
+      XLSX.utils.book_append_sheet(wb, ws, 'Histórico');
+
+      const start = format(startDate, 'dd-MM-yyyy');
+      const end = format(endDate, 'dd-MM-yyyy');
+      const plate = vehiclePlate.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `historico_${plate}_${start}_a_${end}.xlsx`;
+
+      XLSX.writeFile(wb, filename);
+    } catch (err) {
+      console.error('Erro ao exportar XLSX:', err);
+    } finally {
+      setIsExporting(false);
+      setProgress('');
+    }
   };
 
   return (
-    <Button 
-      variant="outline" 
+    <Button
+      variant="outline"
       onClick={handleExport}
-      disabled={disabled || !data.length}
+      disabled={disabled || !data.length || isExporting}
       className="w-full"
     >
-      <Download className="h-4 w-4 mr-2" />
-      Exportar XLSX
+      {isExporting ? (
+        <>
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          {progress || 'Exportando...'}
+        </>
+      ) : (
+        <>
+          <Download className="h-4 w-4 mr-2" />
+          Exportar XLSX
+        </>
+      )}
     </Button>
   );
 }

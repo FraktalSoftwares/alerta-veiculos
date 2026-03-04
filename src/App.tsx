@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ProtectedByPermission } from "@/components/auth/ProtectedByPermission";
+import { PERMISSIONS } from "@/hooks/useUserPermissions";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import EsqueceuSenha from "./pages/EsqueceuSenha";
@@ -51,72 +53,100 @@ const App = () => (
             {/* Protected Routes */}
             <Route path="/" element={
               <ProtectedRoute>
-                <Index />
+                <ProtectedByPermission permissions={[PERMISSIONS.DASHBOARD_VIEW]}>
+                  <Index />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/clientes" element={
               <ProtectedRoute>
-                <Clientes />
+                <ProtectedByPermission permissions={[PERMISSIONS.CLIENTS_VIEW]}>
+                  <Clientes />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/clientes/:id" element={
               <ProtectedRoute>
-                <ClienteDetalhes />
+                <ProtectedByPermission permissions={[PERMISSIONS.CLIENTS_VIEW]}>
+                  <ClienteDetalhes />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/veiculos" element={
               <ProtectedRoute>
-                <Veiculos />
+                <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_VIEW]}>
+                  <Veiculos />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/veiculos/mapa" element={
               <ProtectedRoute>
-                <VeiculosMapa />
+                <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_TRACK]}>
+                  <VeiculosMapa />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/veiculos/:id/mapa" element={
               <ProtectedRoute>
-                <VeiculoMapa />
+                <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_TRACK]}>
+                  <VeiculoMapa />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/veiculos/:id/historico" element={
               <ProtectedRoute>
-                <VeiculoHistorico />
+                <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_VIEW]}>
+                  <VeiculoHistorico />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/veiculos/:id/cercas" element={
               <ProtectedRoute>
-                <VeiculoCercas />
+                <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_VIEW]}>
+                  <VeiculoCercas />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/notificacoes" element={
               <ProtectedRoute>
-                <Notificacoes />
+                <ProtectedByPermission permissions={[PERMISSIONS.NOTIFICATIONS_VIEW]}>
+                  <Notificacoes />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/financeiro" element={
               <ProtectedRoute>
-                <Financeiro />
+                <ProtectedByPermission permissions={[PERMISSIONS.FINANCE_VIEW]}>
+                  <Financeiro />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/financeiro/despesas" element={
               <ProtectedRoute>
-                <Despesas />
+                <ProtectedByPermission permissions={[PERMISSIONS.FINANCE_EXPENSES]}>
+                  <Despesas />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/loja" element={
               <ProtectedRoute>
-                <Loja />
+                <ProtectedByPermission permissions={[PERMISSIONS.STORE_VIEW]}>
+                  <Loja />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/estoque" element={
               <ProtectedRoute>
-                <Estoque />
+                <ProtectedByPermission permissions={[PERMISSIONS.STOCK_VIEW]}>
+                  <Estoque />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/assinaturas" element={
               <ProtectedRoute>
-                <Assinaturas />
+                <ProtectedByPermission permissions={[PERMISSIONS.FINANCE_VIEW]}>
+                  <Assinaturas />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/perfil" element={
@@ -126,12 +156,16 @@ const App = () => (
             } />
             <Route path="/configuracoes" element={
               <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franqueado']}>
-                <Configuracoes />
+                <ProtectedByPermission permissions={[PERMISSIONS.SETTINGS_VIEW]}>
+                  <Configuracoes />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/configuracoes/usuarios" element={
               <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franqueado']}>
-                <Usuarios />
+                <ProtectedByPermission permissions={[PERMISSIONS.SETTINGS_USERS]}>
+                  <Usuarios />
+                </ProtectedByPermission>
               </ProtectedRoute>
             } />
             

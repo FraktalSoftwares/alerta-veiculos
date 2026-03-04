@@ -89,7 +89,7 @@ export function UserRoleList({
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="font-medium text-foreground truncate">{user.full_name}</span>
                 <Badge variant="outline" className="text-xs shrink-0">
-                  {getUserTypeLabel(user.user_type)}
+                  {user.admin_role_name || getUserTypeLabel(user.user_type)}
                 </Badge>
               </div>
               <span className="text-sm text-muted-foreground truncate block">{user.email}</span>

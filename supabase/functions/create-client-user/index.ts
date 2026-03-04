@@ -179,7 +179,28 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:5173';
+
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user: callerUser }, error: callerError } = await supabaseAuth.auth.getUser();
+    if (callerError || !callerUser) {
+      return new Response(
+        JSON.stringify({ error: 'Usuário não autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
@@ -188,11 +209,24 @@ serve(async (req) => {
       },
     });
 
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('user_type')
+      .eq('id', callerUser.id)
+      .single();
+
+    const allowedTypes = ['admin', 'associacao', 'franqueado'];
+    if (!callerProfile || !allowedTypes.includes(callerProfile.user_type)) {
+      return new Response(
+        JSON.stringify({ error: 'Você não tem permissão para criar usuários de cliente' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { client_id, email, password, admin_role_id, send_welcome_email = false } = await req.json();
 
-    console.log('Creating user for client:', client_id, 'with email:', email);
+    console.log('Creating user for client:', client_id, 'with email:', email, 'by caller:', callerUser.id);
 
-    // Validate required fields
     if (!client_id || !email || !password) {
       return new Response(
         JSON.stringify({ error: 'client_id, email and password are required' }),
@@ -208,10 +242,9 @@ serve(async (req) => {
       );
     }
 
-    // Get client info to determine user_type
     const { data: client, error: clientError } = await supabaseAdmin
       .from('clients')
-      .select('id, name, client_type, user_id')
+      .select('id, name, client_type, user_id, owner_id')
       .eq('id', client_id)
       .single();
 
@@ -220,6 +253,13 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Client not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (callerProfile.user_type !== 'admin' && client.owner_id !== callerUser.id) {
+      return new Response(
+        JSON.stringify({ error: 'Você não tem permissão para criar usuário neste cliente' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

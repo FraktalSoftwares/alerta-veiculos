@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { useHasAnyPermission } from "@/hooks/useUserPermissions";
+import { useHasAnyPermission, useHasAllPermissions } from "@/hooks/useUserPermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
@@ -22,9 +22,10 @@ export function ProtectedByPermission({
   children,
 }: ProtectedByPermissionProps) {
   const { profile, loading } = useAuth();
-  const hasPermission = useHasAnyPermission(permissions);
+  const hasAny = useHasAnyPermission(permissions);
+  const hasAll = useHasAllPermissions(permissions);
+  const hasPermission = requireAll ? hasAll : hasAny;
 
-  // Show loading while checking auth
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -33,12 +34,10 @@ export function ProtectedByPermission({
     );
   }
 
-  // Admin always has access
   if (profile?.user_type === "admin") {
     return <>{children}</>;
   }
 
-  // Check permissions
   if (!hasPermission) {
     return <Navigate to={redirectTo} replace />;
   }

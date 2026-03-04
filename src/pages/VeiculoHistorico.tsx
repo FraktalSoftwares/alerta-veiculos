@@ -9,6 +9,7 @@ import { mapVehicleStatus } from '@/types/vehicle';
 import { HistoryFilters } from '@/components/vehicles/history/HistoryFilters';
 import { HistoryTrackingCard } from '@/components/vehicles/history/HistoryTrackingCard';
 import { ExportButton } from '@/components/vehicles/history/ExportButton';
+import { ExportPdfButton } from '@/components/vehicles/history/ExportPdfButton';
 import { GoogleMapHistoryView } from '@/components/vehicles/history/GoogleMapHistoryView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { subDays } from 'date-fns';
@@ -78,6 +79,7 @@ const VeiculoHistorico = () => {
 
   const displayStatus = mapVehicleStatus(vehicle.status);
   const historyData = trackingHistory || [];
+  const vehicleDescription = [vehicle.brand, vehicle.model].filter(Boolean).join('/') || 'Veículo';
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background">
@@ -117,11 +119,21 @@ const VeiculoHistorico = () => {
             <HistoryFilters onFilter={handleFilter} isLoading={isLoadingHistory} />
           </div>
 
-          {/* Export button */}
-          <div className="p-4 border-b">
+          {/* Export buttons */}
+          <div className="p-4 border-b space-y-2">
             <ExportButton 
               data={historyData} 
               vehiclePlate={vehicle.plate}
+              startDate={startDate}
+              endDate={endDate}
+              disabled={isLoadingHistory}
+            />
+            <ExportPdfButton
+              data={historyData}
+              vehiclePlate={vehicle.plate}
+              vehicleDescription={vehicleDescription}
+              startDate={startDate}
+              endDate={endDate}
               disabled={isLoadingHistory}
             />
           </div>
