@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 const SCRIPT_ID = 'google-maps-script';
+const CALLBACK_NAME = '__onGoogleMapsLoaded';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -18,43 +19,44 @@ function notify(state: LoadState) {
 function loadScript(): Promise<void> {
   if (globalPromise) return globalPromise;
 
-  if (window.google?.maps) {
+  if (window.google?.maps?.Map) {
     globalState = 'loaded';
     return Promise.resolve();
   }
 
   globalPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.getElementById(SCRIPT_ID);
-    if (existing) {
-      if (window.google?.maps) {
+    if (document.getElementById(SCRIPT_ID)) {
+      if (window.google?.maps?.Map) {
         notify('loaded');
         resolve();
         return;
       }
-      existing.addEventListener('load', () => {
-        notify('loaded');
-        resolve();
-      });
-      existing.addEventListener('error', () => {
-        notify('error');
-        reject(new Error('Failed to load Google Maps'));
-      });
+      const check = setInterval(() => {
+        if (window.google?.maps?.Map) {
+          clearInterval(check);
+          notify('loaded');
+          resolve();
+        }
+      }, 100);
       return;
     }
 
     notify('loading');
 
-    const script = document.createElement('script');
-    script.id = SCRIPT_ID;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async`;
-    script.async = true;
-    script.defer = true;
-
-    script.onload = () => {
+    (window as any)[CALLBACK_NAME] = () => {
+      delete (window as any)[CALLBACK_NAME];
       notify('loaded');
       resolve();
     };
+
+    const script = document.createElement('script');
+    script.id = SCRIPT_ID;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async&callback=${CALLBACK_NAME}`;
+    script.async = true;
+    script.defer = true;
+
     script.onerror = () => {
+      delete (window as any)[CALLBACK_NAME];
       notify('error');
       globalPromise = null;
       reject(new Error('Failed to load Google Maps'));
