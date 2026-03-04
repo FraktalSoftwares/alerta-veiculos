@@ -1,5 +1,6 @@
 /// <reference types="google.maps" />
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 
 interface GoogleMapViewProps {
   latitude: number;
@@ -7,48 +8,11 @@ interface GoogleMapViewProps {
   heading?: number;
 }
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
-declare global {
-  interface Window {
-    initGoogleMap: () => void;
-  }
-}
-
 export function GoogleMapView({ latitude, longitude, heading = 0 }: GoogleMapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Load Google Maps script
-  useEffect(() => {
-    if (window.google?.maps) {
-      setIsLoaded(true);
-      return;
-    }
-
-    const existingScript = document.getElementById('google-maps-script');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => setIsLoaded(true));
-      return;
-    }
-
-    window.initGoogleMap = () => {
-      setIsLoaded(true);
-    };
-
-    const script = document.createElement('script');
-    script.id = 'google-maps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initGoogleMap`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-
-    return () => {
-      delete window.initGoogleMap;
-    };
-  }, []);
+  const { isLoaded } = useGoogleMaps();
 
   // Initialize map
   useEffect(() => {

@@ -1,18 +1,11 @@
 /// <reference types="google.maps" />
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { VehicleTrackingData } from '@/hooks/useVehicleTracking';
+import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 
 interface GoogleMapHistoryViewProps {
   trackingData: VehicleTrackingData[];
   selectedPoint?: VehicleTrackingData | null;
-}
-
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
-declare global {
-  interface Window {
-    initGoogleMapHistory: () => void;
-  }
 }
 
 export function GoogleMapHistoryView({ trackingData, selectedPoint }: GoogleMapHistoryViewProps) {
@@ -22,36 +15,7 @@ export function GoogleMapHistoryView({ trackingData, selectedPoint }: GoogleMapH
   const startMarkerRef = useRef<google.maps.Marker | null>(null);
   const endMarkerRef = useRef<google.maps.Marker | null>(null);
   const selectedMarkerRef = useRef<google.maps.Marker | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Load Google Maps script
-  useEffect(() => {
-    if (window.google?.maps) {
-      setIsLoaded(true);
-      return;
-    }
-
-    const existingScript = document.getElementById('google-maps-script');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => setIsLoaded(true));
-      return;
-    }
-
-    window.initGoogleMapHistory = () => {
-      setIsLoaded(true);
-    };
-
-    const script = document.createElement('script');
-    script.id = 'google-maps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initGoogleMapHistory`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-
-    return () => {
-      delete window.initGoogleMapHistory;
-    };
-  }, []);
+  const { isLoaded } = useGoogleMaps();
 
   // Initialize map
   useEffect(() => {

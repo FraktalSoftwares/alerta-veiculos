@@ -1,6 +1,7 @@
 /// <reference types="google.maps" />
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { VirtualFenceDisplay } from '@/types/virtualFence';
+import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 
 interface VirtualFenceMapViewProps {
   latitude: number;
@@ -9,14 +10,6 @@ interface VirtualFenceMapViewProps {
   onLocationClick?: (lat: number, lng: number) => void;
   isSelectingLocation?: boolean;
   selectedFenceId?: string | null;
-}
-
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
-declare global {
-  interface Window {
-    initVirtualFenceMap: () => void;
-  }
 }
 
 export function VirtualFenceMapView({
@@ -32,36 +25,7 @@ export function VirtualFenceMapView({
   const circlesRef = useRef<google.maps.Circle[]>([]);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const clickListenerRef = useRef<google.maps.MapsEventListener | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Load Google Maps script
-  useEffect(() => {
-    if (window.google?.maps) {
-      setIsLoaded(true);
-      return;
-    }
-
-    const existingScript = document.getElementById('google-maps-script');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => setIsLoaded(true));
-      return;
-    }
-
-    window.initVirtualFenceMap = () => {
-      setIsLoaded(true);
-    };
-
-    const script = document.createElement('script');
-    script.id = 'google-maps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initVirtualFenceMap`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-
-    return () => {
-      delete window.initVirtualFenceMap;
-    };
-  }, []);
+  const { isLoaded } = useGoogleMaps();
 
   // Initialize map
   useEffect(() => {
