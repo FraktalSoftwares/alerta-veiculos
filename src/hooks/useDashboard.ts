@@ -118,19 +118,75 @@ export function useVehicleStats() {
     queryFn: async (): Promise<VehicleStats> => {
       const { data: vehicles, error } = await supabase
         .from("vehicles")
-        .select("id, status");
+        .select("id, status, equipment(imei)");
 
       if (error) throw error;
 
+      if (!vehicles || vehicles.length === 0) {
+        return { total: 0, active: 0, inactive: 0, blocked: 0, noSignal: 0, maintenance: 0 };
+      }
+
+      // Collect valid IMEIs to check real-time connection
+      const imeiMap = new Map<string, string>(); // vehicleId -> imei
+      for (const v of vehicles) {
+        const imei = (v as any).equipment?.[0]?.imei;
+        if (imei && imei !== '-') {
+          imeiMap.set(v.id, imei);
+        }
+      }
+
+      // Check real-time connection for all vehicles with IMEI
+      const connectionResults = new Map<string, boolean>(); // vehicleId -> connected
+      const connectionPromises = Array.from(imeiMap.entries()).map(async ([vehicleId, imei]) => {
+        try {
+          const response = await fetch(
+            `https://fraktalsistemas.com.br:8004/conexoes/verificar_conexao/${imei}`,
+            { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+          );
+          if (!response.ok) {
+            connectionResults.set(vehicleId, false);
+            return;
+          }
+          const data = await response.json();
+          connectionResults.set(vehicleId, data.conectado === true);
+        } catch {
+          connectionResults.set(vehicleId, false);
+        }
+      });
+
+      await Promise.all(connectionPromises);
+
+      // Compute stats using real-time connection status (same logic as VehicleTableRow)
+      let active = 0, inactive = 0, blocked = 0, noSignal = 0, maintenance = 0;
+      for (const v of vehicles) {
+        if (v.status === "blocked") {
+          blocked++;
+        } else if (v.status === "maintenance") {
+          maintenance++;
+        } else if (v.status === "inactive") {
+          inactive++;
+        } else {
+          // For active/no_signal vehicles, use real-time connection
+          const isConnected = connectionResults.get(v.id) === true;
+          if (isConnected) {
+            active++;
+          } else {
+            noSignal++;
+          }
+        }
+      }
+
       return {
-        total: vehicles?.length || 0,
-        active: vehicles?.filter(v => v.status === "active").length || 0,
-        inactive: vehicles?.filter(v => v.status === "inactive").length || 0,
-        blocked: vehicles?.filter(v => v.status === "blocked").length || 0,
-        noSignal: vehicles?.filter(v => v.status === "no_signal").length || 0,
-        maintenance: vehicles?.filter(v => v.status === "maintenance").length || 0,
+        total: vehicles.length,
+        active,
+        inactive,
+        blocked,
+        noSignal,
+        maintenance,
       };
     },
+    refetchInterval: 30000,
+    staleTime: 10000,
   });
 }
 
