@@ -6,34 +6,22 @@ import { useToast } from '@/hooks/use-toast';
 
 interface UseVehiclesOptions {
   search?: string;
-  trackerStatuses?: string[];
   operators?: string[];
   vehicleTypes?: string[];
   clientId?: string;
-  location?: string;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
   pageSize?: number;
 }
 
-// Map filter tracker status to DB status values
-const TRACKER_STATUS_MAP: Record<string, string[]> = {
-  tracked: ['active'],
-  no_signal: ['no_signal'],
-  offline: ['inactive', 'maintenance'],
-  blocked: ['blocked'],
-};
-
 export function useVehicles(options: UseVehiclesOptions = {}) {
   const { user } = useAuth();
   const {
     search = '',
-    trackerStatuses,
     operators,
     vehicleTypes,
     clientId,
-    location,
     dateFrom,
     dateTo,
     page = 1,
@@ -41,7 +29,7 @@ export function useVehicles(options: UseVehiclesOptions = {}) {
   } = options;
 
   return useQuery({
-    queryKey: ['vehicles', { search, trackerStatuses, operators, vehicleTypes, clientId, location, dateFrom, dateTo, page, pageSize, userId: user?.id }],
+    queryKey: ['vehicles', { search, operators, vehicleTypes, clientId, dateFrom, dateTo, page, pageSize, userId: user?.id }],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
@@ -55,14 +43,6 @@ export function useVehicles(options: UseVehiclesOptions = {}) {
 
       if (search) {
         query = query.or(`plate.ilike.%${search}%,brand.ilike.%${search}%,model.ilike.%${search}%`);
-      }
-
-      // Filter by tracker statuses (convert to DB status values)
-      if (trackerStatuses && trackerStatuses.length > 0 && trackerStatuses.length < 4) {
-        const dbStatuses = trackerStatuses.flatMap((s) => TRACKER_STATUS_MAP[s] || []);
-        if (dbStatuses.length > 0) {
-          query = query.in('status', dbStatuses);
-        }
       }
 
       if (clientId) {
@@ -99,15 +79,6 @@ export function useVehicles(options: UseVehiclesOptions = {}) {
         vehicles = vehicles.filter((v) =>
           v.operator && operators.some((op) => v.operator?.toLowerCase().includes(op.toLowerCase()))
         );
-      }
-
-      if (location) {
-        const loc = location.toLowerCase();
-        vehicles = vehicles.filter((v) => {
-          const lastLoc = (v as any).lastLocation;
-          if (typeof lastLoc === 'string') return lastLoc.toLowerCase().includes(loc);
-          return false;
-        });
       }
 
       return {

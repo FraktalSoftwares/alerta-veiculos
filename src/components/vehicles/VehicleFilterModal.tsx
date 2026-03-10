@@ -14,24 +14,19 @@ import { useClients } from "@/hooks/useClients";
 import { cn } from "@/lib/utils";
 
 const TRACKER_STATUSES = [
-  { value: "tracked", label: "Rastreados" },
-  { value: "no_signal", label: "Sem sinal" },
-  { value: "offline", label: "Desligados" },
-  { value: "blocked", label: "Bloqueado" },
+  { value: "ligado", label: "Ligado" },
+  { value: "com_sinal", label: "Com sinal" },
+  { value: "desligado", label: "Desligado" },
+  { value: "sem_sinal", label: "Sem sinal" },
 ] as const;
 
 const OPERATORS = ["Vivo", "Claro", "Tim"] as const;
 
 const VEHICLE_TYPES = [
   "Carro",
+  "Motocicleta",
   "Onibus",
   "Caminhao",
-  "Motocicleta",
-  "Jet Ski",
-  "Trator",
-  "Aviao",
-  "Van",
-  "Maquina",
 ] as const;
 
 export interface VehicleFilters {
@@ -39,17 +34,15 @@ export interface VehicleFilters {
   operators: string[];
   vehicleTypes: string[];
   clientId?: string;
-  location?: string;
   dateFrom?: string;
   dateTo?: string;
 }
 
 export const EMPTY_FILTERS: VehicleFilters = {
-  trackerStatuses: ["tracked", "no_signal", "offline", "blocked"],
+  trackerStatuses: ["ligado", "com_sinal", "desligado", "sem_sinal"],
   operators: [],
   vehicleTypes: [],
   clientId: undefined,
-  location: undefined,
   dateFrom: undefined,
   dateTo: undefined,
 };
@@ -60,6 +53,7 @@ interface VehicleFilterModalProps {
   filters: VehicleFilters;
   onApplyFilters: (filters: VehicleFilters) => void;
   onClearFilters: () => void;
+  onExportCsv?: () => void;
 }
 
 function ToggleChip({
@@ -93,13 +87,13 @@ export function VehicleFilterModal({
   filters,
   onApplyFilters,
   onClearFilters,
+  onExportCsv,
 }: VehicleFilterModalProps) {
   const [trackerStatuses, setTrackerStatuses] = useState<string[]>(filters.trackerStatuses);
   const [operators, setOperators] = useState<string[]>(filters.operators);
   const [vehicleTypes, setVehicleTypes] = useState<string[]>(filters.vehicleTypes);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string>(filters.clientId || "");
-  const [location, setLocation] = useState(filters.location || "");
   const [dateFrom, setDateFrom] = useState(filters.dateFrom || "");
   const [dateTo, setDateTo] = useState(filters.dateTo || "");
 
@@ -113,7 +107,6 @@ export function VehicleFilterModal({
     setOperators(filters.operators);
     setVehicleTypes(filters.vehicleTypes);
     setSelectedClientId(filters.clientId || "");
-    setLocation(filters.location || "");
     setDateFrom(filters.dateFrom || "");
     setDateTo(filters.dateTo || "");
   }, [filters]);
@@ -144,7 +137,6 @@ export function VehicleFilterModal({
       operators,
       vehicleTypes,
       clientId: selectedClientId || undefined,
-      location: location || undefined,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
     });
@@ -218,58 +210,43 @@ export function VehicleFilterModal({
             </div>
           </div>
 
-          {/* Cliente e Localidade lado a lado */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-base font-semibold">Cliente</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Pesquisar por cliente"
-                  value={selectedClient ? selectedClient.name : clientSearch}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value);
-                    if (!e.target.value) setSelectedClientId("");
-                  }}
-                  onFocus={() => {
-                    if (selectedClient) {
-                      setClientSearch(selectedClient.name);
-                      setSelectedClientId("");
-                    }
-                  }}
-                  className="pl-10"
-                />
-              </div>
-              {clientSearch && !selectedClientId && clientsData?.clients && clientsData.clients.length > 0 && (
-                <div className="border border-border rounded-md max-h-40 overflow-y-auto">
-                  {clientsData.clients.map((client) => (
-                    <button
-                      key={client.id}
-                      onClick={() => {
-                        setSelectedClientId(client.id);
-                        setClientSearch("");
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-accent transition-colors text-sm"
-                    >
-                      {client.name}
-                    </button>
-                  ))}
-                </div>
-              )}
+          {/* Cliente */}
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">Cliente</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Pesquisar por cliente"
+                value={selectedClient ? selectedClient.name : clientSearch}
+                onChange={(e) => {
+                  setClientSearch(e.target.value);
+                  if (!e.target.value) setSelectedClientId("");
+                }}
+                onFocus={() => {
+                  if (selectedClient) {
+                    setClientSearch(selectedClient.name);
+                    setSelectedClientId("");
+                  }
+                }}
+                className="pl-10"
+              />
             </div>
-
-            <div className="space-y-2">
-              <Label className="text-base font-semibold">Localidade</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar cidade ou estado"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="pl-10"
-                />
+            {clientSearch && !selectedClientId && clientsData?.clients && clientsData.clients.length > 0 && (
+              <div className="border border-border rounded-md max-h-40 overflow-y-auto">
+                {clientsData.clients.map((client) => (
+                  <button
+                    key={client.id}
+                    onClick={() => {
+                      setSelectedClientId(client.id);
+                      setClientSearch("");
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-accent transition-colors text-sm"
+                  >
+                    {client.name}
+                  </button>
+                ))}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Ultima atualizacao */}
@@ -299,7 +276,7 @@ export function VehicleFilterModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Button variant="ghost" onClick={handleClear} className="gap-2 text-muted-foreground">
+          <Button variant="ghost" onClick={onExportCsv} className="gap-2 text-muted-foreground">
             Gerar relatorio
             <FileText className="h-4 w-4" />
           </Button>

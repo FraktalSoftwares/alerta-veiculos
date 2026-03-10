@@ -158,12 +158,20 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
 
               <div className="space-y-2">
                 <Label htmlFor="edit-type">Tipo</Label>
-                <Input
-                  id="edit-type"
+                <Select
                   value={formData.vehicle_type}
-                  onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
-                  placeholder="Carro, Moto, Caminhão..."
-                />
+                  onValueChange={(value) => setFormData({ ...formData, vehicle_type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Carro">Carro</SelectItem>
+                    <SelectItem value="Motocicleta">Motocicleta</SelectItem>
+                    <SelectItem value="Onibus">Onibus</SelectItem>
+                    <SelectItem value="Caminhao">Caminhao</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

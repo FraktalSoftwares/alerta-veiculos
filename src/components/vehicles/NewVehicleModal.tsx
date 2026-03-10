@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, ChevronRight, ChevronLeft, MapPin, Car, Users, Check, X, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useCreateVehicle } from "@/hooks/useVehicles";
 import { useClients } from "@/hooks/useClients";
@@ -469,12 +470,20 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId, prese
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm text-muted-foreground">Tipo</Label>
-                    <Input
-                      placeholder="Carro"
+                    <Select
                       value={formData.tipo}
-                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                      className="bg-background"
-                    />
+                      onValueChange={(value) => setFormData({ ...formData, tipo: value })}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Carro">Carro</SelectItem>
+                        <SelectItem value="Motocicleta">Motocicleta</SelectItem>
+                        <SelectItem value="Onibus">Onibus</SelectItem>
+                        <SelectItem value="Caminhao">Caminhao</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm text-muted-foreground">Marca</Label>
