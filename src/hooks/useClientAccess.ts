@@ -117,8 +117,8 @@ export function useCreateClientUser() {
 export function useSendPasswordReset() {
   return useMutation({
     mutationFn: async (email: string) => {
-      const { error } = await supabase.functions.invoke('send-reset-password', {
-        body: { email: email.trim(), redirectTo: `${window.location.origin}/nova-senha` },
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/nova-senha`,
       });
 
       if (error) throw error;
