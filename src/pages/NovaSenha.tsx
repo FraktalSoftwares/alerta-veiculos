@@ -20,20 +20,33 @@ const NovaSenha = () => {
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Check if user has a valid recovery session
-    const checkSession = async () => {
+    // Listen for PASSWORD_RECOVERY event triggered when Supabase processes the URL hash
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsValidSession(true);
+        setCheckingSession(false);
+      } else if (event === 'SIGNED_IN' && session) {
+        // Already signed in — allow password update
+        setIsValidSession(true);
+        setCheckingSession(false);
+      }
+    });
+
+    // Fallback: if auth state doesn't fire within 3s, check session directly
+    const timeout = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      // User needs to have a session (from clicking the recovery link)
       if (session) {
         setIsValidSession(true);
       } else {
         toast.error('Link de recuperação inválido ou expirado');
       }
       setCheckingSession(false);
-    };
+    }, 3000);
 
-    checkSession();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
