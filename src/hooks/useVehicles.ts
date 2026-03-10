@@ -6,18 +6,42 @@ import { useToast } from '@/hooks/use-toast';
 
 interface UseVehiclesOptions {
   search?: string;
-  status?: string;
+  trackerStatuses?: string[];
+  operators?: string[];
+  vehicleTypes?: string[];
   clientId?: string;
+  location?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   pageSize?: number;
 }
 
+// Map filter tracker status to DB status values
+const TRACKER_STATUS_MAP: Record<string, string[]> = {
+  tracked: ['active'],
+  no_signal: ['no_signal'],
+  offline: ['inactive', 'maintenance'],
+  blocked: ['blocked'],
+};
+
 export function useVehicles(options: UseVehiclesOptions = {}) {
   const { user } = useAuth();
-  const { search = '', status, clientId, page = 1, pageSize = 100 } = options;
+  const {
+    search = '',
+    trackerStatuses,
+    operators,
+    vehicleTypes,
+    clientId,
+    location,
+    dateFrom,
+    dateTo,
+    page = 1,
+    pageSize = 100,
+  } = options;
 
   return useQuery({
-    queryKey: ['vehicles', { search, status, clientId, page, pageSize, userId: user?.id }],
+    queryKey: ['vehicles', { search, trackerStatuses, operators, vehicleTypes, clientId, location, dateFrom, dateTo, page, pageSize, userId: user?.id }],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
@@ -30,15 +54,32 @@ export function useVehicles(options: UseVehiclesOptions = {}) {
         `, { count: 'exact' });
 
       if (search) {
-        query = query.or(`plate.ilike.%${search}%,clients.name.ilike.%${search}%`);
+        query = query.or(`plate.ilike.%${search}%,brand.ilike.%${search}%,model.ilike.%${search}%`);
       }
 
-      if (status) {
-        query = query.eq('status', status as 'active' | 'inactive' | 'blocked' | 'maintenance' | 'no_signal');
+      // Filter by tracker statuses (convert to DB status values)
+      if (trackerStatuses && trackerStatuses.length > 0 && trackerStatuses.length < 4) {
+        const dbStatuses = trackerStatuses.flatMap((s) => TRACKER_STATUS_MAP[s] || []);
+        if (dbStatuses.length > 0) {
+          query = query.in('status', dbStatuses);
+        }
       }
 
       if (clientId) {
         query = query.eq('client_id', clientId);
+      }
+
+      // Filter by vehicle type
+      if (vehicleTypes && vehicleTypes.length > 0) {
+        query = query.in('vehicle_type', vehicleTypes);
+      }
+
+      // Filter by last_update date range
+      if (dateFrom) {
+        query = query.gte('last_update', `${dateFrom}T00:00:00`);
+      }
+      if (dateTo) {
+        query = query.lte('last_update', `${dateTo}T23:59:59`);
       }
 
       const from = (page - 1) * pageSize;
@@ -49,9 +90,25 @@ export function useVehicles(options: UseVehiclesOptions = {}) {
 
       if (error) throw error;
 
-      const vehicles: VehicleDisplay[] = (data || []).map((vehicle) =>
+      let vehicles: VehicleDisplay[] = (data || []).map((vehicle) =>
         mapVehicleToDisplay(vehicle as VehicleWithDetails)
       );
+
+      // Post-query filters (fields on related tables that can't be filtered in Supabase query)
+      if (operators && operators.length > 0) {
+        vehicles = vehicles.filter((v) =>
+          v.operator && operators.some((op) => v.operator?.toLowerCase().includes(op.toLowerCase()))
+        );
+      }
+
+      if (location) {
+        const loc = location.toLowerCase();
+        vehicles = vehicles.filter((v) => {
+          const lastLoc = (v as any).lastLocation;
+          if (typeof lastLoc === 'string') return lastLoc.toLowerCase().includes(loc);
+          return false;
+        });
+      }
 
       return {
         vehicles,

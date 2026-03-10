@@ -7,7 +7,7 @@ import { NewVehicleModal } from "@/components/vehicles/NewVehicleModal";
 import { EditVehicleModal } from "@/components/vehicles/EditVehicleModal";
 import { DeleteVehicleDialog } from "@/components/vehicles/DeleteVehicleDialog";
 import { VehicleDetailsModal } from "@/components/vehicles/VehicleDetailsModal";
-import { VehicleFilterModal } from "@/components/vehicles/VehicleFilterModal";
+import { VehicleFilterModal, VehicleFilters, EMPTY_FILTERS } from "@/components/vehicles/VehicleFilterModal";
 import { useVehicles, useBlockVehicle } from "@/hooks/useVehicles";
 import { VehicleDisplay } from "@/types/vehicle";
 import { useToast } from "@/hooks/use-toast";
@@ -22,16 +22,21 @@ const Veiculos = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleDisplay | null>(null);
-  const [filters, setFilters] = useState<{ status?: string; clientId?: string }>({});
+  const [filters, setFilters] = useState<VehicleFilters>(EMPTY_FILTERS);
   const { toast } = useToast();
   const navigate = useNavigate();
-  
+
   const itemsPerPage = 100;
-  
+
   const { data, isLoading } = useVehicles({
     search: searchValue,
-    status: filters.status,
+    trackerStatuses: filters.trackerStatuses,
+    operators: filters.operators,
+    vehicleTypes: filters.vehicleTypes,
     clientId: filters.clientId,
+    location: filters.location,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
     page: currentPage,
     pageSize: itemsPerPage,
   });
@@ -42,13 +47,13 @@ const Veiculos = () => {
     setIsFilterModalOpen(true);
   };
 
-  const handleApplyFilters = (newFilters: { status?: string; clientId?: string }) => {
+  const handleApplyFilters = (newFilters: VehicleFilters) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   const handleClearFilters = () => {
-    setFilters({});
+    setFilters(EMPTY_FILTERS);
     setCurrentPage(1);
   };
 
@@ -105,7 +110,7 @@ const Veiculos = () => {
           onSearchChange={setSearchValue}
           onFilterClick={handleFilterClick}
           onNewVehicleClick={handleNewVehicleClick}
-          hasFilters={!!(filters.status || filters.clientId)}
+          hasFilters={!!(filters.clientId || filters.operators.length > 0 || filters.vehicleTypes.length > 0 || filters.location || filters.dateFrom || filters.dateTo || filters.trackerStatuses.length < 4)}
         />
         
         <VehicleTable 

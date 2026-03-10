@@ -4,31 +4,87 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Filter, FileText } from "lucide-react";
 import { useClients } from "@/hooks/useClients";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+const TRACKER_STATUSES = [
+  { value: "tracked", label: "Rastreados" },
+  { value: "no_signal", label: "Sem sinal" },
+  { value: "offline", label: "Desligados" },
+  { value: "blocked", label: "Bloqueado" },
+] as const;
+
+const OPERATORS = ["Vivo", "Claro", "Tim"] as const;
+
+const VEHICLE_TYPES = [
+  "Carro",
+  "Onibus",
+  "Caminhao",
+  "Motocicleta",
+  "Jet Ski",
+  "Trator",
+  "Aviao",
+  "Van",
+  "Maquina",
+] as const;
+
+export interface VehicleFilters {
+  trackerStatuses: string[];
+  operators: string[];
+  vehicleTypes: string[];
+  clientId?: string;
+  location?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export const EMPTY_FILTERS: VehicleFilters = {
+  trackerStatuses: ["tracked", "no_signal", "offline", "blocked"],
+  operators: [],
+  vehicleTypes: [],
+  clientId: undefined,
+  location: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+};
 
 interface VehicleFilterModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  filters: {
-    status?: string;
-    clientId?: string;
-  };
-  onApplyFilters: (filters: { status?: string; clientId?: string }) => void;
+  filters: VehicleFilters;
+  onApplyFilters: (filters: VehicleFilters) => void;
   onClearFilters: () => void;
+}
+
+function ToggleChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "px-3 py-1 rounded-full border text-sm transition-colors",
+        selected
+          ? "bg-foreground text-background border-foreground"
+          : "bg-background text-foreground border-border hover:bg-accent"
+      )}
+    >
+      {label}
+    </button>
+  );
 }
 
 export function VehicleFilterModal({
@@ -38,112 +94,160 @@ export function VehicleFilterModal({
   onApplyFilters,
   onClearFilters,
 }: VehicleFilterModalProps) {
-  const [status, setStatus] = useState<string>(filters.status || "");
+  const [trackerStatuses, setTrackerStatuses] = useState<string[]>(filters.trackerStatuses);
+  const [operators, setOperators] = useState<string[]>(filters.operators);
+  const [vehicleTypes, setVehicleTypes] = useState<string[]>(filters.vehicleTypes);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string>(filters.clientId || "");
+  const [location, setLocation] = useState(filters.location || "");
+  const [dateFrom, setDateFrom] = useState(filters.dateFrom || "");
+  const [dateTo, setDateTo] = useState(filters.dateTo || "");
 
-  // Buscar clientes para o filtro (apenas quando há busca)
   const { data: clientsData } = useClients({
     search: clientSearch || undefined,
-    pageSize: 50,
+    pageSize: 20,
   });
 
-  // Atualizar estados quando os filtros mudarem externamente
   useEffect(() => {
-    setStatus(filters.status || "");
+    setTrackerStatuses(filters.trackerStatuses);
+    setOperators(filters.operators);
+    setVehicleTypes(filters.vehicleTypes);
     setSelectedClientId(filters.clientId || "");
+    setLocation(filters.location || "");
+    setDateFrom(filters.dateFrom || "");
+    setDateTo(filters.dateTo || "");
   }, [filters]);
 
   const selectedClient = clientsData?.clients?.find((c) => c.id === selectedClientId);
 
+  const toggleTrackerStatus = (value: string) => {
+    setTrackerStatuses((prev) =>
+      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value]
+    );
+  };
+
+  const toggleOperator = (value: string) => {
+    setOperators((prev) =>
+      prev.includes(value) ? prev.filter((o) => o !== value) : [...prev, value]
+    );
+  };
+
+  const toggleVehicleType = (value: string) => {
+    setVehicleTypes((prev) =>
+      prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+    );
+  };
+
   const handleApply = () => {
     onApplyFilters({
-      status: status || undefined,
+      trackerStatuses,
+      operators,
+      vehicleTypes,
       clientId: selectedClientId || undefined,
+      location: location || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
     });
     onOpenChange(false);
   };
 
   const handleClear = () => {
-    setStatus("");
-    setSelectedClientId("");
-    setClientSearch("");
     onClearFilters();
     onOpenChange(false);
   };
 
-  const hasActiveFilters = status || selectedClientId;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Filtros de Veículos</DialogTitle>
+          <DialogTitle>Filtrar Veiculos</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Filtro por Status */}
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos os status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
-                <SelectItem value="active">Ativo (Rastreando)</SelectItem>
-                <SelectItem value="inactive">Inativo (Desligado)</SelectItem>
-                <SelectItem value="blocked">Bloqueado</SelectItem>
-                <SelectItem value="maintenance">Manutenção</SelectItem>
-                <SelectItem value="no_signal">Sem Sinal</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-6 py-2">
+          {/* Status do rastreador */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Status do rastreador</Label>
+            <div className="space-y-2">
+              {TRACKER_STATUSES.map((status) => (
+                <div key={status.value} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`status-${status.value}`}
+                    checked={trackerStatuses.includes(status.value)}
+                    onCheckedChange={() => toggleTrackerStatus(status.value)}
+                  />
+                  <label
+                    htmlFor={`status-${status.value}`}
+                    className="text-sm cursor-pointer select-none"
+                  >
+                    {status.label}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Filtro por Cliente */}
-          <div className="space-y-2">
-            <Label>Cliente</Label>
+          <hr className="border-border" />
+
+          {/* Operadora */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Operadora</Label>
+            <div className="flex flex-wrap gap-2">
+              {OPERATORS.map((op) => (
+                <ToggleChip
+                  key={op}
+                  label={op}
+                  selected={operators.includes(op)}
+                  onClick={() => toggleOperator(op)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Tipo de veiculo */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Tipo de veiculo</Label>
+            <div className="flex flex-wrap gap-2">
+              {VEHICLE_TYPES.map((type) => (
+                <ToggleChip
+                  key={type}
+                  label={type}
+                  selected={vehicleTypes.includes(type)}
+                  onClick={() => toggleVehicleType(type)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Cliente e Localidade lado a lado */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label className="text-base font-semibold">Cliente</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar cliente..."
-                  value={clientSearch}
+                  placeholder="Pesquisar por cliente"
+                  value={selectedClient ? selectedClient.name : clientSearch}
                   onChange={(e) => {
                     setClientSearch(e.target.value);
-                    if (!e.target.value) {
+                    if (!e.target.value) setSelectedClientId("");
+                  }}
+                  onFocus={() => {
+                    if (selectedClient) {
+                      setClientSearch(selectedClient.name);
                       setSelectedClientId("");
                     }
                   }}
                   className="pl-10"
                 />
               </div>
-              
-              {selectedClient && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="flex-1 justify-between">
-                    <span>{selectedClient.name}</span>
-                    <button
-                      onClick={() => {
-                        setSelectedClientId("");
-                        setClientSearch("");
-                      }}
-                      className="ml-2 hover:bg-destructive/20 rounded-full p-0.5"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                </div>
-              )}
-
-              {clientSearch && !selectedClient && clientsData?.clients && clientsData.clients.length > 0 && (
-                <div className="border border-border rounded-md max-h-48 overflow-y-auto">
+              {clientSearch && !selectedClientId && clientsData?.clients && clientsData.clients.length > 0 && (
+                <div className="border border-border rounded-md max-h-40 overflow-y-auto">
                   {clientsData.clients.map((client) => (
                     <button
                       key={client.id}
                       onClick={() => {
                         setSelectedClientId(client.id);
-                        setClientSearch(client.name);
+                        setClientSearch("");
                       }}
                       className="w-full text-left px-3 py-2 hover:bg-accent transition-colors text-sm"
                     >
@@ -152,29 +256,59 @@ export function VehicleFilterModal({
                   ))}
                 </div>
               )}
+            </div>
 
-              {clientSearch && !selectedClient && clientsData?.clients && clientsData.clients.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-2">
-                  Nenhum cliente encontrado
-                </p>
-              )}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Localidade</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar cidade ou estado"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Ultima atualizacao */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Ultima atualizacao</Label>
+            <p className="text-sm text-muted-foreground">Selecione o periodo:</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-sm">Inicio</Label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm">Fim</Label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="flex justify-between">
-          <Button variant="outline" onClick={handleClear} disabled={!hasActiveFilters}>
-            Limpar Filtros
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <Button variant="ghost" onClick={handleClear} className="gap-2 text-muted-foreground">
+            Gerar relatorio
+            <FileText className="h-4 w-4" />
           </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleApply}>Aplicar Filtros</Button>
-          </div>
-        </DialogFooter>
+          <Button onClick={handleApply} className="gap-2 bg-[#C4A35A] hover:bg-[#B3933F] text-white">
+            Filtrar
+            <Filter className="h-4 w-4" />
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
-
