@@ -65,11 +65,11 @@ export function useClients(options: UseClientsOptions = {}) {
       const clientIds = (data || []).map(client => client.id);
       
       let vehiclesData: any[] = [];
-      
+
       if (clientIds.length > 0) {
         let vehicleStatsQuery = supabase
           .from('vehicles')
-          .select('client_id, status, last_update')
+          .select('client_id, status, last_update, equipment(imei)')
           .in('client_id', clientIds);
 
         const { data: vehicles, error: vehiclesError } = await vehicleStatsQuery;
@@ -78,7 +78,7 @@ export function useClients(options: UseClientsOptions = {}) {
         vehiclesData = vehicles || [];
       }
 
-      // Agregar estatísticas por cliente
+      // Agregar estatísticas por cliente e coletar IMEIs
       const statsByClient = new Map<string, {
         total: number;
         tracked: number;
@@ -87,6 +87,8 @@ export function useClients(options: UseClientsOptions = {}) {
         blocked: number;
         lastUpdate: string | null;
       }>();
+
+      const imeisByClient = new Map<string, string[]>();
 
       (vehiclesData || []).forEach(vehicle => {
         const clientId = vehicle.client_id;
@@ -99,6 +101,9 @@ export function useClients(options: UseClientsOptions = {}) {
             blocked: 0,
             lastUpdate: null,
           });
+        }
+        if (!imeisByClient.has(clientId)) {
+          imeisByClient.set(clientId, []);
         }
 
         const stats = statsByClient.get(clientId)!;
@@ -114,6 +119,16 @@ export function useClients(options: UseClientsOptions = {}) {
           stats.blocked++;
         }
 
+        // Coletar IMEIs dos equipamentos vinculados
+        const equipment = vehicle.equipment;
+        if (Array.isArray(equipment)) {
+          equipment.forEach((eq: any) => {
+            if (eq.imei) {
+              imeisByClient.get(clientId)!.push(eq.imei);
+            }
+          });
+        }
+
         // Atualizar última atualização (mais recente)
         if (vehicle.last_update) {
           if (!stats.lastUpdate || new Date(vehicle.last_update) > new Date(stats.lastUpdate)) {
@@ -123,7 +138,7 @@ export function useClients(options: UseClientsOptions = {}) {
       });
 
       // Mapear clientes com suas estatísticas
-      let clients: ClientDisplay[] = (data || []).map((client) => {
+      const clients: ClientDisplay[] = (data || []).map((client) => {
         const stats = statsByClient.get(client.id) || {
           total: 0,
           tracked: 0,
@@ -143,23 +158,15 @@ export function useClients(options: UseClientsOptions = {}) {
         });
       });
 
-      // Filter by tracker statuses (post-query filtering based on vehicle stats)
-      if (trackerStatuses && trackerStatuses.length > 0 && trackerStatuses.length < 4) {
-        clients = clients.filter((client) => {
-          const stats = statsByClient.get(client.id);
-          if (!stats) return false;
-
-          return (
-            (trackerStatuses.includes('tracked') && stats.tracked > 0) ||
-            (trackerStatuses.includes('no_signal') && stats.noSignal > 0) ||
-            (trackerStatuses.includes('offline') && stats.offline > 0) ||
-            (trackerStatuses.includes('blocked') && stats.blocked > 0)
-          );
-        });
-      }
+      // Construir mapa de IMEIs por cliente
+      const clientImeis: Record<string, string[]> = {};
+      imeisByClient.forEach((imeis, clientId) => {
+        clientImeis[clientId] = imeis;
+      });
 
       return {
         clients,
+        clientImeis,
         total: count || 0,
         page,
         pageSize,
