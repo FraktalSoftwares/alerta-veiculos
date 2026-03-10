@@ -56,7 +56,7 @@ const Clientes = () => {
     return imeis;
   }, [clientImeis]);
 
-  const { data: connectionMap } = useMultipleVehicleConnections(allImeis);
+  const { data: connectionMap, isLoading: isLoadingConnections } = useMultipleVehicleConnections(allImeis);
 
   // Filter clients by real-time tracker status
   const filteredClients = useMemo(() => {
@@ -65,6 +65,9 @@ const Clientes = () => {
 
     if (allSelected) return clients;
     if (noneSelected) return [];
+
+    // Don't filter until connection data is loaded
+    if (!connectionMap && allImeis.length > 0) return clients;
 
     const showConnected = filters.trackerStatuses.includes('ligado') || filters.trackerStatuses.includes('com_sinal');
     const showDisconnected = filters.trackerStatuses.includes('desligado') || filters.trackerStatuses.includes('sem_sinal');
@@ -80,7 +83,7 @@ const Clientes = () => {
       if (hasDisconnected && showDisconnected) return true;
       return false;
     });
-  }, [clients, filters.trackerStatuses, clientImeis, connectionMap]);
+  }, [clients, filters.trackerStatuses, clientImeis, connectionMap, allImeis.length]);
 
   const handleFilterClick = () => {
     setIsFilterModalOpen(true);

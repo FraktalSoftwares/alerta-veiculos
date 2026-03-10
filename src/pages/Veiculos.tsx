@@ -53,6 +53,9 @@ const Veiculos = () => {
     if (allSelected) return vehicles;
     if (noneSelected) return [];
 
+    // Don't filter until connection data is loaded
+    if (!connectionMap && imeis.some(Boolean)) return vehicles;
+
     const showConnected = filters.trackerStatuses.includes('ligado') || filters.trackerStatuses.includes('com_sinal');
     const showDisconnected = filters.trackerStatuses.includes('desligado') || filters.trackerStatuses.includes('sem_sinal');
 
@@ -67,7 +70,7 @@ const Veiculos = () => {
       if (!isConnected && showDisconnected) return true;
       return false;
     });
-  }, [vehicles, filters.trackerStatuses, connectionMap]);
+  }, [vehicles, filters.trackerStatuses, connectionMap, imeis]);
 
   const blockVehicle = useBlockVehicle();
 
