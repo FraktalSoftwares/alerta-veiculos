@@ -150,11 +150,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/nova-senha`;
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: redirectUrl,
+      const redirectTo = `${window.location.origin}/nova-senha`;
+
+      const { error } = await supabase.functions.invoke('send-reset-password', {
+        body: { email: email.trim(), redirectTo },
       });
+
       return { error: error as Error | null };
     } catch (error) {
       return { error: error as Error };

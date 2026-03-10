@@ -3,6 +3,9 @@ project_id = "fjhozukksxzuazuykyhk"
 [functions.create-user]
 verify_jwt = false
 
+[functions.send-reset-password]
+verify_jwt = false
+
 [functions.create-client-user]
 verify_jwt = true
 
