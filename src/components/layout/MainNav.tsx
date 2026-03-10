@@ -13,21 +13,21 @@ interface NavItemConfig {
 }
 
 const navItems: NavItemConfig[] = [
-  { 
-    to: "/", 
-    icon: Home, 
+  {
+    to: "/",
+    icon: Home,
     label: "Início",
     permissions: [PERMISSIONS.DASHBOARD_VIEW],
   },
-  { 
-    to: "/clientes", 
-    icon: Users, 
+  {
+    to: "/clientes",
+    icon: Users,
     label: "Clientes",
     permissions: [PERMISSIONS.CLIENTS_VIEW],
   },
-  { 
-    to: "/veiculos", 
-    icon: Car, 
+  {
+    to: "/veiculos",
+    icon: Car,
     label: "Veículos",
     permissions: [PERMISSIONS.VEHICLES_VIEW],
     subItems: [
@@ -35,15 +35,15 @@ const navItems: NavItemConfig[] = [
       { to: "/veiculos/mapa", label: "Gestão de mapa", permissions: [PERMISSIONS.VEHICLES_TRACK] },
     ]
   },
-  { 
-    to: "/notificacoes", 
-    icon: Bell, 
+  {
+    to: "/notificacoes",
+    icon: Bell,
     label: "Notificações",
     permissions: [PERMISSIONS.NOTIFICATIONS_VIEW],
   },
-  { 
-    to: "/financeiro", 
-    icon: TrendingUp, 
+  {
+    to: "/financeiro",
+    icon: TrendingUp,
     label: "Financeiro",
     permissions: [PERMISSIONS.FINANCE_VIEW],
     subItems: [
@@ -51,21 +51,21 @@ const navItems: NavItemConfig[] = [
       { to: "/financeiro/despesas", label: "Despesas", permissions: [PERMISSIONS.FINANCE_EXPENSES] },
     ]
   },
-  { 
-    to: "/loja", 
-    icon: Store, 
+  {
+    to: "/loja",
+    icon: Store,
     label: "Loja",
     permissions: [PERMISSIONS.STORE_VIEW],
   },
-  { 
-    to: "/estoque", 
-    icon: Package, 
+  {
+    to: "/estoque",
+    icon: Package,
     label: "Estoque",
     permissions: [PERMISSIONS.STOCK_VIEW],
   },
-  { 
-    to: "/configuracoes", 
-    icon: Settings, 
+  {
+    to: "/configuracoes",
+    icon: Settings,
     label: "Configurações",
     permissions: [PERMISSIONS.SETTINGS_VIEW],
     subItems: [
@@ -75,20 +75,20 @@ const navItems: NavItemConfig[] = [
   },
 ];
 
-function NavItemWithPermission({ 
-  item, 
-  variant = "horizontal", 
-  onClose 
-}: { 
-  item: NavItemConfig; 
-  variant?: "horizontal" | "vertical"; 
+function NavItemWithPermission({
+  item,
+  variant = "horizontal",
+  onClose
+}: {
+  item: NavItemConfig;
+  variant?: "horizontal" | "vertical";
   onClose?: () => void;
 }) {
   const { profile } = useAuth();
   const { data: userPerms } = useUserPermissions();
   const hasPermission = useHasAnyPermission(item.permissions || []);
   const isAdmin = profile?.user_type === "admin";
-  
+
   if (!item.permissions || item.permissions.length === 0) {
     return <NavItem {...item} variant={variant} onClose={onClose} />;
   }
@@ -133,11 +133,11 @@ export function MainNavSheet({ open, onOpenChange }: MainNavSheetProps) {
         </SheetHeader>
         <nav className="flex flex-col py-2 overflow-y-auto max-h-[calc(100vh-80px)]">
           {navItems.map((item) => (
-            <NavItemWithPermission 
-              key={item.to} 
-              item={item} 
-              variant="vertical" 
-              onClose={() => onOpenChange(false)} 
+            <NavItemWithPermission
+              key={item.to}
+              item={item}
+              variant="vertical"
+              onClose={() => onOpenChange(false)}
             />
           ))}
         </nav>

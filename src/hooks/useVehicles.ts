@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { VehicleWithDetails, VehicleFormData, mapVehicleToDisplay, VehicleDisplay } from '@/types/vehicle';
 import { useToast } from '@/hooks/use-toast';
+import { useMotoristaClient } from '@/hooks/useMotoristaClient';
 
 interface UseVehiclesOptions {
   search?: string;
@@ -16,7 +17,9 @@ interface UseVehiclesOptions {
 }
 
 export function useVehicles(options: UseVehiclesOptions = {}) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { data: motoristaClientId, isLoading: isLoadingMotorista } = useMotoristaClient();
+  const isMotorista = profile?.user_type === 'motorista';
   const {
     search = '',
     operators,
@@ -28,8 +31,11 @@ export function useVehicles(options: UseVehiclesOptions = {}) {
     pageSize = 100,
   } = options;
 
+  // Para motoristas, usa o client_id vinculado; para outros, usa o filtro normal
+  const effectiveClientId = isMotorista ? motoristaClientId : clientId;
+
   return useQuery({
-    queryKey: ['vehicles', { search, operators, vehicleTypes, clientId, dateFrom, dateTo, page, pageSize, userId: user?.id }],
+    queryKey: ['vehicles', { search, operators, vehicleTypes, clientId: effectiveClientId, dateFrom, dateTo, page, pageSize, userId: user?.id }],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
@@ -45,8 +51,8 @@ export function useVehicles(options: UseVehiclesOptions = {}) {
         query = query.or(`plate.ilike.%${search}%,brand.ilike.%${search}%,model.ilike.%${search}%`);
       }
 
-      if (clientId) {
-        query = query.eq('client_id', clientId);
+      if (effectiveClientId) {
+        query = query.eq('client_id', effectiveClientId);
       }
 
       // Filter by vehicle type
@@ -89,7 +95,8 @@ export function useVehicles(options: UseVehiclesOptions = {}) {
         totalPages: Math.ceil((count || 0) / pageSize),
       };
     },
-    enabled: !!user,
+    // Motorista precisa aguardar o client_id ser carregado
+    enabled: !!user && (!isMotorista || (!!motoristaClientId && !isLoadingMotorista)),
   });
 }
 

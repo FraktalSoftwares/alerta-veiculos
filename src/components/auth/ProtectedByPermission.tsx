@@ -1,8 +1,9 @@
 import { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useHasAnyPermission, useHasAllPermissions } from "@/hooks/useUserPermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import { useFirstAccessibleRoute } from "@/hooks/useFirstAccessibleRoute";
 
 interface ProtectedByPermissionProps {
   permissions: string[];
@@ -11,20 +12,18 @@ interface ProtectedByPermissionProps {
   children: ReactNode;
 }
 
-/**
- * Route protection component that checks for specific permissions
- * Redirects to specified path if user doesn't have required permissions
- */
 export function ProtectedByPermission({
   permissions,
   requireAll = false,
-  redirectTo = "/",
+  redirectTo,
   children,
 }: ProtectedByPermissionProps) {
   const { profile, loading } = useAuth();
+  const location = useLocation();
   const hasAny = useHasAnyPermission(permissions);
   const hasAll = useHasAllPermissions(permissions);
   const hasPermission = requireAll ? hasAll : hasAny;
+  const firstAccessibleRoute = useFirstAccessibleRoute();
 
   if (loading) {
     return (
@@ -39,7 +38,13 @@ export function ProtectedByPermission({
   }
 
   if (!hasPermission) {
-    return <Navigate to={redirectTo} replace />;
+    // Redireciona para a primeira rota que o usuário tem acesso
+    const target = redirectTo || firstAccessibleRoute;
+    // Evita loop infinito
+    if (target === location.pathname) {
+      return <Navigate to="/perfil" replace />;
+    }
+    return <Navigate to={target} replace />;
   }
 
   return <>{children}</>;
