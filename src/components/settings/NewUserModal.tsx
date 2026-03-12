@@ -60,12 +60,23 @@ export function NewUserModal({ open, onOpenChange }: NewUserModalProps) {
   });
 
   const handleSubmit = async () => {
-    if (!formData.nome || !formData.email || !formData.password) {
+    const nome = formData.nome.trim();
+    const email = formData.email.trim();
+    const password = formData.password;
+
+    if (!nome || !email || !password) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
-    if (formData.password.length < 6) {
+    // Validar formato de e-mail
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Informe um e-mail válido");
+      return;
+    }
+
+    if (password.length < 6) {
       toast.error("A senha deve ter no mínimo 6 caracteres");
       return;
     }
@@ -76,9 +87,9 @@ export function NewUserModal({ open, onOpenChange }: NewUserModalProps) {
       
       const response = await supabase.functions.invoke('create-user', {
         body: {
-          email: formData.email,
-          password: formData.password,
-          full_name: formData.nome,
+          email: email,
+          password: password,
+          full_name: nome,
           user_type: formData.user_type,
           admin_role_id: formData.admin_role_id || null,
         },
@@ -99,7 +110,7 @@ export function NewUserModal({ open, onOpenChange }: NewUserModalProps) {
         nome: "",
         email: "",
         password: "",
-        user_type: "motorista",
+        user_type: defaultUserType,
         admin_role_id: "",
       });
     } catch (error: any) {

@@ -32,6 +32,7 @@ export interface NotificationFormData {
   target_user_ids?: string[];
   notification_type?: string;
   save_as_template?: boolean;
+  scheduled_at?: string;
 }
 
 export interface NotificationTemplateDisplay {

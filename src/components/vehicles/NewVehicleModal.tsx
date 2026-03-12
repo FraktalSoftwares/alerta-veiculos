@@ -117,20 +117,29 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId, prese
   const { data: availableEquipments = [] } = useAvailableEquipments(equipmentSearch);
 
   const handleNext = async () => {
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      // Submit
-      if (!formData.clienteId || !formData.placa) {
+    // Validação por step
+    if (currentStep === 1) {
+      if (!formData.clienteId) {
         toast({
-          title: "Campos obrigatórios",
-          description: "Por favor, preencha o cliente e a placa do veículo.",
+          title: "Campo obrigatório",
+          description: "Por favor, selecione um cliente antes de avançar.",
           variant: "destructive",
         });
         return;
       }
-      
-      // Validar placa
+      setCurrentStep(2);
+      return;
+    }
+
+    if (currentStep === 2) {
+      if (!formData.placa.trim()) {
+        toast({
+          title: "Campo obrigatório",
+          description: "Por favor, informe a placa do veículo.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (!isValidPlate(formData.placa)) {
         toast({
           title: "Placa inválida",
@@ -139,7 +148,24 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId, prese
         });
         return;
       }
-      
+      // Validar ano se fornecido
+      if (formData.ano) {
+        const parsedYear = parseInt(formData.ano, 10);
+        if (isNaN(parsedYear) || parsedYear < 1900 || parsedYear > new Date().getFullYear() + 1) {
+          toast({
+            title: "Ano inválido",
+            description: "Por favor, informe um ano válido.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      setCurrentStep(3);
+      return;
+    }
+
+    // Step 3 - Submit
+    {
       // Validar ano se fornecido
       let yearValue: number | undefined = undefined;
       if (formData.ano) {

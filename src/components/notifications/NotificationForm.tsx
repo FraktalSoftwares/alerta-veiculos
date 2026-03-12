@@ -77,11 +77,22 @@ export function NotificationForm({
   }, [templateData]);
 
   const handleSubmit = () => {
-    if (!title || !message) return;
+    if (!title.trim() || !message.trim()) return;
+
+    if (scheduleEnabled) {
+      if (!scheduleDate || !scheduleTime) {
+        return;
+      }
+      // Validar que a data/hora agendada é no futuro
+      const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`);
+      if (isNaN(scheduledAt.getTime()) || scheduledAt <= new Date()) {
+        return;
+      }
+    }
 
     onSubmit({
-      title,
-      message,
+      title: title.trim(),
+      message: message.trim(),
       targetType,
       targetUserType,
       saveAsTemplate,
@@ -171,24 +182,32 @@ export function NotificationForm({
         {scheduleEnabled && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="schedule-date">Data do envio</Label>
+              <Label htmlFor="schedule-date">Data do envio *</Label>
               <Input
                 id="schedule-date"
                 type="date"
                 value={scheduleDate}
                 onChange={(e) => setScheduleDate(e.target.value)}
-                className="bg-background border-border"
+                className={`bg-background border-border ${scheduleEnabled && !scheduleDate ? 'border-destructive' : ''}`}
+                required
               />
+              {scheduleEnabled && !scheduleDate && (
+                <p className="text-xs text-destructive">Informe a data do envio</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="schedule-time">Hora do envio</Label>
+              <Label htmlFor="schedule-time">Hora do envio *</Label>
               <Input
                 id="schedule-time"
                 type="time"
                 value={scheduleTime}
                 onChange={(e) => setScheduleTime(e.target.value)}
-                className="bg-background border-border"
+                className={`bg-background border-border ${scheduleEnabled && !scheduleTime ? 'border-destructive' : ''}`}
+                required
               />
+              {scheduleEnabled && !scheduleTime && (
+                <p className="text-xs text-destructive">Informe a hora do envio</p>
+              )}
             </div>
           </div>
         )}
@@ -207,7 +226,7 @@ export function NotificationForm({
 
       <Button
         onClick={handleSubmit}
-        disabled={isPending || !title || !message}
+        disabled={isPending || !title.trim() || !message.trim() || (scheduleEnabled && (!scheduleDate || !scheduleTime))}
         className="w-full bg-foreground text-background hover:bg-foreground/90 gap-2"
       >
         {isPending ? 'Enviando...' : 'Enviar notificação'}

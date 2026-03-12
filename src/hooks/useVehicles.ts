@@ -345,9 +345,12 @@ export function useBlockVehicle() {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['client-vehicles'] });
+      // Invalidar tanto a query individual quanto a de múltiplas conexões
       if (data.imei) {
         queryClient.invalidateQueries({ queryKey: ['vehicle-connection', data.imei] });
       }
+      queryClient.invalidateQueries({ queryKey: ['vehicle-connections'] });
       
       // Se houve erro na API mas o banco foi atualizado, mostra aviso
       if ((data as any).apiError) {

@@ -55,6 +55,11 @@ const Notificacoes = () => {
       });
     }
 
+    // Montar scheduled_at se agendamento estiver habilitado
+    const scheduledAt = pendingData.scheduleEnabled && pendingData.scheduleDate && pendingData.scheduleTime
+      ? new Date(`${pendingData.scheduleDate}T${pendingData.scheduleTime}`).toISOString()
+      : undefined;
+
     createNotification.mutate(
       {
         title: pendingData.title,
@@ -62,6 +67,7 @@ const Notificacoes = () => {
         target_type: pendingData.targetType,
         target_user_type: pendingData.targetType === 'user_type' ? pendingData.targetUserType : undefined,
         notification_type: 'general',
+        scheduled_at: scheduledAt,
       },
       {
         onSuccess: () => {
@@ -83,10 +89,15 @@ const Notificacoes = () => {
     return TARGET_LABELS[pendingData.targetUserType] || pendingData.targetUserType;
   };
 
-  const filteredNotifications = (notifications || []).filter((n) =>
-    n.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-    n.message.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const filteredNotifications = (notifications || []).filter((n) => {
+    const search = searchValue.toLowerCase();
+    return (
+      n.title.toLowerCase().includes(search) ||
+      n.message.toLowerCase().includes(search) ||
+      n.target.toLowerCase().includes(search) ||
+      n.date.toLowerCase().includes(search)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-muted/30">

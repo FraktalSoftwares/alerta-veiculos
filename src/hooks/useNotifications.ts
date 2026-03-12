@@ -108,6 +108,7 @@ export function useCreateNotification() {
           target_user_type: formData.target_user_type || null,
           target_user_ids: formData.target_user_ids || null,
           notification_type: formData.notification_type || 'general',
+          ...(formData.scheduled_at ? { scheduled_at: formData.scheduled_at } : {}),
         })
         .select()
         .single();
