@@ -10,6 +10,7 @@ import { VehicleDetailsModal } from "@/components/vehicles/VehicleDetailsModal";
 import { VehicleFilterModal, VehicleFilters, EMPTY_FILTERS } from "@/components/vehicles/VehicleFilterModal";
 import { useVehicles, useBlockVehicle } from "@/hooks/useVehicles";
 import { useMultipleVehicleConnections } from "@/hooks/useVehicleConnection";
+import { useMultipleVehicleBlockStatuses } from "@/hooks/useVehicleBlockStatus";
 import { VehicleDisplay } from "@/types/vehicle";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -44,10 +45,11 @@ const Veiculos = () => {
   const vehicles = data?.vehicles || [];
   const imeis = useMemo(() => vehicles.map((v) => (v.imei && v.imei !== '-' ? v.imei : null)), [vehicles]);
   const { data: connectionMap } = useMultipleVehicleConnections(imeis);
+  const { data: blockStatusMap } = useMultipleVehicleBlockStatuses(imeis);
 
-  // Filter by real-time connection status (STATUS column)
+  // Filter by real-time connection and block status
   const filteredVehicles = useMemo(() => {
-    const allSelected = filters.trackerStatuses.length === 4;
+    const allSelected = filters.trackerStatuses.length === 5;
     const noneSelected = filters.trackerStatuses.length === 0;
 
     if (allSelected) return vehicles;
@@ -58,19 +60,22 @@ const Veiculos = () => {
 
     const showConnected = filters.trackerStatuses.includes('ligado') || filters.trackerStatuses.includes('com_sinal');
     const showDisconnected = filters.trackerStatuses.includes('desligado') || filters.trackerStatuses.includes('sem_sinal');
+    const showBlocked = filters.trackerStatuses.includes('bloqueado');
 
     return vehicles.filter((vehicle) => {
-      const isBlocked = vehicle.status === 'bloqueado';
-      if (isBlocked) return true; // always show blocked
-
       const imei = vehicle.imei && vehicle.imei !== '-' ? vehicle.imei : null;
+      const isBlocked = imei ? blockStatusMap?.[imei] === true : vehicle.status === 'bloqueado';
+
+      if (isBlocked && showBlocked) return true;
+      if (isBlocked && !showBlocked) return false;
+
       const isConnected = imei ? connectionMap?.[imei] === true : false;
 
       if (isConnected && showConnected) return true;
       if (!isConnected && showDisconnected) return true;
       return false;
     });
-  }, [vehicles, filters.trackerStatuses, connectionMap, imeis]);
+  }, [vehicles, filters.trackerStatuses, connectionMap, blockStatusMap, imeis]);
 
   const blockVehicle = useBlockVehicle();
 
@@ -140,7 +145,7 @@ const Veiculos = () => {
     const rows = filteredVehicles.map((v) => {
       const imei = v.imei && v.imei !== '-' ? v.imei : null;
       const isConnected = imei ? connectionMap?.[imei] === true : false;
-      const isBlocked = v.status === 'bloqueado';
+      const isBlocked = imei ? blockStatusMap?.[imei] === true : v.status === 'bloqueado';
       const statusLabel = isBlocked ? "Bloqueado" : isConnected ? "Ligado" : "Desligado";
 
       return [
@@ -168,7 +173,7 @@ const Veiculos = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [filteredVehicles, connectionMap, toast]);
+  }, [filteredVehicles, connectionMap, blockStatusMap, toast]);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -181,7 +186,7 @@ const Veiculos = () => {
           onSearchChange={setSearchValue}
           onFilterClick={handleFilterClick}
           onNewVehicleClick={handleNewVehicleClick}
-          hasFilters={!!(filters.clientId || filters.operators.length > 0 || filters.vehicleTypes.length > 0 || filters.dateFrom || filters.dateTo || filters.trackerStatuses.length < 4)}
+          hasFilters={!!(filters.clientId || filters.operators.length > 0 || filters.vehicleTypes.length > 0 || filters.dateFrom || filters.dateTo || filters.trackerStatuses.length < 5)}
         />
         
         <VehicleTable

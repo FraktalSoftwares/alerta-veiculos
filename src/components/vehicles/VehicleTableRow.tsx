@@ -28,6 +28,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useVehicleConnection } from "@/hooks/useVehicleConnection";
+import { useVehicleBlockStatus } from "@/hooks/useVehicleBlockStatus";
 
 interface VehicleTableRowProps {
   vehicle: VehicleDisplay;
@@ -124,11 +125,13 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
   };
 
   // Check real connection status via API
-  const { data: connectionData } = useVehicleConnection(vehicle.imei && vehicle.imei !== '-' ? vehicle.imei : null);
-  
-  // Determine status based on API connection status
-  // If blocked, always show blocked status first
-  const isBlocked = vehicle.status === 'bloqueado';
+  const validImei = vehicle.imei && vehicle.imei !== '-' ? vehicle.imei : null;
+  const { data: connectionData } = useVehicleConnection(validImei);
+  const { data: blockStatusData } = useVehicleBlockStatus(validImei);
+
+  // Determine status based on API connection and block status
+  // Block status from API takes priority, fallback to DB status
+  const isBlocked = blockStatusData?.blocked ?? vehicle.status === 'bloqueado';
   const isConnected = connectionData?.conectado === true;
   // If blocked, show blocked status, otherwise use connection status
   const displayStatus = isBlocked ? 'bloqueado' : (isConnected ? 'rastreando' : 'sem-sinal');

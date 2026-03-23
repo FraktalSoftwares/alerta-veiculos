@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { ClientPageHeader } from "@/components/clients/ClientPageHeader";
@@ -9,7 +9,6 @@ import { EditClientModal } from "@/components/clients/EditClientModal";
 import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
 import { ClientFilterModal, ClientFilterValues, DEFAULT_FILTERS } from "@/components/clients/ClientFilterModal";
 import { useClients } from "@/hooks/useClients";
-import { useMultipleVehicleConnections } from "@/hooks/useVehicleConnection";
 import { ClientDisplay } from "@/types/client";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +30,6 @@ const Clientes = () => {
   // Check if any filter is active (different from defaults)
   const hasActiveFilters =
     filters.clientStatus !== undefined ||
-    filters.trackerStatuses.length < 4 ||
     filters.dateFrom !== "" ||
     filters.dateTo !== "";
 
@@ -45,45 +43,8 @@ const Clientes = () => {
   });
 
   const clients = data?.clients || [];
-  const clientImeis = data?.clientImeis || {};
 
-  // Collect all IMEIs from all clients for batch connection check
-  const allImeis = useMemo(() => {
-    const imeis: (string | null)[] = [];
-    Object.values(clientImeis).forEach((clientImeiList) => {
-      clientImeiList.forEach((imei) => imeis.push(imei));
-    });
-    return imeis;
-  }, [clientImeis]);
-
-  const { data: connectionMap, isLoading: isLoadingConnections } = useMultipleVehicleConnections(allImeis);
-
-  // Filter clients by real-time tracker status
-  const filteredClients = useMemo(() => {
-    const allSelected = filters.trackerStatuses.length === 4;
-    const noneSelected = filters.trackerStatuses.length === 0;
-
-    if (allSelected) return clients;
-    if (noneSelected) return [];
-
-    // Don't filter until connection data is loaded
-    if (!connectionMap && allImeis.length > 0) return clients;
-
-    const showConnected = filters.trackerStatuses.includes('ligado') || filters.trackerStatuses.includes('com_sinal');
-    const showDisconnected = filters.trackerStatuses.includes('desligado') || filters.trackerStatuses.includes('sem_sinal');
-
-    return clients.filter((client) => {
-      const imeis = clientImeis[client.id] || [];
-      if (imeis.length === 0) return showDisconnected; // No equipment = disconnected
-
-      const hasConnected = imeis.some((imei) => connectionMap?.[imei] === true);
-      const hasDisconnected = imeis.some((imei) => connectionMap?.[imei] !== true);
-
-      if (hasConnected && showConnected) return true;
-      if (hasDisconnected && showDisconnected) return true;
-      return false;
-    });
-  }, [clients, filters.trackerStatuses, clientImeis, connectionMap, allImeis.length]);
+  const filteredClients = clients;
 
   const handleFilterClick = () => {
     setIsFilterModalOpen(true);

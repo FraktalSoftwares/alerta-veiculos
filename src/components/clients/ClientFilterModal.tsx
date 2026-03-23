@@ -8,16 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Filter, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const TRACKER_STATUSES = [
-  { value: "ligado", label: "Ligado" },
-  { value: "com_sinal", label: "Com sinal" },
-  { value: "desligado", label: "Desligado" },
-  { value: "sem_sinal", label: "Sem sinal" },
-] as const;
 
 const CLIENT_STATUS_OPTIONS = [
   { value: "active", label: "Ativo" },
@@ -25,14 +17,12 @@ const CLIENT_STATUS_OPTIONS = [
 ] as const;
 
 export interface ClientFilterValues {
-  trackerStatuses: string[];
   clientStatus: string | undefined;
   dateFrom: string;
   dateTo: string;
 }
 
 export const DEFAULT_FILTERS: ClientFilterValues = {
-  trackerStatuses: ["ligado", "com_sinal", "desligado", "sem_sinal"],
   clientStatus: undefined,
   dateFrom: "",
   dateTo: "",
@@ -78,9 +68,6 @@ export function ClientFilterModal({
   initialValues,
   onExportCsv,
 }: ClientFilterModalProps) {
-  const [trackerStatuses, setTrackerStatuses] = useState<string[]>(
-    initialValues?.trackerStatuses ?? DEFAULT_FILTERS.trackerStatuses
-  );
   const [clientStatus, setClientStatus] = useState<string | undefined>(
     initialValues?.clientStatus
   );
@@ -89,18 +76,11 @@ export function ClientFilterModal({
 
   useEffect(() => {
     if (isOpen && initialValues) {
-      setTrackerStatuses(initialValues.trackerStatuses);
       setClientStatus(initialValues.clientStatus);
       setDateFrom(initialValues.dateFrom || "");
       setDateTo(initialValues.dateTo || "");
     }
   }, [isOpen, initialValues]);
-
-  const toggleTrackerStatus = (value: string) => {
-    setTrackerStatuses((prev) =>
-      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value]
-    );
-  };
 
   const toggleClientStatus = (value: string) => {
     setClientStatus((prev) => (prev === value ? undefined : value));
@@ -108,7 +88,6 @@ export function ClientFilterModal({
 
   const handleApply = () => {
     onApply({
-      trackerStatuses,
       clientStatus,
       dateFrom,
       dateTo,
@@ -128,30 +107,6 @@ export function ClientFilterModal({
         </DialogHeader>
 
         <div className="space-y-6 py-2">
-          {/* Status do rastreador */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">Status do rastreador</Label>
-            <div className="space-y-2">
-              {TRACKER_STATUSES.map((status) => (
-                <div key={status.value} className="flex items-center gap-2">
-                  <Checkbox
-                    id={`client-status-${status.value}`}
-                    checked={trackerStatuses.includes(status.value)}
-                    onCheckedChange={() => toggleTrackerStatus(status.value)}
-                  />
-                  <label
-                    htmlFor={`client-status-${status.value}`}
-                    className="text-sm cursor-pointer select-none"
-                  >
-                    {status.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <hr className="border-border" />
-
           {/* Situação do cliente */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">Situação do cliente</Label>

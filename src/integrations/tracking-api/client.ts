@@ -56,6 +56,15 @@ class TrackingApiClient {
   }
 
   /**
+   * Verifica o status de bloqueio de um veículo
+   */
+  async getBlockStatus(imei: string): Promise<{ identificador: string; blocked: boolean }> {
+    return this.request(TRACKING_API_ENDPOINTS.BLOCK_STATUS(imei), {
+      method: 'GET',
+    });
+  }
+
+  /**
    * Executa uma ação em um veículo
    */
   async executeAction(

@@ -23,6 +23,9 @@ export const TRACKING_API_ENDPOINTS = {
     return protocolo ? `${base}?protocolo=${encodeURIComponent(protocolo)}` : base;
   },
   
+  // Bloqueio
+  BLOCK_STATUS: (imei: string) => `/bloqueio/status_bloqueio?identificador=${imei}`,
+
   // Ações de Veículos
   // Nota: Os endpoints abaixo devem ser ajustados conforme a documentação da API
   BLOCK_VEHICLE: (imei: string) => `/acoes/bloquear/${imei}`,

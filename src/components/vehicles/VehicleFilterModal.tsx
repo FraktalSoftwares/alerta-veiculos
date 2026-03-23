@@ -18,6 +18,7 @@ const TRACKER_STATUSES = [
   { value: "com_sinal", label: "Com sinal" },
   { value: "desligado", label: "Desligado" },
   { value: "sem_sinal", label: "Sem sinal" },
+  { value: "bloqueado", label: "Bloqueado" },
 ] as const;
 
 const OPERATORS = ["Vivo", "Claro", "Tim"] as const;
@@ -39,7 +40,7 @@ export interface VehicleFilters {
 }
 
 export const EMPTY_FILTERS: VehicleFilters = {
-  trackerStatuses: ["ligado", "com_sinal", "desligado", "sem_sinal"],
+  trackerStatuses: ["ligado", "com_sinal", "desligado", "sem_sinal", "bloqueado"],
   operators: [],
   vehicleTypes: [],
   clientId: undefined,

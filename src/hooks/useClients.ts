@@ -10,7 +10,6 @@ interface UseClientsOptions {
   clientType?: string;
   page?: number;
   pageSize?: number;
-  trackerStatuses?: string[];
   dateFrom?: string;
   dateTo?: string;
   parentClientId?: string;
@@ -18,10 +17,10 @@ interface UseClientsOptions {
 
 export function useClients(options: UseClientsOptions = {}) {
   const { user } = useAuth();
-  const { search = '', status, clientType, page = 1, pageSize = 100, trackerStatuses, dateFrom, dateTo, parentClientId } = options;
+  const { search = '', status, clientType, page = 1, pageSize = 100, dateFrom, dateTo, parentClientId } = options;
 
   return useQuery({
-    queryKey: ['clients', { search, status, clientType, page, pageSize, trackerStatuses, dateFrom, dateTo, parentClientId, userId: user?.id }],
+    queryKey: ['clients', { search, status, clientType, page, pageSize, dateFrom, dateTo, parentClientId, userId: user?.id }],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
