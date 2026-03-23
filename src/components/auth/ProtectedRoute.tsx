@@ -27,6 +27,11 @@ export function ProtectedRoute({ children, allowedUserTypes }: ProtectedRoutePro
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Se o perfil está inativo/bloqueado, redirecionar para login
+  if (profile && profile.is_active === false && profile.user_type !== 'admin') {
+    return <Navigate to="/login" replace />;
+  }
+
   // Check user type permissions if specified
   if (allowedUserTypes && profile && !allowedUserTypes.includes(profile.user_type)) {
     return (

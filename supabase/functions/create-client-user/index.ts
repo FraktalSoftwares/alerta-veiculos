@@ -280,6 +280,14 @@ serve(async (req) => {
       'motorista': 'motorista',
     };
 
+    // Roles padrão por tipo de cliente (mesmos IDs da migration)
+    const defaultRoleByType: Record<string, string> = {
+      'associacao': '00000000-0000-0000-0000-000000000002',
+      'franqueado': '00000000-0000-0000-0000-000000000003',
+      'frotista': '00000000-0000-0000-0000-000000000004',
+      'motorista': '00000000-0000-0000-0000-000000000005',
+    };
+
     const userType = userTypeMap[client.client_type] || 'motorista';
 
     console.log('Creating auth user with type:', userType);
@@ -332,20 +340,20 @@ serve(async (req) => {
 
     console.log('User successfully linked to client');
 
-    // Assign admin role if provided
-    if (admin_role_id && authData.user?.id) {
+    // Assign admin role (use provided or default based on client_type)
+    const effectiveRoleId = admin_role_id || defaultRoleByType[client.client_type];
+    if (effectiveRoleId && authData.user?.id) {
       const { error: roleError } = await supabaseAdmin
         .from('user_admin_roles')
         .insert({
           user_id: authData.user.id,
-          admin_role_id,
+          admin_role_id: effectiveRoleId,
         });
 
       if (roleError) {
         console.error('Error assigning admin role:', roleError);
-        // Don't fail the whole operation, but log it
       } else {
-        console.log('Admin role assigned successfully:', admin_role_id);
+        console.log('Admin role assigned successfully:', effectiveRoleId);
       }
     }
 

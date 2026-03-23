@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ClientStats {
   total: number;
@@ -55,11 +56,12 @@ function parseDate(dateStr: string): string | null {
 }
 
 export function useClientStats(startDate?: string, endDate?: string) {
+  const { user } = useAuth();
   const isoStartDate = startDate ? parseDate(startDate) : null;
   const isoEndDate = endDate ? parseDate(endDate) : null;
 
   return useQuery({
-    queryKey: ["dashboard", "client-stats", isoStartDate, isoEndDate],
+    queryKey: ["dashboard", "client-stats", isoStartDate, isoEndDate, user?.id],
     queryFn: async (): Promise<ClientStats> => {
       // Get all clients (optionally filter by created_at range)
       let query = supabase
@@ -113,8 +115,9 @@ export function useClientStats(startDate?: string, endDate?: string) {
 }
 
 export function useVehicleStats() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["dashboard", "vehicle-stats"],
+    queryKey: ["dashboard", "vehicle-stats", user?.id],
     queryFn: async (): Promise<VehicleStats> => {
       const { data: vehicles, error } = await supabase
         .from("vehicles")
@@ -191,8 +194,9 @@ export function useVehicleStats() {
 }
 
 export function useEquipmentStats() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["dashboard", "equipment-stats"],
+    queryKey: ["dashboard", "equipment-stats", user?.id],
     queryFn: async (): Promise<EquipmentStats> => {
       const { data: equipment, error } = await supabase
         .from("equipment")
@@ -212,6 +216,7 @@ export function useEquipmentStats() {
 }
 
 export function useMonthlyRevenue(startDateStr?: string, endDateStr?: string) {
+  const { user } = useAuth();
   const isoStartDate = startDateStr ? parseDate(startDateStr) : null;
   const isoEndDate = endDateStr ? parseDate(endDateStr) : null;
 
@@ -219,9 +224,9 @@ export function useMonthlyRevenue(startDateStr?: string, endDateStr?: string) {
   const currentYear = new Date().getFullYear();
   const defaultStart = `${currentYear}-01-01`;
   const defaultEnd = `${currentYear}-12-31`;
-  
+
   return useQuery({
-    queryKey: ["dashboard", "monthly-revenue", isoStartDate || defaultStart, isoEndDate || defaultEnd],
+    queryKey: ["dashboard", "monthly-revenue", isoStartDate || defaultStart, isoEndDate || defaultEnd, user?.id],
     queryFn: async (): Promise<RevenueData[]> => {
       const startDate = isoStartDate || defaultStart;
       const endDate = isoEndDate || defaultEnd;
@@ -261,8 +266,9 @@ export function useMonthlyRevenue(startDateStr?: string, endDateStr?: string) {
 }
 
 export function useFinanceSummary(startDate?: string, endDate?: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["dashboard", "finance-summary", startDate, endDate],
+    queryKey: ["dashboard", "finance-summary", startDate, endDate, user?.id],
     queryFn: async (): Promise<FinanceSummary> => {
       let query = supabase.from("finance_records").select("amount, type, status");
 

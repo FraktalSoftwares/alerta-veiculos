@@ -17,6 +17,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getAllowedUserTypesToCreate, getDefaultUserTypeForCreation } from "@/lib/userTypeHierarchy";
 import { useAdminRoles } from "@/hooks/useSettings";
 
+// IDs fixos das roles padrão por tipo de cliente (criadas na migration)
+const DEFAULT_ROLE_BY_CLIENT_TYPE: Record<string, string> = {
+  associacao: "00000000-0000-0000-0000-000000000002",
+  franqueado: "00000000-0000-0000-0000-000000000003",
+  frotista: "00000000-0000-0000-0000-000000000004",
+  motorista: "00000000-0000-0000-0000-000000000005",
+};
+
 interface ViaCepResponse {
   cep: string;
   logradouro: string;
@@ -178,6 +186,14 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const { data: adminRoles = [] } = useAdminRoles();
+
+  // Auto-selecionar a função administrativa baseada no tipo de cliente
+  useEffect(() => {
+    const defaultRoleId = DEFAULT_ROLE_BY_CLIENT_TYPE[dadosBasicos.client_type];
+    if (defaultRoleId) {
+      setAcesso(prev => ({ ...prev, admin_role_id: defaultRoleId }));
+    }
+  }, [dadosBasicos.client_type]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

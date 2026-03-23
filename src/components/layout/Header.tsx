@@ -8,19 +8,24 @@ import { NotificationsDrawer } from "./NotificationsDrawer";
 import { useUnreadAlertsCount } from "@/hooks/useVehicleAlerts";
 import { useUnreadNotificationsCount } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
+import { useClientCustomization } from "@/contexts/ClientCustomizationContext";
 
 export function Header() {
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  
+
   const { data: unreadAlertsCount = 0 } = useUnreadAlertsCount();
   const { data: unreadNotificationsCount = 0 } = useUnreadNotificationsCount();
+  const { customization } = useClientCustomization();
 
   return (
     <header className="w-full sticky top-0 z-40 bg-background">
-      {/* Top bar - Black background */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-foreground relative">
+      {/* Top bar */}
+      <div
+        className="flex items-center justify-between px-4 sm:px-6 py-3 bg-foreground relative"
+        style={customization?.primary_color ? { backgroundColor: customization.primary_color } : undefined}
+      >
         <div className="flex items-center gap-1 sm:gap-2 min-w-0">
           <Button
             variant="ghost"
@@ -45,7 +50,11 @@ export function Header() {
         
         {/* Center Logo */}
         <div className="absolute left-1/2 -translate-x-1/2 flex-shrink-0">
-          <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-7 sm:h-8" />
+          <img
+            src={customization?.logo_url || "/logo_alerta.png"}
+            alt="Alerta Rastreamento"
+            className="h-7 sm:h-8 max-w-[140px] object-contain"
+          />
         </div>
         
         <UserProfile />

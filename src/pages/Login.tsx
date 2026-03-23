@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { loginSchema } from "@/lib/validations/auth";
 import loginBg from "@/assets/login-bg.png";
+import logoAlerta from "@/assets/logoalertahigt.png";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -42,7 +43,9 @@ const Login = () => {
     setLoading(false);
 
     if (error) {
-      if (error.message.includes('Invalid login credentials')) {
+      if (error.message.includes('bloqueada') || error.message.includes('blocked')) {
+        toast.error(error.message, { duration: 8000 });
+      } else if (error.message.includes('Invalid login credentials')) {
         toast.error('Email ou senha incorretos');
       } else if (error.message.includes('Email not confirmed')) {
         toast.error('Por favor, confirme seu email antes de fazer login');
@@ -71,7 +74,7 @@ const Login = () => {
           <div className="bg-card rounded-lg shadow-lg overflow-hidden">
             {/* Logo Header */}
             <div className="bg-foreground py-4 sm:py-6 px-4 sm:px-8 flex justify-center box-content">
-              <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-8 sm:h-10 w-[90px] sm:w-[113px]" />
+              <img src={logoAlerta} alt="Alerta Rastreamento" className="h-8 sm:h-10 w-[90px] sm:w-[113px]" />
             </div>
 
             {/* Form Content */}
@@ -172,7 +175,7 @@ const Login = () => {
         className="hidden lg:flex lg:w-1/2 bg-cover bg-center bg-no-repeat items-center justify-center"
         style={{ backgroundImage: `url(${loginBg})` }}
       >
-        <img src="/logo_alerta.png" alt="Alerta Rastreamento" className="h-20" />
+        <img src={logoAlerta} alt="Alerta Rastreamento" className="h-20" />
       </div>
     </div>
   );

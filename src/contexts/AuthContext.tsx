@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Profile {
   id: string;
@@ -30,6 +31,8 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
 }
 
+const BLOCKED_MESSAGE = 'Sua conta está bloqueada. Entre em contato com o administrador responsável.';
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -37,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const isSigningOut = useRef(false);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -57,12 +61,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const forceSignOut = useCallback(async (message: string) => {
+    if (isSigningOut.current) return;
+    isSigningOut.current = true;
+
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+
+    toast.error(message, { duration: 8000 });
+    isSigningOut.current = false;
+  }, []);
+
+  const handleProfileLoaded = useCallback(async (profileData: Profile | null) => {
+    if (profileData && profileData.is_active === false && profileData.user_type !== 'admin') {
+      await forceSignOut(BLOCKED_MESSAGE);
+      return false;
+    }
+    setProfile(profileData);
+    return true;
+  }, [forceSignOut]);
+
   const refreshProfile = async () => {
     if (user) {
       const profileData = await fetchProfile(user.id);
-      setProfile(profileData);
+      if (profileData) {
+        await handleProfileLoaded(profileData);
+      }
     }
   };
+
+  // Listener em tempo real: se is_active mudar para false, deslogar imediatamente
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`profile-status-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as Profile;
+          if (updated.is_active === false && updated.user_type !== 'admin') {
+            forceSignOut(BLOCKED_MESSAGE);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, forceSignOut]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -70,13 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        
+
         // Defer profile fetch with setTimeout to avoid deadlock
         if (currentSession?.user) {
           setTimeout(async () => {
             const profileData = await fetchProfile(currentSession.user.id);
-            setProfile(profileData);
-            setLoading(false);
+            const allowed = await handleProfileLoaded(profileData);
+            if (allowed) setLoading(false);
           }, 0);
         } else {
           setProfile(null);
@@ -89,11 +145,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
-      
+
       if (existingSession?.user) {
-        fetchProfile(existingSession.user.id).then((profileData) => {
-          setProfile(profileData);
-          setLoading(false);
+        fetchProfile(existingSession.user.id).then(async (profileData) => {
+          const allowed = await handleProfileLoaded(profileData);
+          if (allowed) setLoading(false);
         });
       } else {
         setLoading(false);
@@ -105,25 +161,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
-      return { error: error as Error | null };
+
+      if (error) return { error: error as Error | null };
+
+      // Verificar se o perfil está bloqueado ANTES de permitir o login
+      if (data.user) {
+        const profileData = await fetchProfile(data.user.id);
+        if (profileData && profileData.is_active === false && profileData.user_type !== 'admin') {
+          await supabase.auth.signOut();
+          return { error: new Error(BLOCKED_MESSAGE) };
+        }
+      }
+
+      return { error: null };
     } catch (error) {
       return { error: error as Error };
     }
   };
 
   const signUp = async (
-    email: string, 
-    password: string, 
+    email: string,
+    password: string,
     fullName: string,
     userType: Profile['user_type'] = 'motorista'
   ) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
