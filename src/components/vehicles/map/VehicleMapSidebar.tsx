@@ -127,7 +127,7 @@ export function VehicleMapSidebar({
       className={
         variant === "sheet"
           ? "w-full bg-background flex flex-col h-full"
-          : "w-[400px] lg:w-[520px] xl:w-[580px] bg-background border-r border-border flex flex-col h-full shrink-0"
+          : "w-[320px] md:w-[400px] lg:w-[480px] bg-background border-r border-border flex flex-col h-full shrink-0"
       }
     >
       <VehicleMapFilters

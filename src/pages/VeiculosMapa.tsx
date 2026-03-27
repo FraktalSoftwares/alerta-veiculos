@@ -48,7 +48,7 @@ const VeiculosMapa = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] sm:min-h-screen bg-background flex flex-col">
+    <div className="h-[100dvh] sm:h-screen bg-background flex flex-col overflow-hidden">
       <Header />
       
       <div className="flex flex-1 overflow-hidden min-h-0">
