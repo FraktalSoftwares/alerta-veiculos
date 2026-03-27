@@ -1,5 +1,6 @@
 import { VehicleBadge } from "@/components/vehicles/VehicleBadge";
 import { useClientVehicles } from "@/hooks/useVehicles";
+import { useVehicleTracking } from "@/hooks/useVehicleTracking";
 import { Loader2 } from "lucide-react";
 
 interface VeiculosTabProps {
@@ -12,6 +13,30 @@ const statusLabels = {
   "sem-sinal": "SEM SINAL",
   bloqueado: "BLOQUEADO",
 };
+
+function VehicleLastUpdate({ vehicleId }: { vehicleId: string }) {
+  const { data: tracking, isLoading } = useVehicleTracking(vehicleId);
+
+  if (isLoading) {
+    return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />;
+  }
+
+  if (!tracking?.recorded_at) {
+    return <>-</>;
+  }
+
+  return (
+    <>
+      {new Date(tracking.recorded_at).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })}
+    </>
+  );
+}
 
 export function VeiculosTab({ clientId }: VeiculosTabProps) {
   const { data: vehicles, isLoading } = useClientVehicles(clientId);
@@ -50,7 +75,7 @@ export function VeiculosTab({ clientId }: VeiculosTabProps) {
         </thead>
         <tbody>
           {vehicles.map((vehicle, index) => (
-            <tr 
+            <tr
               key={vehicle.id}
               className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
             >
@@ -61,7 +86,9 @@ export function VeiculosTab({ clientId }: VeiculosTabProps) {
               <td className="px-4 py-4 text-sm text-foreground">{vehicle.model || '-'}</td>
               <td className="px-4 py-4 text-sm text-foreground">{vehicle.year || '-'}</td>
               <td className="px-4 py-4 text-sm text-foreground">{vehicle.color || '-'}</td>
-              <td className="px-4 py-4 text-sm text-foreground">{vehicle.lastUpdate}</td>
+              <td className="px-4 py-4 text-sm text-foreground">
+                <VehicleLastUpdate vehicleId={vehicle.id} />
+              </td>
               <td className="px-4 py-4 text-right">
                 <VehicleBadge variant={vehicle.status}>
                   {statusLabels[vehicle.status]}

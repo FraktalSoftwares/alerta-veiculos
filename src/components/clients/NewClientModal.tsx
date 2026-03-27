@@ -38,6 +38,7 @@ interface ViaCepResponse {
 interface NewClientModalProps {
   isOpen: boolean;
   onClose: () => void;
+  preselectedParentClientId?: string;
 }
 
 const STEPS = [
@@ -57,7 +58,7 @@ const generateRandomPassword = () => {
   return password;
 };
 
-export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
+export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: NewClientModalProps) {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
 
@@ -340,6 +341,7 @@ export function NewClientModal({ isOpen, onClose }: NewClientModalProps) {
             birth_date: dadosBasicos.birth_date || null,
             client_type: dadosBasicos.client_type,
             status: dadosBasicos.status,
+            parent_client_id: preselectedParentClientId || null,
           })
           .select()
           .single();

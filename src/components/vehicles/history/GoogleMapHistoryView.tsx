@@ -1,5 +1,5 @@
 /// <reference types="google.maps" />
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { VehicleTrackingData } from '@/hooks/useVehicleTracking';
 import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 
@@ -17,9 +17,12 @@ export function GoogleMapHistoryView({ trackingData, selectedPoint }: GoogleMapH
   const selectedMarkerRef = useRef<google.maps.Marker | null>(null);
   const { isLoaded } = useGoogleMaps();
 
-  // Initialize map
-  useEffect(() => {
-    if (!isLoaded || !mapRef.current || mapInstanceRef.current) return;
+  // Initialize map — also re-creates if the DOM node changed
+  const initMap = useCallback(() => {
+    if (!isLoaded || !mapRef.current) return;
+
+    // If the map instance is still attached to the current div, skip
+    if (mapInstanceRef.current && mapRef.current.firstChild) return;
 
     const defaultCenter = { lat: -23.5505, lng: -46.6333 };
     const map = new window.google.maps.Map(mapRef.current, {
@@ -33,11 +36,20 @@ export function GoogleMapHistoryView({ trackingData, selectedPoint }: GoogleMapH
     });
 
     mapInstanceRef.current = map;
+    polylineRef.current = null;
+    startMarkerRef.current = null;
+    endMarkerRef.current = null;
+    selectedMarkerRef.current = null;
   }, [isLoaded]);
+
+  useEffect(() => {
+    initMap();
+  }, [initMap]);
 
   // Update polyline and markers when tracking data changes
   useEffect(() => {
-    if (!isLoaded || !mapInstanceRef.current || !trackingData.length) return;
+    initMap();
+    if (!mapInstanceRef.current || !trackingData.length) return;
 
     const map = mapInstanceRef.current;
 
@@ -111,20 +123,20 @@ export function GoogleMapHistoryView({ trackingData, selectedPoint }: GoogleMapH
     const bounds = new window.google.maps.LatLngBounds();
     path.forEach(point => bounds.extend(point));
     map.fitBounds(bounds);
-    
+
     // Add padding after fitBounds
-    const listener = window.google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+    window.google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
       const currentZoom = map.getZoom();
       if (currentZoom && currentZoom > 16) {
         map.setZoom(16);
       }
     });
 
-  }, [isLoaded, trackingData]);
+  }, [isLoaded, trackingData, initMap]);
 
   // Handle selected point
   useEffect(() => {
-    if (!isLoaded || !mapInstanceRef.current) return;
+    if (!mapInstanceRef.current) return;
 
     const map = mapInstanceRef.current;
 
@@ -162,14 +174,6 @@ export function GoogleMapHistoryView({ trackingData, selectedPoint }: GoogleMapH
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!trackingData.length) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-muted">
-        <p className="text-muted-foreground">Nenhum dado de rastreamento para exibir</p>
       </div>
     );
   }

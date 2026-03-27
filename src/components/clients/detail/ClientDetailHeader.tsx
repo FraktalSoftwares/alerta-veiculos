@@ -11,9 +11,14 @@ import {
 import { ClientWithDetails } from "@/types/client";
 import { formatCPF, formatCNPJ } from "@/lib/formatters";
 
+interface HeaderAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface ClientDetailHeaderProps {
   client?: ClientWithDetails;
-  onNewVehicleClick: () => void;
+  action?: HeaderAction | null;
 }
 
 function formatDocument(docNumber: string | null, docType: string | null): string {
@@ -23,7 +28,7 @@ function formatDocument(docNumber: string | null, docType: string | null): strin
   return formatCPF(digits);
 }
 
-export function ClientDetailHeader({ client, onNewVehicleClick }: ClientDetailHeaderProps) {
+export function ClientDetailHeader({ client, action }: ClientDetailHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-6">
@@ -53,13 +58,15 @@ export function ClientDetailHeader({ client, onNewVehicleClick }: ClientDetailHe
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <Button
-        onClick={onNewVehicleClick}
-        className="bg-foreground hover:bg-foreground/90 text-background gap-2"
-      >
-        <Plus className="h-4 w-4" />
-        Novo Veículo
-      </Button>
+      {action && (
+        <Button
+          onClick={action.onClick}
+          className="bg-foreground hover:bg-foreground/90 text-background gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          {action.label}
+        </Button>
+      )}
     </div>
   );
 }

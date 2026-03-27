@@ -263,45 +263,6 @@ const VeiculoMapa = () => {
         </div>
       </div>
 
-      {/* Status bar at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 p-4 flex justify-center">
-        <div className="bg-card/95 backdrop-blur-sm rounded-xl p-4 shadow-lg w-fit">
-          {/* Location info */}
-          {!iframeUrl && (
-            <div className="text-center text-xs text-muted-foreground mb-3 pb-3 border-b border-border">
-              Equipamento não vinculado ou sem IMEI/Modelo configurado
-            </div>
-          )}
-          {iframeUrl && (
-            <div className="text-center text-xs text-muted-foreground mb-3 pb-3 border-b border-border">
-              Última atualização: {lastUpdate}
-            </div>
-          )}
-          
-          <div className="flex items-center justify-center gap-6">
-            <div className="flex flex-col items-center gap-1">
-              <div className={`p-2 rounded-full ${isPoweredOn ? 'bg-green-500/20' : 'bg-muted'}`}>
-                <Power className={`h-5 w-5 ${isPoweredOn ? 'text-green-500' : 'text-muted-foreground'}`} />
-              </div>
-              <span className="text-xs text-muted-foreground">{isPoweredOn ? 'Ligado' : 'Desligado'}</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className={`p-2 rounded-full ${hasSignal ? 'bg-green-500/20' : 'bg-destructive/20'}`}>
-                <Wifi className={`h-5 w-5 ${hasSignal ? 'text-green-500' : 'text-destructive'}`} />
-              </div>
-              <span className="text-xs text-muted-foreground">{hasSignal ? 'Com sinal' : 'Sem sinal'}</span>
-            </div>
-            {isBlocked && (
-              <div className="flex flex-col items-center gap-1">
-                <div className="p-2 rounded-full bg-destructive/20">
-                  <Lock className="h-5 w-5 text-destructive" />
-                </div>
-                <span className="text-xs text-destructive">Bloqueado</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Map - fullscreen */}
       {iframeUrl ? (
