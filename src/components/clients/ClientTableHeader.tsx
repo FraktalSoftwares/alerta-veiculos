@@ -1,7 +1,7 @@
 export function ClientTableHeader() {
   return (
     <div className="grid grid-cols-[80px_120px_1fr_100px_140px_120px_100px_140px_100px_80px] gap-4 px-6 py-4 text-sm font-medium text-muted-foreground border-b border-border bg-table-header">
-      <div>#</div>
+      <div>Código</div>
       <div>Tipo</div>
       <div>Nome</div>
       <div className="text-center">Veículos Totais</div>

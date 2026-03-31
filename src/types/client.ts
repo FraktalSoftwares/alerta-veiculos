@@ -3,7 +3,7 @@ import { Database } from '@/integrations/supabase/types';
 // UI display type (for table)
 export interface ClientDisplay {
   id: string;
-  type: 'CLIENTE' | 'ASSOCIADO' | 'FRANQUEADO' | 'FROTISTA' | 'MOTORISTA';
+  type: 'CLIENTE' | 'ASSOCIAÇÃO' | 'ASSOCIADO' | 'FRANQUEADO' | 'FROTISTA' | 'MOTORISTA';
   name: string;
   totalVehicles: number;
   trackedVehicles: number;
@@ -31,7 +31,7 @@ export interface ClientWithDetails {
   phone: string | null;
   email: string | null;
   birth_date: string | null;
-  client_type: 'admin' | 'associacao' | 'franqueado' | 'frotista' | 'motorista';
+  client_type: 'admin' | 'associacao' | 'associado' | 'franqueado' | 'frotista' | 'motorista';
   status: string | null;
   created_at: string;
   updated_at: string;
@@ -53,7 +53,7 @@ export interface ClientFormData {
   phone: string;
   email: string;
   birth_date?: string;
-  client_type: 'associacao' | 'franqueado' | 'frotista' | 'motorista';
+  client_type: 'associacao' | 'associado' | 'franqueado' | 'frotista' | 'motorista';
   status: 'active' | 'inactive' | 'blocked';
   parent_client_id?: string;
 }
@@ -62,7 +62,8 @@ export interface ClientFormData {
 export function mapClientToDisplay(client: ClientWithDetails): ClientDisplay {
   const typeMap: Record<string, ClientDisplay['type']> = {
     'admin': 'CLIENTE',
-    'associacao': 'ASSOCIADO',
+    'associacao': 'ASSOCIAÇÃO',
+    'associado': 'ASSOCIADO',
     'franqueado': 'FRANQUEADO',
     'frotista': 'FROTISTA',
     'motorista': 'MOTORISTA',

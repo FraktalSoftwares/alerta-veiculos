@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpdateVehicle, useVehicle } from "@/hooks/useVehicles";
-import { useUnlinkEquipmentFromVehicle } from "@/hooks/useEquipment";
+import { useUnlinkEquipmentFromVehicle, useAvailableEquipments, useLinkEquipmentToVehicle } from "@/hooks/useEquipment";
 import { VehicleDisplay } from "@/types/vehicle";
-import { Loader2, Unlink, Radio } from "lucide-react";
+import { Loader2, Unlink, Radio, Link, Search } from "lucide-react";
 import { toast } from "sonner";
 import { formatPlate } from "@/lib/formatters";
 import {
@@ -30,8 +30,12 @@ interface EditVehicleModalProps {
 export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalProps) {
   const updateVehicle = useUpdateVehicle();
   const unlinkEquipment = useUnlinkEquipmentFromVehicle();
+  const linkEquipment = useLinkEquipmentToVehicle();
   const { data: vehicleDetails } = useVehicle(vehicle?.id);
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false);
+  const [equipmentSearch, setEquipmentSearch] = useState("");
+  const [showEquipmentSearch, setShowEquipmentSearch] = useState(false);
+  const { data: availableEquipments } = useAvailableEquipments(showEquipmentSearch ? equipmentSearch : "");
   
   const [formData, setFormData] = useState({
     plate: "",
@@ -45,6 +49,8 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
 
   useEffect(() => {
     if (vehicle) {
+      setShowEquipmentSearch(false);
+      setEquipmentSearch("");
       setFormData({
         plate: vehicle.plate,
         vehicle_type: vehicle.type || "",
@@ -114,7 +120,7 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Rastreador vinculado */}
-            {linkedEquipment && (
+            {linkedEquipment ? (
               <div className="p-4 border border-border rounded-lg bg-muted/30">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -139,6 +145,92 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
                     Desvincular
                   </Button>
                 </div>
+              </div>
+            ) : (
+              <div className="p-4 border border-dashed border-border rounded-lg">
+                {!showEquipmentSearch ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-muted">
+                        <Radio className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">Nenhum rastreador vinculado</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowEquipmentSearch(true)}
+                      className="gap-1.5"
+                    >
+                      <Link className="h-4 w-4" />
+                      Vincular Rastreador
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">Vincular Rastreador</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowEquipmentSearch(false);
+                          setEquipmentSearch("");
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar por IMEI ou número de série..."
+                        value={equipmentSearch}
+                        onChange={(e) => setEquipmentSearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <div className="max-h-40 overflow-y-auto space-y-1">
+                      {availableEquipments && availableEquipments.length > 0 ? (
+                        availableEquipments.map((eq) => (
+                          <div
+                            key={eq.id}
+                            className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                            onClick={async () => {
+                              if (!vehicle) return;
+                              try {
+                                await linkEquipment.mutateAsync({
+                                  equipmentId: eq.id,
+                                  vehicleId: vehicle.id,
+                                });
+                                setShowEquipmentSearch(false);
+                                setEquipmentSearch("");
+                              } catch {
+                                // Error handled by mutation
+                              }
+                            }}
+                          >
+                            <div>
+                              <p className="text-sm font-medium">
+                                {eq.products?.model || eq.products?.title || 'Rastreador'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                IMEI: {eq.imei || 'N/A'} | Serial: {eq.serial_number}
+                              </p>
+                            </div>
+                            <Link className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-2">
+                          Nenhum rastreador disponível
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

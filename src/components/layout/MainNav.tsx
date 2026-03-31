@@ -9,6 +9,7 @@ interface NavItemConfig {
   icon: LucideIcon;
   label: string;
   permissions?: string[];
+  allowedUserTypes?: string[];
   subItems?: { to: string; label: string; permissions?: string[] }[];
 }
 
@@ -68,6 +69,7 @@ const navItems: NavItemConfig[] = [
     icon: Settings,
     label: "Configurações",
     permissions: [PERMISSIONS.SETTINGS_VIEW],
+    allowedUserTypes: ["admin"],
     subItems: [
       { to: "/configuracoes", label: "Funções Administrativas", permissions: [PERMISSIONS.SETTINGS_ROLES] },
       { to: "/configuracoes/usuarios", label: "Usuários", permissions: [PERMISSIONS.SETTINGS_USERS] },
@@ -88,6 +90,13 @@ function NavItemWithPermission({
   const { data: userPerms } = useUserPermissions();
   const hasPermission = useHasAnyPermission(item.permissions || []);
   const isAdmin = profile?.user_type === "admin";
+
+  // Restrict by user type if specified
+  if (item.allowedUserTypes && item.allowedUserTypes.length > 0) {
+    if (!profile?.user_type || !item.allowedUserTypes.includes(profile.user_type)) {
+      return null;
+    }
+  }
 
   if (!item.permissions || item.permissions.length === 0) {
     return <NavItem {...item} variant={variant} onClose={onClose} />;

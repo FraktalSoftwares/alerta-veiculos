@@ -157,14 +157,14 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/configuracoes" element={
-              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franqueado']}>
+              <ProtectedRoute allowedUserTypes={['admin']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.SETTINGS_VIEW]}>
                   <Configuracoes />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/configuracoes/usuarios" element={
-              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franqueado']}>
+              <ProtectedRoute allowedUserTypes={['admin']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.SETTINGS_USERS]}>
                   <Usuarios />
                 </ProtectedByPermission>

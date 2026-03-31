@@ -382,6 +382,31 @@ export function useAssignUserRole() {
         });
 
       if (error) throw error;
+
+      // Also update user_type in profiles based on the admin role name
+      const { data: role } = await supabase
+        .from("admin_roles")
+        .select("name")
+        .eq("id", adminRoleId)
+        .single();
+
+      if (role) {
+        const roleNameToUserType: Record<string, "admin" | "associacao" | "associado" | "franqueado" | "frotista" | "motorista"> = {
+          "Administrador": "admin",
+          "Associação": "associacao",
+          "Associado": "associado",
+          "Franqueado": "franqueado",
+          "Frotista": "frotista",
+          "Motorista": "motorista",
+        };
+        const userType = roleNameToUserType[role.name];
+        if (userType) {
+          await supabase
+            .from("profiles")
+            .update({ user_type: userType })
+            .eq("id", userId);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-with-roles"] });
@@ -423,6 +448,38 @@ export function useRemoveUserRole() {
     onError: (error) => {
       toast({
         title: "Erro ao remover função",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { user_id: userId },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users-with-roles"] });
+      toast({
+        title: "Usuário excluído",
+        description: "O usuário foi excluído permanentemente com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao excluir usuário",
         description: error.message,
         variant: "destructive",
       });

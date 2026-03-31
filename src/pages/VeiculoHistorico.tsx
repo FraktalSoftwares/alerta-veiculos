@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, MapPin } from 'lucide-react';
@@ -8,11 +8,13 @@ import { VehicleBadge } from '@/components/vehicles/VehicleBadge';
 import { mapVehicleStatus } from '@/types/vehicle';
 import { HistoryFilters } from '@/components/vehicles/history/HistoryFilters';
 import { HistoryTrackingCard } from '@/components/vehicles/history/HistoryTrackingCard';
+import { HistoryStoppedGroupCard } from '@/components/vehicles/history/HistoryStoppedGroupCard';
 import { ExportButton } from '@/components/vehicles/history/ExportButton';
 import { ExportPdfButton } from '@/components/vehicles/history/ExportPdfButton';
 import { GoogleMapHistoryView } from '@/components/vehicles/history/GoogleMapHistoryView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { subDays } from 'date-fns';
+import { groupStoppedPoints, HistoryDisplayItem, countOriginalPoints } from '@/utils/groupStoppedPoints';
 
 const statusLabels = {
   rastreando: 'RASTREANDO',
@@ -39,10 +41,14 @@ const VeiculoHistorico = () => {
   const [selectedPoint, setSelectedPoint] = useState<VehicleTrackingData | null>(null);
 
   const { data: vehicle, isLoading: isLoadingVehicle } = useVehicle(id || '');
-  const { 
-    data: trackingHistory, 
-    isLoading: isLoadingHistory 
+  const {
+    data: trackingHistory,
+    isLoading: isLoadingHistory
   } = useVehicleTrackingHistory(id || '', startDate, endDate);
+
+  const historyData = trackingHistory || [];
+  const displayItems = useMemo(() => groupStoppedPoints(historyData), [historyData]);
+  const totalPoints = useMemo(() => countOriginalPoints(displayItems), [displayItems]);
 
   const handleBack = () => {
     navigate(`/veiculos/${id}/mapa`);
@@ -56,6 +62,15 @@ const VeiculoHistorico = () => {
 
   const handlePointClick = (point: VehicleTrackingData) => {
     setSelectedPoint(point);
+  };
+
+  const handleDisplayItemClick = (item: HistoryDisplayItem) => {
+    if (item.type === 'single-point') {
+      setSelectedPoint(item.data);
+    } else {
+      // For groups, select the first point to show on map
+      setSelectedPoint(item.points[0]);
+    }
   };
 
   const isLoading = isLoadingVehicle;
@@ -78,7 +93,6 @@ const VeiculoHistorico = () => {
   }
 
   const displayStatus = mapVehicleStatus(vehicle.status);
-  const historyData = trackingHistory || [];
   const vehicleDescription = [vehicle.brand, vehicle.model].filter(Boolean).join('/') || 'Veículo';
 
   return (
@@ -113,7 +127,7 @@ const VeiculoHistorico = () => {
       {/* Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-80 border-r bg-card flex flex-col">
+        <div className="w-96 border-r bg-card flex flex-col">
           {/* Filters */}
           <div className="p-4 border-b">
             <HistoryFilters onFilter={handleFilter} isLoading={isLoadingHistory} />
@@ -141,7 +155,10 @@ const VeiculoHistorico = () => {
           {/* Points count */}
           <div className="px-4 py-3 border-b bg-muted/50">
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{historyData.length}</span> pontos encontrados
+              <span className="font-medium text-foreground">{totalPoints}</span> pontos encontrados
+              {displayItems.length !== totalPoints && (
+                <span className="ml-1">({displayItems.length} itens agrupados)</span>
+              )}
             </p>
           </div>
 
@@ -152,7 +169,7 @@ const VeiculoHistorico = () => {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
-              ) : historyData.length === 0 ? (
+              ) : displayItems.length === 0 ? (
                 <div className="text-center py-8">
                   <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">
@@ -160,17 +177,29 @@ const VeiculoHistorico = () => {
                   </p>
                 </div>
               ) : (
-                historyData.map((point, index) => (
-                  <HistoryTrackingCard
-                    key={point.id}
-                    point={point}
-                    index={index}
-                    isFirst={index === 0}
-                    isLast={index === historyData.length - 1}
-                    isSelected={selectedPoint?.id === point.id}
-                    onClick={() => handlePointClick(point)}
-                  />
-                ))
+                displayItems.map((item, index) => {
+                  if (item.type === 'stopped-group') {
+                    return (
+                      <HistoryStoppedGroupCard
+                        key={item.id}
+                        group={item}
+                        isSelected={selectedPoint ? item.points.some(p => p.id === selectedPoint.id) : false}
+                        onClick={() => handleDisplayItemClick(item)}
+                      />
+                    );
+                  }
+                  return (
+                    <HistoryTrackingCard
+                      key={item.data.id}
+                      point={item.data}
+                      index={index}
+                      isFirst={index === 0}
+                      isLast={index === displayItems.length - 1}
+                      isSelected={selectedPoint?.id === item.data.id}
+                      onClick={() => handlePointClick(item.data)}
+                    />
+                  );
+                })
               )}
             </div>
           </ScrollArea>

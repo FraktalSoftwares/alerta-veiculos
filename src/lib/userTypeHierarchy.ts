@@ -11,6 +11,7 @@ interface UserTypeOption {
 const ALL_USER_TYPES: UserTypeOption[] = [
   { value: "admin", label: "Administrador" },
   { value: "associacao", label: "Associação" },
+  { value: "associado", label: "Associado" },
   { value: "franqueado", label: "Franqueado" },
   { value: "frotista", label: "Frotista" },
   { value: "motorista", label: "Motorista" },
@@ -19,10 +20,11 @@ const ALL_USER_TYPES: UserTypeOption[] = [
 // Define which user types each user type can create
 const ALLOWED_CREATIONS: Record<UserType, UserType[]> = {
   admin: ["associacao", "franqueado", "frotista", "motorista"],
-  associacao: ["franqueado", "frotista", "motorista"],
+  associacao: ["associado", "franqueado", "frotista", "motorista"],
+  associado: [],
   franqueado: ["frotista", "motorista"],
   frotista: ["motorista"],
-  motorista: ["motorista"],
+  motorista: [],
 };
 
 /**

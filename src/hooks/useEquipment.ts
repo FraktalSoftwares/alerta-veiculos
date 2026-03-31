@@ -25,7 +25,8 @@ export function useEquipments(options: UseEquipmentOptions = {}) {
         .select(`
           *,
           products(id, title, model),
-          vehicles(id, plate, clients(id, name))
+          vehicles(id, plate, clients(id, name)),
+          owner:profiles!equipment_owner_id_fkey(id, full_name, email, user_type)
         `, { count: 'exact' });
 
       if (search) {
@@ -98,7 +99,7 @@ export function useCreateEquipment() {
       const { data, error } = await supabase
         .from('equipment')
         .insert({
-          owner_id: user.id,
+          owner_id: formData.owner_id || user.id,
           serial_number: formData.serial_number,
           imei: formData.imei || null,
           chip_number: formData.chip_number || null,

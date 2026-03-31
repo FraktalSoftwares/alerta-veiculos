@@ -10,7 +10,7 @@ interface Profile {
   phone: string | null;
   document_type: string | null;
   document_number: string | null;
-  user_type: 'admin' | 'associacao' | 'franqueado' | 'frotista' | 'motorista';
+  user_type: 'admin' | 'associacao' | 'associado' | 'franqueado' | 'frotista' | 'motorista';
   avatar_url: string | null;
   is_active: boolean;
   parent_user_id: string | null;

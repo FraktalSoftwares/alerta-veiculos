@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { RequirePermission } from "@/components/auth/PermissionGate";
 import { PERMISSIONS } from "@/hooks/useUserPermissions";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StockTableRowProps {
   equipment: EquipmentDisplay;
@@ -21,6 +22,9 @@ const statusLabels = {
 };
 
 export function StockTableRow({ equipment, onClick, onEdit, onDelete }: StockTableRowProps) {
+  const { profile } = useAuth();
+  const isAdmin = profile?.user_type === 'admin';
+
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit?.(equipment);
@@ -34,9 +38,21 @@ export function StockTableRow({ equipment, onClick, onEdit, onDelete }: StockTab
   return (
     <div
       onClick={() => onClick?.(equipment)}
-      className="grid grid-cols-[1fr_120px_160px_100px_120px_140px_100px] gap-4 px-6 py-5 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors"
+      className={`grid ${isAdmin ? 'grid-cols-[1fr_150px_120px_160px_100px_120px_140px_100px]' : 'grid-cols-[1fr_120px_160px_100px_120px_140px_100px]'} gap-4 px-6 py-5 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors`}
     >
       <div className="text-foreground font-medium truncate">{equipment.name}</div>
+      {isAdmin && (
+        <div className="truncate">
+          {equipment.ownerName && equipment.ownerName !== profile?.full_name ? (
+            <>
+              <div className="text-foreground text-sm truncate">{equipment.ownerName}</div>
+              <div className="text-muted-foreground text-xs truncate">{equipment.ownerEmail || ''}</div>
+            </>
+          ) : (
+            <div className="text-muted-foreground text-sm">Sem vínculo</div>
+          )}
+        </div>
+      )}
       <div className="text-muted-foreground">{equipment.model}</div>
       <div className="text-foreground">{equipment.imei}</div>
       <div className="text-foreground">{equipment.line}</div>

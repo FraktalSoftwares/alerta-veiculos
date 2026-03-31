@@ -17,6 +17,9 @@ export interface EquipmentDisplay {
   chipOperator: string | null;
   vehicleId: string | null;
   dbStatus?: EquipmentStatus | null;
+  ownerId?: string | null;
+  ownerName?: string | null;
+  ownerEmail?: string | null;
 }
 
 // Extended equipment type with relationships
@@ -34,6 +37,12 @@ export interface EquipmentWithDetails extends EquipmentRow {
       name: string;
     };
   } | null;
+  owner?: {
+    id: string;
+    full_name: string;
+    email: string;
+    user_type: string;
+  } | null;
 }
 
 // Form types
@@ -46,6 +55,7 @@ export interface EquipmentFormData {
   product_id?: string;
   vehicle_id?: string;
   status?: EquipmentStatus;
+  owner_id?: string;
 }
 
 // Map DB status to UI status
@@ -83,5 +93,8 @@ export function mapEquipmentToDisplay(equipment: EquipmentWithDetails): Equipmen
     chipOperator: equipment.chip_operator,
     vehicleId: equipment.vehicle_id,
     dbStatus: equipment.status,
+    ownerId: equipment.owner_id || null,
+    ownerName: equipment.owner?.full_name || null,
+    ownerEmail: equipment.owner?.email || null,
   };
 }

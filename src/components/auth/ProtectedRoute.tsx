@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedUserTypes?: Array<'admin' | 'associacao' | 'franqueado' | 'frotista' | 'motorista'>;
+  allowedUserTypes?: Array<'admin' | 'associacao' | 'associado' | 'franqueado' | 'frotista' | 'motorista'>;
 }
 
 export function ProtectedRoute({ children, allowedUserTypes }: ProtectedRouteProps) {

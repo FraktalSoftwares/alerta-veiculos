@@ -10,6 +10,8 @@ import { ClientWithDetails } from "@/types/client";
 import { useUpdateClient } from "@/hooks/useClients";
 import { formatCPF, formatCNPJ, formatPhone, formatDateBR, parseDateBR } from "@/lib/formatters";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAllowedUserTypesToCreate } from "@/lib/userTypeHierarchy";
 
 interface DadosBasicosTabProps {
   client: ClientWithDetails;
@@ -19,6 +21,8 @@ export function DadosBasicosTab({ client }: DadosBasicosTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const updateClient = useUpdateClient();
+  const { profile } = useAuth();
+  const allowedUserTypes = getAllowedUserTypesToCreate(profile?.user_type);
 
   const [formData, setFormData] = useState(() => {
     const docType = (client.document_type || "cpf") as "cpf" | "cnpj";
@@ -30,7 +34,7 @@ export function DadosBasicosTab({ client }: DadosBasicosTabProps) {
       document_type: docType,
       document_number: docType === "cnpj" ? formatCNPJ(rawDoc) : formatCPF(rawDoc),
       phone: formatPhone(rawPhone),
-      client_type: client.client_type as "associacao" | "franqueado" | "frotista" | "motorista",
+      client_type: client.client_type as "associacao" | "associado" | "franqueado" | "frotista" | "motorista",
       status: (client.status || "active") as "active" | "inactive" | "blocked",
     };
   });
@@ -184,10 +188,12 @@ export function DadosBasicosTab({ client }: DadosBasicosTabProps) {
       <div className="mb-6">
         <Label className="font-semibold mb-3 block">Tipo de usuário</Label>
         <RadioGroup value={formData.client_type} onValueChange={(v: any) => setFormData({ ...formData, client_type: v })} className="flex gap-6" disabled={!isEditing}>
-          <div className="flex items-center space-x-2"><RadioGroupItem value="associacao" id="associacao" /><Label htmlFor="associacao">Associação</Label></div>
-          <div className="flex items-center space-x-2"><RadioGroupItem value="franqueado" id="franqueado" /><Label htmlFor="franqueado">Franqueado</Label></div>
-          <div className="flex items-center space-x-2"><RadioGroupItem value="frotista" id="frotista" /><Label htmlFor="frotista">Frotista</Label></div>
-          <div className="flex items-center space-x-2"><RadioGroupItem value="motorista" id="motorista" /><Label htmlFor="motorista">Motorista</Label></div>
+          {allowedUserTypes.map((type) => (
+            <div key={type.value} className="flex items-center space-x-2">
+              <RadioGroupItem value={type.value} id={type.value} />
+              <Label htmlFor={type.value}>{type.label}</Label>
+            </div>
+          ))}
         </RadioGroup>
       </div>
 

@@ -28,8 +28,11 @@ export function useClients(options: UseClientsOptions = {}) {
         .from('clients')
         .select(`*`, { count: 'exact' });
 
+      // Exclude the logged-in user's own client record
+      query = query.or(`user_id.is.null,user_id.neq.${user.id}`);
+
       if (search) {
-        query = query.or(`name.ilike.%${search}%,document_number.ilike.%${search}%`);
+        query = query.or(`name.ilike.%${search}%,id::text.ilike.${search}%`);
       }
 
       if (status) {
@@ -37,7 +40,7 @@ export function useClients(options: UseClientsOptions = {}) {
       }
 
       if (clientType) {
-        query = query.eq('client_type', clientType as 'admin' | 'associacao' | 'franqueado' | 'frotista' | 'motorista');
+        query = query.eq('client_type', clientType as 'admin' | 'associacao' | 'associado' | 'franqueado' | 'frotista' | 'motorista');
       }
 
       if (parentClientId) {

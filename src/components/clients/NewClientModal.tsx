@@ -41,13 +41,16 @@ interface NewClientModalProps {
   preselectedParentClientId?: string;
 }
 
-const STEPS = [
+const ALL_STEPS = [
   { id: 1, label: "Dados Básicos" },
   { id: 2, label: "Endereço" },
   { id: 3, label: "Cobrança" },
   { id: 4, label: "Customização" },
   { id: 5, label: "Acesso e opções" },
 ];
+
+// Associado inherits customization from parent Associação — skip step 4
+const STEPS_WITHOUT_CUSTOMIZATION = ALL_STEPS.filter(s => s.id !== 4);
 
 const generateRandomPassword = () => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
@@ -83,14 +86,18 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
     phone: "",
     email: "",
     birth_date: "",
-    client_type: "motorista" as "associacao" | "franqueado" | "frotista" | "motorista",
+    client_type: "motorista" as "associacao" | "associado" | "franqueado" | "frotista" | "motorista",
     status: "active" as "active" | "inactive" | "blocked",
   });
+
+  const hasCustomization = dadosBasicos.client_type === "associacao" || dadosBasicos.client_type === "franqueado";
+  const steps = hasCustomization ? ALL_STEPS : STEPS_WITHOUT_CUSTOMIZATION;
+  const lastStepId = steps[steps.length - 1].id;
 
   // Sync defaultUserType when profile loads asynchronously
   useEffect(() => {
     if (defaultUserType) {
-      setDadosBasicos(prev => ({ ...prev, client_type: defaultUserType as "associacao" | "franqueado" | "frotista" | "motorista" }));
+      setDadosBasicos(prev => ({ ...prev, client_type: defaultUserType as "associacao" | "associado" | "franqueado" | "frotista" | "motorista" }));
     }
   }, [defaultUserType]);
 
@@ -226,7 +233,7 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
       phone: "",
       email: "",
       birth_date: "",
-      client_type: (defaultUserType as "associacao" | "franqueado" | "frotista" | "motorista") || "motorista",
+      client_type: (defaultUserType as "associacao" | "associado" | "franqueado" | "frotista" | "motorista") || "motorista",
       status: "active",
     });
     setEndereco({
@@ -300,7 +307,13 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
       }
     }
 
-    setCurrentStep(currentStep + 1);
+    // Skip customization step for associado
+    const nextStep = currentStep + 1;
+    if (nextStep === 4 && !hasCustomization) {
+      setCurrentStep(5);
+    } else {
+      setCurrentStep(nextStep);
+    }
   };
 
   // Final save — ALL records created here
@@ -472,7 +485,7 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
 
   const renderStepIndicator = () => (
     <div className="flex items-center justify-center gap-2 mb-6">
-      {STEPS.map((step, index) => (
+      {steps.map((step, index) => (
         <div key={step.id} className="flex items-center">
           <div
             className={cn(
@@ -484,9 +497,9 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
                 : "bg-muted text-muted-foreground"
             )}
           >
-            {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+            {currentStep > step.id ? <Check className="h-4 w-4" /> : index + 1}
           </div>
-          {index < STEPS.length - 1 && (
+          {index < steps.length - 1 && (
             <div
               className={cn(
                 "w-8 h-0.5 mx-1",
@@ -598,7 +611,7 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
         <Label>Tipo de Usuário</Label>
         <RadioGroup
           value={dadosBasicos.client_type}
-          onValueChange={(value: "associacao" | "franqueado" | "frotista" | "motorista") =>
+          onValueChange={(value: "associacao" | "associado" | "franqueado" | "frotista" | "motorista") =>
             setDadosBasicos({ ...dadosBasicos, client_type: value })
           }
           className="flex flex-wrap gap-6"
@@ -935,30 +948,6 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label>Função Administrativa</Label>
-              <Select
-                value={acesso.admin_role_id}
-                onValueChange={(value) => setAcesso({ ...acesso, admin_role_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma função (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {adminRoles
-                    .filter((role) => role.isActive)
-                    .map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Define quais permissões o usuário terá no sistema.
-              </p>
-            </div>
-
             <div className="flex items-center justify-between pt-2">
               <div>
                 <Label>Enviar Email de Boas-vindas</Label>
@@ -992,7 +981,7 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Novo Cliente - {STEPS[currentStep - 1].label}</DialogTitle>
+          <DialogTitle>Novo Cliente - {ALL_STEPS[currentStep - 1].label}</DialogTitle>
         </DialogHeader>
 
         {renderStepIndicator()}
@@ -1002,13 +991,22 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
           <Button
             type="button"
             variant="outline"
-            onClick={() => currentStep > 1 ? setCurrentStep(currentStep - 1) : handleClose()}
+            onClick={() => {
+              if (currentStep <= 1) { handleClose(); return; }
+              const prevStep = currentStep - 1;
+              // Skip customization step for associado
+              if (prevStep === 4 && !hasCustomization) {
+                setCurrentStep(3);
+              } else {
+                setCurrentStep(prevStep);
+              }
+            }}
             disabled={isSaving}
           >
             {currentStep === 1 ? "Cancelar" : "Voltar"}
           </Button>
 
-          {currentStep < 5 ? (
+          {currentStep < lastStepId ? (
             <Button
               onClick={handleNext}
               className="bg-foreground hover:bg-foreground/90 text-background"

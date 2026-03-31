@@ -2,15 +2,20 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { UserRoleList } from "./UserRoleList";
+import { DeleteUserDialog } from "./DeleteUserDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   useUsersWithRoles,
   useAdminRoles,
   useAssignUserRole,
   useRemoveUserRole,
+  UserWithRole,
 } from "@/hooks/useSettings";
 
 export function UserRoleSection() {
+  const { profile } = useAuth();
   const [searchValue, setSearchValue] = useState("");
+  const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
 
   const { data: users = [], isLoading: isLoadingUsers } = useUsersWithRoles();
   const { data: roles = [], isLoading: isLoadingRoles } = useAdminRoles();
@@ -52,8 +57,16 @@ export function UserRoleSection() {
         users={filteredUsers}
         roles={roles}
         isLoading={isLoadingUsers || isLoadingRoles}
+        isAdmin={profile?.user_type === "admin"}
         onAssignRole={handleAssignRole}
         onRemoveRole={handleRemoveRole}
+        onDeleteUser={setUserToDelete}
+      />
+
+      <DeleteUserDialog
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        user={userToDelete}
       />
     </div>
   );

@@ -3,12 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Trash2 } from "lucide-react";
 import { useCreateEquipment, useUpdateEquipment, useDeleteEquipment } from "@/hooks/useEquipment";
 import { EquipmentDisplay } from "@/types/equipment";
 import { formatIMEI, formatPhone } from "@/lib/formatters";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUsersWithRoles } from "@/hooks/useSettings";
 
 interface NewEquipmentModalProps {
   open: boolean;
@@ -23,11 +24,19 @@ export interface EquipmentFormData {
   chip_operator: string;
   status: string;
   model_type?: string;
+  owner_id?: string;
 }
 
 export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmentModalProps) {
   const isEditing = !!equipment;
-  
+  const { profile } = useAuth();
+  const isAdmin = profile?.user_type === 'admin';
+  const { data: users } = useUsersWithRoles();
+
+  const assignableUsers = (users || []).filter(
+    (u) => u.user_type === 'associacao' || u.user_type === 'frotista'
+  );
+
   const [formData, setFormData] = useState<EquipmentFormData>({
     serial_number: "",
     imei: "",
@@ -35,6 +44,7 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
     chip_operator: "",
     status: "available",
     model_type: "",
+    owner_id: "",
   });
 
   // Atualiza o formulário quando o equipamento ou o modal abrir mudar
@@ -64,6 +74,11 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
           }
         }
         
+        // Se o owner é o próprio admin, considera como "sem vínculo"
+        const ownerValue = (equipment.ownerId && equipment.ownerId !== profile?.id)
+          ? equipment.ownerId
+          : "";
+
         setFormData({
           serial_number: equipment.serialNumber || "",
           imei: equipment.imei === "-" ? "" : equipment.imei || "",
@@ -71,6 +86,7 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
           chip_operator: equipment.chipOperator || "",
           status: statusValue,
           model_type: modelType,
+          owner_id: ownerValue,
         });
       } else {
         // Limpa o formulário para criar novo equipamento
@@ -81,6 +97,7 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
           chip_operator: "",
           status: "available",
           model_type: "",
+          owner_id: "",
         });
       }
     }
@@ -121,6 +138,7 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
           chip_operator: formData.chip_operator || undefined,
           model: formData.model_type || undefined,
           status: formData.status as 'available' | 'installed' | 'maintenance' | 'defective',
+          ...(isAdmin && { owner_id: formData.owner_id || profile?.id }),
         },
       }, {
         onSuccess: () => {
@@ -135,6 +153,7 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
         chip_operator: formData.chip_operator || undefined,
         model: formData.model_type || undefined,
         status: formData.status as 'available' | 'installed' | 'maintenance' | 'defective',
+        owner_id: formData.owner_id || undefined,
       }, {
         onSuccess: () => {
           onOpenChange(false);
@@ -145,6 +164,7 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
             chip_operator: "",
             status: "available",
             model_type: "",
+            owner_id: "",
           });
         }
       });
@@ -165,14 +185,14 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] p-0 gap-0">
-        <DialogHeader className="px-6 py-4 bg-muted/50 border-b border-border">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] p-0 gap-0 flex flex-col">
+        <DialogHeader className="px-6 py-4 bg-muted/50 border-b border-border shrink-0">
           <DialogTitle className="text-lg font-semibold text-center">
             {isEditing ? 'Editar equipamento' : 'Cadastrar equipamento'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           <div className="border border-border rounded-lg p-6 space-y-6">
             {/* Número de Série */}
             <div className="space-y-2">
@@ -270,6 +290,31 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Vincular a usuário (apenas admin) */}
+            {isAdmin && (
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">
+                  {isEditing ? 'Proprietário' : 'Atribuir a usuário'}
+                </Label>
+                <Select
+                  value={formData.owner_id || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, owner_id: value === "none" ? "" : value })}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Sem vínculo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem vínculo</SelectItem>
+                    {assignableUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.full_name} ({user.user_type === 'associacao' ? 'Associação' : 'Frotista'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* Actions */}

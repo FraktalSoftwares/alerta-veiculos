@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { UserWithRole } from "@/hooks/useSettings";
 import { AdminRoleDisplay } from "@/types/settings";
 
@@ -17,16 +17,20 @@ interface UserRoleListProps {
   users: UserWithRole[];
   roles: AdminRoleDisplay[];
   isLoading: boolean;
+  isAdmin: boolean;
   onAssignRole: (userId: string, roleId: string) => void;
   onRemoveRole: (userId: string) => void;
+  onDeleteUser: (user: UserWithRole) => void;
 }
 
 export function UserRoleList({
   users,
   roles,
   isLoading,
+  isAdmin,
   onAssignRole,
   onRemoveRole,
+  onDeleteUser,
 }: UserRoleListProps) {
   if (isLoading) {
     return (
@@ -128,6 +132,18 @@ export function UserRoleList({
                 className="text-muted-foreground hover:text-destructive shrink-0 min-h-[40px] min-w-[40px]"
               >
                 <X className="h-4 w-4" />
+              </Button>
+            )}
+
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onDeleteUser(user)}
+                title="Excluir usuário"
+                className="text-muted-foreground hover:text-destructive shrink-0 min-h-[40px] min-w-[40px]"
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
           </div>

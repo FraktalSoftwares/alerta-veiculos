@@ -10,6 +10,8 @@ import { ClientDisplay } from "@/types/client";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCPF, formatCNPJ, formatPhone } from "@/lib/formatters";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAllowedUserTypesToCreate } from "@/lib/userTypeHierarchy";
 
 interface EditClientModalProps {
   isOpen: boolean;
@@ -19,6 +21,8 @@ interface EditClientModalProps {
 
 export function EditClientModal({ isOpen, onClose, client }: EditClientModalProps) {
   const updateClient = useUpdateClient();
+  const { profile } = useAuth();
+  const allowedUserTypes = getAllowedUserTypesToCreate(profile?.user_type);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -26,7 +30,7 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
     document_number: "",
     phone: "",
     email: "",
-    client_type: "frotista" as "associacao" | "franqueado" | "frotista" | "motorista",
+    client_type: "frotista" as "associacao" | "associado" | "franqueado" | "frotista" | "motorista",
     status: "active" as "active" | "inactive" | "blocked",
   });
 
@@ -41,9 +45,8 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
         document_number: docType === "cnpj" ? formatCNPJ(rawDoc) : formatCPF(rawDoc),
         phone: formatPhone(rawPhone),
         email: client.email || "",
-        client_type: client.client_type === "associacao" ? "associacao" 
-          : client.client_type === "franqueado" ? "franqueado"
-          : client.client_type === "frotista" ? "frotista"
+        client_type: (client.client_type === "associacao" || client.client_type === "associado" || client.client_type === "franqueado" || client.client_type === "frotista" || client.client_type === "motorista")
+          ? client.client_type
           : "motorista",
         status: client.status === "ATIVO" ? "active" : client.status === "INATIVO" ? "inactive" : "blocked",
       });
@@ -210,27 +213,17 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
             <Label>Tipo de Usuário</Label>
             <RadioGroup
               value={formData.client_type}
-              onValueChange={(value: "associacao" | "franqueado" | "frotista" | "motorista") =>
+              onValueChange={(value: any) =>
                 setFormData({ ...formData, client_type: value })
               }
               className="flex flex-wrap gap-6"
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="associacao" id="edit-associacao" />
-                <Label htmlFor="edit-associacao">Associação</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="franqueado" id="edit-franqueado" />
-                <Label htmlFor="edit-franqueado">Franqueado</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="frotista" id="edit-frotista" />
-                <Label htmlFor="edit-frotista">Frotista</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="motorista" id="edit-motorista" />
-                <Label htmlFor="edit-motorista">Motorista</Label>
-              </div>
+              {allowedUserTypes.map((type) => (
+                <div key={type.value} className="flex items-center space-x-2">
+                  <RadioGroupItem value={type.value} id={`edit-${type.value}`} />
+                  <Label htmlFor={`edit-${type.value}`}>{type.label}</Label>
+                </div>
+              ))}
             </RadioGroup>
           </div>
 
