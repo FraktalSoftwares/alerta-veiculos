@@ -11,6 +11,7 @@ interface ClientStats {
   byType: {
     associacao: number;
     associado: number;
+    franquia: number;
     franqueado: number;
     frotista: number;
     motorista: number;
@@ -112,6 +113,7 @@ export function useClientStats(startDate?: string, endDate?: string) {
       const byType = {
         associacao: clients?.filter(c => c.client_type === "associacao").length || 0,
         associado: clients?.filter(c => c.client_type === "associado").length || 0,
+        franquia: clients?.filter(c => c.client_type === "franquia").length || 0,
         franqueado: clients?.filter(c => c.client_type === "franqueado").length || 0,
         frotista: clients?.filter(c => c.client_type === "frotista").length || 0,
         motorista: clients?.filter(c => c.client_type === "motorista").length || 0,

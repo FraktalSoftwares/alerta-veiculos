@@ -63,6 +63,8 @@ function getTargetLabel(notification: NotificationWithDetails): string {
     const typeLabels: Record<UserType, string> = {
       'admin': 'Administradores',
       'associacao': 'Associações',
+      'associado': 'Associados',
+      'franquia': 'Franquias',
       'franqueado': 'Franqueados',
       'frotista': 'Frotistas',
       'motorista': 'Motoristas',

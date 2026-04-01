@@ -118,7 +118,7 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    const allowedTypes = ['admin', 'associacao', 'franqueado'];
+    const allowedTypes = ['admin', 'associacao', 'franquia'];
     if (!callerProfile || !allowedTypes.includes(callerProfile.user_type)) {
       return new Response(
         JSON.stringify({ error: 'Você não tem permissão para criar assinaturas' }),

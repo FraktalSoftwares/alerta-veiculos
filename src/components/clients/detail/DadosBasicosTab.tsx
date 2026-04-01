@@ -34,7 +34,7 @@ export function DadosBasicosTab({ client }: DadosBasicosTabProps) {
       document_type: docType,
       document_number: docType === "cnpj" ? formatCNPJ(rawDoc) : formatCPF(rawDoc),
       phone: formatPhone(rawPhone),
-      client_type: client.client_type as "associacao" | "associado" | "franqueado" | "frotista" | "motorista",
+      client_type: client.client_type as "associacao" | "associado" | "franquia" | "franqueado" | "frotista" | "motorista",
       status: (client.status || "active") as "active" | "inactive" | "blocked",
     };
   });

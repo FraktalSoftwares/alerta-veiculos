@@ -11,6 +11,8 @@ import { NotificationTemplateDisplay } from "@/types/notification";
 const TARGET_LABELS: Record<string, string> = {
   admin: 'Administradores',
   associacao: 'Associações',
+  associado: 'Associados',
+  franquia: 'Franquias',
   franqueado: 'Franqueados',
   frotista: 'Frotistas',
   motorista: 'Motoristas',

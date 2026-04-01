@@ -30,7 +30,7 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
     document_number: "",
     phone: "",
     email: "",
-    client_type: "frotista" as "associacao" | "associado" | "franqueado" | "frotista" | "motorista",
+    client_type: "frotista" as "associacao" | "associado" | "franquia" | "franqueado" | "frotista" | "motorista",
     status: "active" as "active" | "inactive" | "blocked",
   });
 
@@ -45,7 +45,7 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
         document_number: docType === "cnpj" ? formatCNPJ(rawDoc) : formatCPF(rawDoc),
         phone: formatPhone(rawPhone),
         email: client.email || "",
-        client_type: (client.client_type === "associacao" || client.client_type === "associado" || client.client_type === "franqueado" || client.client_type === "frotista" || client.client_type === "motorista")
+        client_type: (client.client_type === "associacao" || client.client_type === "associado" || client.client_type === "franquia" || client.client_type === "franqueado" || client.client_type === "frotista" || client.client_type === "motorista")
           ? client.client_type
           : "motorista",
         status: client.status === "ATIVO" ? "active" : client.status === "INATIVO" ? "inactive" : "blocked",

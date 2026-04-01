@@ -23,7 +23,7 @@ const LojaContent = () => {
   const { profile } = useAuth();
 
   const isAdmin = profile?.user_type === 'admin';
-  const isBuyer = profile?.user_type === 'associacao' || profile?.user_type === 'franqueado';
+  const isBuyer = profile?.user_type === 'associacao' || profile?.user_type === 'franquia';
 
   const { data: products = [], isLoading } = useProducts({ 
     search: searchValue,

@@ -63,6 +63,8 @@ export function UserRoleList({
     const labels: Record<string, string> = {
       admin: "Administrador",
       associacao: "Associação",
+      associado: "Associado",
+      franquia: "Franquia",
       franqueado: "Franqueado",
       frotista: "Frotista",
       motorista: "Motorista",

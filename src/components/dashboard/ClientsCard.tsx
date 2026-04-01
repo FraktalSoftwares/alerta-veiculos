@@ -11,9 +11,10 @@ export function ClientsCard() {
   const data = [
     ...(isAdmin ? [{ name: "Associações", value: stats?.byType.associacao || 0, color: "#1E40AF" }] : []),
     { name: "Associados", value: stats?.byType.associado || 0, color: "#3B82F6" },
-    { name: "Motoristas", value: stats?.byType.motorista || 0, color: "#F59E0B" },
+    { name: "Franquias", value: stats?.byType.franquia || 0, color: "#10B981" },
     { name: "Franqueados", value: stats?.byType.franqueado || 0, color: "#EA580C" },
     { name: "Frotistas", value: stats?.byType.frotista || 0, color: "#16A34A" },
+    { name: "Motoristas", value: stats?.byType.motorista || 0, color: "#F59E0B" },
   ];
 
   const hasData = data.some(d => d.value > 0);

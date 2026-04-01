@@ -110,6 +110,8 @@ const Usuarios = () => {
     const labels: Record<string, string> = {
       admin: "ADMINISTRADOR",
       associacao: "ASSOCIAÇÃO",
+      associado: "ASSOCIADO",
+      franquia: "FRANQUIA",
       franqueado: "FRANQUEADO",
       frotista: "FROTISTA",
       motorista: "MOTORISTA",

@@ -7,11 +7,10 @@ const corsHeaders = {
 
 // Define hierarchy rules: which user types each type can create
 const ALLOWED_CREATIONS: Record<string, string[]> = {
-  admin: ['associacao', 'franqueado', 'frotista', 'motorista'],
-  associacao: ['franqueado', 'frotista', 'motorista'],
-  franqueado: ['frotista', 'motorista'],
+  admin: ['admin', 'associacao', 'associado', 'franquia', 'franqueado', 'frotista', 'motorista'],
+  associacao: ['associado', 'motorista'],
+  franquia: ['franqueado', 'motorista'],
   frotista: ['motorista'],
-  motorista: ['motorista'],
 }
 
 function canCreateUserType(callerType: string, targetType: string): boolean {

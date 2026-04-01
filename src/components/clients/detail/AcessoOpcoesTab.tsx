@@ -35,7 +35,7 @@ const DEFAULT_PRIMARY_COLOR = "#F59E0B";
 const DEFAULT_SECONDARY_COLOR = "#FFFFFF";
 
 export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
-  const canCustomize = client.client_type === 'admin' || client.client_type === 'associacao';
+  const canCustomize = client.client_type === 'admin' || client.client_type === 'associacao' || client.client_type === 'franquia';
 
   // Customization state
   const [isEditingColors, setIsEditingColors] = useState(false);

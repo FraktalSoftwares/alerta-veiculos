@@ -17,6 +17,8 @@ export function ClientTableRow({ client, onClick, onEdit, onDelete }: ClientTabl
     switch (type) {
       case 'ASSOCIADO':
         return 'associate';
+      case 'FRANQUIA':
+        return 'franchise';
       case 'FRANQUEADO':
         return 'franchisee';
       case 'FROTISTA':

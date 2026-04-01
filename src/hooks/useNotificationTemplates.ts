@@ -11,6 +11,8 @@ function getTargetLabel(targetType: string | null, targetUserType: string | null
     const labels: Record<string, string> = {
       admin: 'Administradores',
       associacao: 'Associações',
+      associado: 'Associados',
+      franquia: 'Franquias',
       franqueado: 'Franqueados',
       frotista: 'Frotistas',
       motorista: 'Motoristas',

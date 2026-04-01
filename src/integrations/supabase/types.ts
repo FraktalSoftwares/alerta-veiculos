@@ -1087,6 +1087,7 @@ export type Database = {
         | "admin"
         | "associacao"
         | "associado"
+        | "franquia"
         | "franqueado"
         | "frotista"
         | "motorista"
@@ -1240,7 +1241,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
-      user_type: ["admin", "associacao", "associado", "franqueado", "frotista", "motorista"],
+      user_type: ["admin", "associacao", "associado", "franquia", "franqueado", "frotista", "motorista"],
       vehicle_status: [
         "active",
         "inactive",

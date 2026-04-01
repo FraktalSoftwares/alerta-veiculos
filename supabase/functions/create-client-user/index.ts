@@ -215,7 +215,7 @@ serve(async (req) => {
       .eq('id', callerUser.id)
       .single();
 
-    const allowedTypes = ['admin', 'associacao', 'franqueado'];
+    const allowedTypes = ['admin', 'associacao', 'franquia', 'frotista'];
     if (!callerProfile || !allowedTypes.includes(callerProfile.user_type)) {
       return new Response(
         JSON.stringify({ error: 'Você não tem permissão para criar usuários de cliente' }),
@@ -275,6 +275,8 @@ serve(async (req) => {
     const userTypeMap: Record<string, string> = {
       'admin': 'admin',
       'associacao': 'associacao',
+      'associado': 'associado',
+      'franquia': 'franquia',
       'franqueado': 'franqueado',
       'frotista': 'frotista',
       'motorista': 'motorista',
@@ -283,7 +285,9 @@ serve(async (req) => {
     // Roles padrão por tipo de cliente (mesmos IDs da migration)
     const defaultRoleByType: Record<string, string> = {
       'associacao': '00000000-0000-0000-0000-000000000002',
-      'franqueado': '00000000-0000-0000-0000-000000000003',
+      'associado': '00000000-0000-0000-0000-000000000007',
+      'franquia': '00000000-0000-0000-0000-000000000006',
+      'franqueado': '00000000-0000-0000-0000-000000000008',
       'frotista': '00000000-0000-0000-0000-000000000004',
       'motorista': '00000000-0000-0000-0000-000000000005',
     };

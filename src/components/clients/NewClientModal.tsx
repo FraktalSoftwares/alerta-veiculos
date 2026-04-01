@@ -20,7 +20,9 @@ import { useAdminRoles } from "@/hooks/useSettings";
 // IDs fixos das roles padrão por tipo de cliente (criadas na migration)
 const DEFAULT_ROLE_BY_CLIENT_TYPE: Record<string, string> = {
   associacao: "00000000-0000-0000-0000-000000000002",
-  franqueado: "00000000-0000-0000-0000-000000000003",
+  associado: "00000000-0000-0000-0000-000000000007",
+  franquia: "00000000-0000-0000-0000-000000000006",
+  franqueado: "00000000-0000-0000-0000-000000000008",
   frotista: "00000000-0000-0000-0000-000000000004",
   motorista: "00000000-0000-0000-0000-000000000005",
 };
@@ -86,18 +88,18 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
     phone: "",
     email: "",
     birth_date: "",
-    client_type: "motorista" as "associacao" | "associado" | "franqueado" | "frotista" | "motorista",
+    client_type: "motorista" as "associacao" | "associado" | "franquia" | "franqueado" | "frotista" | "motorista",
     status: "active" as "active" | "inactive" | "blocked",
   });
 
-  const hasCustomization = dadosBasicos.client_type === "associacao" || dadosBasicos.client_type === "franqueado";
+  const hasCustomization = dadosBasicos.client_type === "associacao" || dadosBasicos.client_type === "franquia" || dadosBasicos.client_type === "franqueado";
   const steps = hasCustomization ? ALL_STEPS : STEPS_WITHOUT_CUSTOMIZATION;
   const lastStepId = steps[steps.length - 1].id;
 
   // Sync defaultUserType when profile loads asynchronously
   useEffect(() => {
     if (defaultUserType) {
-      setDadosBasicos(prev => ({ ...prev, client_type: defaultUserType as "associacao" | "associado" | "franqueado" | "frotista" | "motorista" }));
+      setDadosBasicos(prev => ({ ...prev, client_type: defaultUserType as "associacao" | "associado" | "franquia" | "franqueado" | "frotista" | "motorista" }));
     }
   }, [defaultUserType]);
 
@@ -233,7 +235,7 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
       phone: "",
       email: "",
       birth_date: "",
-      client_type: (defaultUserType as "associacao" | "associado" | "franqueado" | "frotista" | "motorista") || "motorista",
+      client_type: (defaultUserType as "associacao" | "associado" | "franquia" | "franqueado" | "frotista" | "motorista") || "motorista",
       status: "active",
     });
     setEndereco({
@@ -611,7 +613,7 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
         <Label>Tipo de Usuário</Label>
         <RadioGroup
           value={dadosBasicos.client_type}
-          onValueChange={(value: "associacao" | "associado" | "franqueado" | "frotista" | "motorista") =>
+          onValueChange={(value: "associacao" | "associado" | "franquia" | "franqueado" | "frotista" | "motorista") =>
             setDadosBasicos({ ...dadosBasicos, client_type: value })
           }
           className="flex flex-wrap gap-6"

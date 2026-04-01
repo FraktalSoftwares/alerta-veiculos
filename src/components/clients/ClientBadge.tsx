@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type BadgeVariant = "client" | "associate" | "franchisee" | "fleet" | "driver" | "active" | "inactive";
+type BadgeVariant = "client" | "associate" | "franchise" | "franchisee" | "fleet" | "driver" | "active" | "inactive";
 
 interface ClientBadgeProps {
   variant: BadgeVariant;
@@ -11,6 +11,7 @@ interface ClientBadgeProps {
 const variantStyles: Record<BadgeVariant, string> = {
   client: "bg-secondary text-foreground border border-border",
   associate: "bg-secondary text-foreground border border-border",
+  franchise: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
   franchisee: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   fleet: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
   driver: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",

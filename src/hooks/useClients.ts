@@ -40,7 +40,7 @@ export function useClients(options: UseClientsOptions = {}) {
       }
 
       if (clientType) {
-        query = query.eq('client_type', clientType as 'admin' | 'associacao' | 'associado' | 'franqueado' | 'frotista' | 'motorista');
+        query = query.eq('client_type', clientType as 'admin' | 'associacao' | 'associado' | 'franquia' | 'franqueado' | 'frotista' | 'motorista');
       }
 
       if (parentClientId) {
