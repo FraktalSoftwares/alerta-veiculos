@@ -26,7 +26,7 @@ export function useProducts(options: UseProductsOptions = {}) {
         .order("created_at", { ascending: false });
 
       if (activeOnly) {
-        query = query.eq("is_active", true);
+        query = query.eq("is_active", true).gt("stock_quantity", 0);
       }
 
       if (search) {

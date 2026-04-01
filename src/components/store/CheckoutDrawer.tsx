@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
@@ -22,14 +21,14 @@ import {
   validateCVV,
   validateCEP,
 } from '@/lib/cardValidation';
-import { Loader2, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, ShoppingBag, CheckCircle2, Package, Copy } from 'lucide-react';
 
 interface CheckoutDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = 'cart' | 'address' | 'payment';
+type Step = 'cart' | 'address' | 'payment' | 'confirmation';
 
 const emptyAddress: ShippingAddress = {
   cep: '',
@@ -46,13 +45,22 @@ const emptyPayment: PaymentData = {
   cardHolder: '',
   expiryDate: '',
   cvv: '',
+  cpfCnpj: '',
+  phone: '',
 };
 
 const stepLabels: Record<Step, string> = {
   cart: 'Carrinho',
   address: 'Endereço',
   payment: 'Pagamento',
+  confirmation: 'Confirmação',
 };
+
+interface OrderConfirmation {
+  orderId: string;
+  equipmentTransferred: number;
+  totalAmount: number;
+}
 
 export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
   const { items, updateQuantity, removeFromCart, getTotal, clearCart } = useCart();
@@ -61,6 +69,7 @@ export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
   const [payment, setPayment] = useState<PaymentData>(emptyPayment);
   const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
+  const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
 
   const createOrder = useCreateOrder();
   const total = getTotal();
@@ -106,6 +115,14 @@ export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
     if (!validateCVV(payment.cvv)) {
       errors.cvv = 'CVV inválido';
     }
+    const cpfCnpjDigits = payment.cpfCnpj.replace(/\D/g, '');
+    if (cpfCnpjDigits.length !== 11 && cpfCnpjDigits.length !== 14) {
+      errors.cpfCnpj = 'CPF ou CNPJ inválido';
+    }
+    const phoneDigits = payment.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      errors.phone = 'Telefone inválido';
+    }
 
     setPaymentErrors(errors);
     return Object.keys(errors).length === 0;
@@ -133,29 +150,43 @@ export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
     if (!validatePayment()) return;
 
     try {
-      await createOrder.mutateAsync({
+      const [expiryMonth, expiryYear] = payment.expiryDate.split('/');
+
+      const result = await createOrder.mutateAsync({
         items,
         shippingAddress: address,
         paymentData: payment,
       });
 
+      setOrderConfirmation({
+        orderId: result.orderId,
+        equipmentTransferred: result.equipmentTransferred,
+        totalAmount: total,
+      });
+      setStep('confirmation');
       clearCart();
-      setStep('cart');
-      setAddress(emptyAddress);
-      setPayment(emptyPayment);
-      onOpenChange(false);
     } catch (error) {
       // Error handled by mutation
     }
   };
 
   const handleClose = () => {
+    if (step === 'confirmation') {
+      setOrderConfirmation(null);
+    }
     setStep('cart');
     onOpenChange(false);
   };
 
-  const steps: Step[] = ['cart', 'address', 'payment'];
-  const currentStepIndex = steps.indexOf(step);
+  const handleCopyOrderId = () => {
+    if (orderConfirmation) {
+      navigator.clipboard.writeText(orderConfirmation.orderId);
+    }
+  };
+
+  const checkoutSteps: Step[] = ['cart', 'address', 'payment'];
+  const currentStepIndex = checkoutSteps.indexOf(step);
+  const isConfirmation = step === 'confirmation';
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
@@ -164,42 +195,43 @@ export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
           <SheetTitle className="text-lg font-semibold">
             {stepLabels[step]}
           </SheetTitle>
-          
-          {/* Simple step indicators */}
-          <div className="flex items-center justify-center gap-3 pt-3">
-            {steps.map((s, index) => {
-              const isActive = currentStepIndex === index;
-              const isPast = currentStepIndex > index;
-              
-              return (
-                <div key={s} className="flex items-center gap-3">
-                  <div className="flex flex-col items-center gap-1">
-                    <div
-                      className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
-                        isActive
-                          ? 'bg-primary scale-125'
-                          : isPast
-                          ? 'bg-primary/60'
-                          : 'bg-muted-foreground/30'
-                      }`}
-                    />
-                    <span className={`text-[10px] font-medium ${
-                      isActive ? 'text-primary' : 'text-muted-foreground'
-                    }`}>
-                      {stepLabels[s]}
-                    </span>
+
+          {!isConfirmation && (
+            <div className="flex items-center justify-center gap-3 pt-3">
+              {checkoutSteps.map((s, index) => {
+                const isActive = currentStepIndex === index;
+                const isPast = currentStepIndex > index;
+
+                return (
+                  <div key={s} className="flex items-center gap-3">
+                    <div className="flex flex-col items-center gap-1">
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
+                          isActive
+                            ? 'bg-primary scale-125'
+                            : isPast
+                            ? 'bg-primary/60'
+                            : 'bg-muted-foreground/30'
+                        }`}
+                      />
+                      <span className={`text-[10px] font-medium ${
+                        isActive ? 'text-primary' : 'text-muted-foreground'
+                      }`}>
+                        {stepLabels[s]}
+                      </span>
+                    </div>
+                    {index < checkoutSteps.length - 1 && (
+                      <div
+                        className={`w-12 h-px -mt-4 ${
+                          isPast ? 'bg-primary/60' : 'bg-muted-foreground/20'
+                        }`}
+                      />
+                    )}
                   </div>
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`w-12 h-px -mt-4 ${
-                        isPast ? 'bg-primary/60' : 'bg-muted-foreground/20'
-                      }`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </SheetHeader>
 
         <Separator />
@@ -226,7 +258,7 @@ export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
                 )}
               </div>
             )}
-            
+
             {step === 'address' && (
               <AddressForm
                 address={address}
@@ -234,7 +266,7 @@ export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
                 errors={addressErrors}
               />
             )}
-            
+
             {step === 'payment' && (
               <PaymentForm
                 payment={payment}
@@ -242,11 +274,64 @@ export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
                 errors={paymentErrors}
               />
             )}
+
+            {step === 'confirmation' && orderConfirmation && (
+              <div className="py-8 text-center space-y-6">
+                <div className="flex justify-center">
+                  <div className="h-20 w-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-foreground">Pedido Confirmado!</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Seu pagamento foi aprovado e o pedido está sendo processado.
+                  </p>
+                </div>
+
+                <div className="bg-muted/50 rounded-xl p-4 space-y-3 text-left">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Pedido</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-mono font-medium">
+                        #{orderConfirmation.orderId.substring(0, 8)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={handleCopyOrderId}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total pago</span>
+                    <span className="text-sm font-semibold">{formatCurrency(orderConfirmation.totalAmount)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Equipamentos</span>
+                    <div className="flex items-center gap-1.5">
+                      <Package className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold">{orderConfirmation.equipmentTransferred} adicionado(s) ao estoque</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Você pode acompanhar seus pedidos na página "Meus Pedidos" no menu da Loja.
+                </p>
+              </div>
+            )}
           </div>
         </ScrollArea>
 
         <div className="border-t bg-card p-6 space-y-4">
-          {items.length > 0 && (
+          {!isConfirmation && items.length > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Total</span>
               <span className="text-xl font-bold">{formatCurrency(total)}</span>
@@ -254,39 +339,47 @@ export function CheckoutDrawer({ open, onOpenChange }: CheckoutDrawerProps) {
           )}
 
           <div className="flex gap-3">
-            {step !== 'cart' ? (
-              <Button variant="outline" onClick={handleBack} className="flex-1 h-11">
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Voltar
+            {isConfirmation ? (
+              <Button onClick={handleClose} className="flex-1 h-11">
+                Fechar
               </Button>
             ) : (
-              <Button variant="outline" onClick={handleClose} className="flex-1 h-11">
-                Continuar Comprando
-              </Button>
-            )}
-
-            {step !== 'payment' && items.length > 0 && (
-              <Button onClick={handleNext} className="flex-1 h-11">
-                Próximo
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            )}
-
-            {step === 'payment' && (
-              <Button
-                onClick={handleSubmit}
-                className="flex-1 h-11"
-                disabled={createOrder.isPending}
-              >
-                {createOrder.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processando...
-                  </>
+              <>
+                {step !== 'cart' ? (
+                  <Button variant="outline" onClick={handleBack} className="flex-1 h-11">
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Voltar
+                  </Button>
                 ) : (
-                  `Pagar ${formatCurrency(total)}`
+                  <Button variant="outline" onClick={handleClose} className="flex-1 h-11">
+                    Continuar Comprando
+                  </Button>
                 )}
-              </Button>
+
+                {step !== 'payment' && items.length > 0 && (
+                  <Button onClick={handleNext} className="flex-1 h-11">
+                    Próximo
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                )}
+
+                {step === 'payment' && (
+                  <Button
+                    onClick={handleSubmit}
+                    className="flex-1 h-11"
+                    disabled={createOrder.isPending}
+                  >
+                    {createOrder.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      `Pagar ${formatCurrency(total)}`
+                    )}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

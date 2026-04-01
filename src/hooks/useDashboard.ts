@@ -10,6 +10,7 @@ interface ClientStats {
   overdue: number;
   byType: {
     associacao: number;
+    associado: number;
     franqueado: number;
     frotista: number;
     motorista: number;
@@ -31,6 +32,7 @@ interface EquipmentStats {
   installed: number;
   maintenance: number;
   defective: number;
+  storeStock: number;
 }
 
 interface RevenueData {
@@ -66,7 +68,12 @@ export function useClientStats(startDate?: string, endDate?: string) {
       // Get all clients (optionally filter by created_at range)
       let query = supabase
         .from("clients")
-        .select("id, status, client_type, created_at");
+        .select("id, status, client_type, created_at, user_id");
+
+      // Exclude the logged-in user's own client record
+      if (user) {
+        query = query.or(`user_id.is.null,user_id.neq.${user.id}`);
+      }
 
       const { data: clients, error } = await query;
 
@@ -104,6 +111,7 @@ export function useClientStats(startDate?: string, endDate?: string) {
       // Count by type
       const byType = {
         associacao: clients?.filter(c => c.client_type === "associacao").length || 0,
+        associado: clients?.filter(c => c.client_type === "associado").length || 0,
         franqueado: clients?.filter(c => c.client_type === "franqueado").length || 0,
         frotista: clients?.filter(c => c.client_type === "frotista").length || 0,
         motorista: clients?.filter(c => c.client_type === "motorista").length || 0,
@@ -198,11 +206,15 @@ export function useEquipmentStats() {
   return useQuery({
     queryKey: ["dashboard", "equipment-stats", user?.id],
     queryFn: async (): Promise<EquipmentStats> => {
-      const { data: equipment, error } = await supabase
-        .from("equipment")
-        .select("id, status");
+      const [{ data: equipment, error }, { data: products, error: productsError }] = await Promise.all([
+        supabase.from("equipment").select("id, status"),
+        supabase.from("products").select("stock_quantity").eq("is_active", true),
+      ]);
 
       if (error) throw error;
+      if (productsError) throw productsError;
+
+      const storeStock = products?.reduce((sum, p) => sum + (p.stock_quantity || 0), 0) || 0;
 
       return {
         total: equipment?.length || 0,
@@ -210,6 +222,7 @@ export function useEquipmentStats() {
         installed: equipment?.filter(e => e.status === "installed").length || 0,
         maintenance: equipment?.filter(e => e.status === "maintenance").length || 0,
         defective: equipment?.filter(e => e.status === "defective").length || 0,
+        storeStock,
       };
     },
   });

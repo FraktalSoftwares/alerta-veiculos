@@ -6,6 +6,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ========== Asaas Client (inline) ==========
+class AsaasClient {
+  private baseUrl: string;
+  private apiKey: string;
+
+  constructor(config: { apiKey: string; environment: 'production' | 'sandbox' }) {
+    this.apiKey = config.apiKey;
+    this.baseUrl = config.environment === 'production'
+      ? 'https://www.asaas.com/api/v3'
+      : 'https://sandbox.asaas.com/api/v3';
+  }
+
+  private async request<T>(method: string, endpoint: string, data?: any): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers: Record<string, string> = {
+      'access_token': this.apiKey,
+      'Content-Type': 'application/json',
+    };
+
+    const options: RequestInit = { method, headers };
+    if (data && method !== 'GET') {
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(url, options);
+    const result = await response.json();
+
+    if (!response.ok) {
+      const errorMessage = result.errors?.[0]?.description ||
+        result.message ||
+        `Asaas API error: ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return result;
+  }
+
+  async createCustomer(data: any): Promise<any> {
+    return this.request('POST', '/customers', data);
+  }
+
+  async createPayment(data: any): Promise<any> {
+    return this.request('POST', '/payments', data);
+  }
+}
+
+// ========== Interfaces ==========
 interface OrderItem {
   productId: string;
   quantity: number;
@@ -22,19 +69,112 @@ interface ShippingAddress {
   state: string;
 }
 
-interface PaymentInfo {
-  cardLastFour: string;
-  cardHolder: string;
+interface CreditCardData {
+  holderName: string;
+  number: string;
+  expiryMonth: string;
+  expiryYear: string;
+  ccv: string;
+}
+
+interface CreditCardHolderInfo {
+  name: string;
+  email: string;
+  cpfCnpj: string;
+  postalCode: string;
+  addressNumber: string;
+  addressComplement?: string;
+  phone?: string;
 }
 
 interface RequestBody {
   items: OrderItem[];
   shippingAddress: ShippingAddress;
-  paymentData: PaymentInfo;
+  paymentData: {
+    creditCard: CreditCardData;
+    creditCardHolderInfo: CreditCardHolderInfo;
+  };
 }
 
+// ========== Stock Reservation ==========
+const RESERVATION_TTL_MINUTES = 15;
+
+async function reserveStock(
+  supabase: any,
+  items: OrderItem[],
+  orderId: string
+): Promise<{ success: boolean; error?: string }> {
+  for (const item of items) {
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('id, title, stock_quantity')
+      .eq('id', item.productId)
+      .single();
+
+    if (error || !product) {
+      return { success: false, error: `Produto não encontrado: ${item.productId}` };
+    }
+
+    if (product.stock_quantity < item.quantity) {
+      return {
+        success: false,
+        error: `Estoque insuficiente para ${product.title}. Disponível: ${product.stock_quantity}`,
+      };
+    }
+
+    // Decrement stock immediately as reservation
+    const { error: stockError } = await supabase.rpc('decrement_stock', {
+      p_product_id: item.productId,
+      p_quantity: item.quantity,
+    });
+
+    if (stockError) {
+      // Fallback: manual decrement
+      const { data: current } = await supabase
+        .from('products')
+        .select('stock_quantity')
+        .eq('id', item.productId)
+        .single();
+
+      if (current) {
+        await supabase
+          .from('products')
+          .update({ stock_quantity: Math.max(0, current.stock_quantity - item.quantity) })
+          .eq('id', item.productId);
+      }
+    }
+  }
+
+  // Save reservation metadata on the order
+  await supabase
+    .from('orders')
+    .update({
+      notes: `RESERVATION_EXPIRES:${new Date(Date.now() + RESERVATION_TTL_MINUTES * 60 * 1000).toISOString()}`,
+    })
+    .eq('id', orderId);
+
+  return { success: true };
+}
+
+async function releaseStock(supabase: any, items: OrderItem[]): Promise<void> {
+  for (const item of items) {
+    const { data: current } = await supabase
+      .from('products')
+      .select('stock_quantity')
+      .eq('id', item.productId)
+      .single();
+
+    if (current) {
+      await supabase
+        .from('products')
+        .update({ stock_quantity: current.stock_quantity + item.quantity })
+        .eq('id', item.productId);
+    }
+  }
+}
+
+// ========== Main Handler ==========
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -42,8 +182,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Get user from auth header
+
+    // Auth
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -52,39 +192,34 @@ serve(async (req) => {
       );
     }
 
-    // Create client with user token to get user info
     const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     });
 
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !user) {
-      console.error('Auth error:', userError);
       return new Response(
         JSON.stringify({ error: 'Usuário não autenticado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create service client for admin operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user profile to check type
+    // Profile check
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('user_type')
+      .select('user_type, full_name, email')
       .eq('id', user.id)
       .single();
 
     if (profileError || !profile) {
-      console.error('Profile error:', profileError);
       return new Response(
         JSON.stringify({ error: 'Perfil não encontrado' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Only associacao and franqueado can purchase
     if (!['associacao', 'franqueado'].includes(profile.user_type)) {
       return new Response(
         JSON.stringify({ error: 'Apenas Associação e Franqueado podem realizar compras' }),
@@ -97,7 +232,7 @@ serve(async (req) => {
 
     console.log('Processing order for user:', user.id, 'Items:', items.length);
 
-    // Validate items and check stock
+    // Validate items exist and are active
     for (const item of items) {
       const { data: product, error: productError } = await supabase
         .from('products')
@@ -121,8 +256,8 @@ serve(async (req) => {
 
       if (product.stock_quantity < item.quantity) {
         return new Response(
-          JSON.stringify({ 
-            error: `Estoque insuficiente para ${product.title}. Disponível: ${product.stock_quantity}` 
+          JSON.stringify({
+            error: `Estoque insuficiente para ${product.title}. Disponível: ${product.stock_quantity}`,
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -130,16 +265,18 @@ serve(async (req) => {
     }
 
     // Calculate total
-    const totalAmount = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+    const totalAmount = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
-    // Create order
+    // Create order (pending)
+    const addressText = `${shippingAddress.street}, ${shippingAddress.number}${shippingAddress.complement ? `, ${shippingAddress.complement}` : ''}, ${shippingAddress.neighborhood}, ${shippingAddress.city}-${shippingAddress.state}, CEP: ${shippingAddress.cep}`;
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         buyer_id: user.id,
         total_amount: totalAmount,
         status: 'pending',
-        notes: `Entrega: ${shippingAddress.street}, ${shippingAddress.number}, ${shippingAddress.neighborhood}, ${shippingAddress.city}-${shippingAddress.state}, CEP: ${shippingAddress.cep}`,
+        notes: `Entrega: ${addressText}`,
       })
       .select()
       .single();
@@ -152,23 +289,18 @@ serve(async (req) => {
       );
     }
 
-    console.log('Order created:', order.id);
-
     // Create order items
-    const orderItems = items.map(item => ({
+    const orderItems = items.map((item) => ({
       order_id: order.id,
       product_id: item.productId,
       quantity: item.quantity,
       unit_price: item.unitPrice,
     }));
 
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
 
     if (itemsError) {
       console.error('Order items error:', itemsError);
-      // Rollback order
       await supabase.from('orders').delete().eq('id', order.id);
       return new Response(
         JSON.stringify({ error: 'Erro ao adicionar itens ao pedido' }),
@@ -176,98 +308,233 @@ serve(async (req) => {
       );
     }
 
-    // Simulate payment processing (always succeeds for demo)
-    console.log('Processing payment for card ending:', paymentData.cardLastFour);
-    
-    // In production, integrate with Stripe or other payment gateway here
-    const paymentSuccess = true;
+    // Reserve stock
+    const reservation = await reserveStock(supabase, items, order.id);
+    if (!reservation.success) {
+      await supabase.from('order_items').delete().eq('order_id', order.id);
+      await supabase.from('orders').delete().eq('id', order.id);
+      return new Response(
+        JSON.stringify({ error: reservation.error }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ========== Asaas Payment Integration ==========
+    // Fetch Asaas configuration
+    const { data: asaasConfig } = await supabase
+      .from('asaas_configuration')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    const apiKey = Deno.env.get(asaasConfig?.secret_name || 'ASAAS_API_KEY');
+
+    let paymentSuccess = false;
+    let asaasPaymentId: string | null = null;
+
+    if (asaasConfig && apiKey) {
+      const asaasClient = new AsaasClient({
+        apiKey,
+        environment: asaasConfig.environment as 'production' | 'sandbox',
+      });
+
+      // Ensure buyer has an Asaas customer ID
+      // Check if profile has linked client record with asaas_customer_id
+      let asaasCustomerId: string | null = null;
+
+      const { data: clientRecord } = await supabase
+        .from('clients')
+        .select('id, asaas_customer_id, document_number, phone')
+        .eq('owner_id', user.id)
+        .limit(1)
+        .single();
+
+      if (clientRecord?.asaas_customer_id) {
+        asaasCustomerId = clientRecord.asaas_customer_id;
+      } else {
+        // Create customer in Asaas
+        try {
+          const customerData: any = {
+            name: profile.full_name || paymentData.creditCard.holderName,
+            email: profile.email || user.email || '',
+          };
+          if (clientRecord?.document_number) {
+            customerData.cpfCnpj = clientRecord.document_number.replace(/\D/g, '');
+          }
+          if (clientRecord?.phone) {
+            customerData.phone = clientRecord.phone.replace(/\D/g, '');
+          }
+          if (paymentData.creditCardHolderInfo?.cpfCnpj) {
+            customerData.cpfCnpj = paymentData.creditCardHolderInfo.cpfCnpj.replace(/\D/g, '');
+          }
+
+          const asaasCustomer = await asaasClient.createCustomer(customerData);
+          asaasCustomerId = asaasCustomer.id;
+
+          // Save customer ID
+          if (clientRecord) {
+            await supabase
+              .from('clients')
+              .update({ asaas_customer_id: asaasCustomerId })
+              .eq('id', clientRecord.id);
+          }
+        } catch (error) {
+          console.error('Error creating Asaas customer:', error);
+          // Release stock and rollback
+          await releaseStock(supabase, items);
+          await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id);
+          return new Response(
+            JSON.stringify({ error: `Erro ao criar cliente no gateway de pagamento: ${error.message}` }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
+      // Create payment in Asaas
+      try {
+        const asaasPaymentData: any = {
+          customer: asaasCustomerId,
+          billingType: 'CREDIT_CARD',
+          value: totalAmount,
+          dueDate: new Date().toISOString().split('T')[0],
+          description: `Pedido #${order.id.substring(0, 8)} - Loja Alerta Veículos`,
+          externalReference: order.id,
+          creditCard: {
+            holderName: paymentData.creditCard.holderName,
+            number: paymentData.creditCard.number.replace(/\s/g, ''),
+            expiryMonth: paymentData.creditCard.expiryMonth,
+            expiryYear: paymentData.creditCard.expiryYear,
+            ccv: paymentData.creditCard.ccv,
+          },
+          creditCardHolderInfo: {
+            name: paymentData.creditCardHolderInfo.name || paymentData.creditCard.holderName,
+            email: paymentData.creditCardHolderInfo.email || profile.email || user.email || '',
+            cpfCnpj: paymentData.creditCardHolderInfo.cpfCnpj.replace(/\D/g, ''),
+            postalCode: shippingAddress.cep.replace(/\D/g, ''),
+            addressNumber: shippingAddress.number,
+            addressComplement: shippingAddress.complement || undefined,
+            phone: paymentData.creditCardHolderInfo.phone?.replace(/\D/g, '') || undefined,
+          },
+        };
+
+        const asaasPayment = await asaasClient.createPayment(asaasPaymentData);
+        asaasPaymentId = asaasPayment.id;
+
+        // CONFIRMED or RECEIVED means immediate approval for credit card
+        paymentSuccess = ['CONFIRMED', 'RECEIVED', 'PENDING'].includes(asaasPayment.status);
+
+        console.log('Asaas payment created:', asaasPaymentId, 'Status:', asaasPayment.status);
+      } catch (error) {
+        console.error('Asaas payment error:', error);
+        // Release stock and mark order as failed
+        await releaseStock(supabase, items);
+        await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id);
+        return new Response(
+          JSON.stringify({ error: `Pagamento recusado: ${error.message}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      // No Asaas config - simulate payment (development/fallback)
+      console.warn('Asaas not configured. Simulating payment success.');
+      paymentSuccess = true;
+    }
 
     if (!paymentSuccess) {
-      // Update order status to failed
-      await supabase
-        .from('orders')
-        .update({ status: 'failed' })
-        .eq('id', order.id);
-
+      await releaseStock(supabase, items);
+      await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id);
       return new Response(
         JSON.stringify({ error: 'Pagamento recusado. Verifique os dados do cartão.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Payment successful - update stock and create equipment
-    let equipmentCreated = 0;
+    // Payment successful - transfer existing equipment or create new ones
+    let equipmentTransferred = 0;
 
     for (const item of items) {
-      // Get product info for equipment
-      const { data: product } = await supabase
-        .from('products')
-        .select('id, title, model, brand')
-        .eq('id', item.productId)
-        .single();
+      // First, try to find existing equipment linked to this product with status 'in_store'
+      const { data: existingEquipment } = await supabase
+        .from('equipment')
+        .select('id')
+        .eq('product_id', item.productId)
+        .eq('status', 'in_store')
+        .limit(item.quantity);
 
-      // Decrement stock
-      const { error: stockError } = await supabase.rpc('decrement_stock', {
-        p_product_id: item.productId,
-        p_quantity: item.quantity
-      });
+      const transferCount = existingEquipment?.length || 0;
 
-      // If RPC doesn't exist, do it manually
-      if (stockError) {
-        console.log('Using manual stock update');
-        const { data: currentProduct } = await supabase
-          .from('products')
-          .select('stock_quantity')
-          .eq('id', item.productId)
-          .single();
+      // Transfer existing equipment to the buyer
+      if (existingEquipment && existingEquipment.length > 0) {
+        const equipmentIds = existingEquipment.map((e: any) => e.id);
+        const { error: transferError } = await supabase
+          .from('equipment')
+          .update({
+            owner_id: user.id,
+            status: 'available',
+          })
+          .in('id', equipmentIds);
 
-        if (currentProduct) {
-          await supabase
-            .from('products')
-            .update({ stock_quantity: currentProduct.stock_quantity - item.quantity })
-            .eq('id', item.productId);
+        if (!transferError) {
+          equipmentTransferred += transferCount;
+          console.log(`Transferred ${transferCount} existing equipment for product ${item.productId}`);
+        } else {
+          console.error('Equipment transfer error:', transferError);
         }
       }
 
-      // Create equipment entries for each unit purchased
-      for (let i = 0; i < item.quantity; i++) {
-        const serialNumber = `${product?.title?.substring(0, 3).toUpperCase() || 'EQP'}-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-        
-        const { error: equipmentError } = await supabase
-          .from('equipment')
-          .insert({
+      // If not enough existing equipment, create new ones for the remainder
+      const remaining = item.quantity - transferCount;
+      if (remaining > 0) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('id, title, model, brand')
+          .eq('id', item.productId)
+          .single();
+
+        for (let i = 0; i < remaining; i++) {
+          const serialNumber = `${product?.title?.substring(0, 3).toUpperCase() || 'EQP'}-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+          const { error: equipmentError } = await supabase.from('equipment').insert({
             owner_id: user.id,
             product_id: item.productId,
             serial_number: serialNumber,
             status: 'available',
           });
 
-        if (!equipmentError) {
-          equipmentCreated++;
-        } else {
-          console.error('Equipment creation error:', equipmentError);
+          if (!equipmentError) {
+            equipmentTransferred++;
+          } else {
+            console.error('Equipment creation error:', equipmentError);
+          }
         }
       }
     }
 
-    // Update order status to completed
+    // Update order to completed with payment info
+    const orderNotes = `Entrega: ${addressText}${asaasPaymentId ? ` | Pagamento Asaas: ${asaasPaymentId}` : ''}`;
     await supabase
       .from('orders')
-      .update({ status: 'completed' })
+      .update({
+        status: 'approved',
+        notes: orderNotes,
+      })
       .eq('id', order.id);
 
-    console.log('Order completed. Equipment created:', equipmentCreated);
+    console.log('Order completed. Equipment created:', equipmentTransferred);
 
     return new Response(
       JSON.stringify({
         success: true,
         orderId: order.id,
-        equipmentCreated,
+        equipmentTransferred,
+        totalAmount,
+        asaasPaymentId,
         message: 'Pedido processado com sucesso!',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
     console.error('Process order error:', error);
     return new Response(

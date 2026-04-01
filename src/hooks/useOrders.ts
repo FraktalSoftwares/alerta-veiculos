@@ -11,7 +11,9 @@ interface CreateOrderData {
 
 interface OrderResult {
   orderId: string;
-  equipmentCreated: number;
+  equipmentTransferred: number;
+  totalAmount: number;
+  asaasPaymentId?: string;
 }
 
 export function useCreateOrder() {
@@ -20,6 +22,8 @@ export function useCreateOrder() {
 
   return useMutation({
     mutationFn: async (data: CreateOrderData): Promise<OrderResult> => {
+      const [expiryMonth, expiryYear] = data.paymentData.expiryDate.split('/');
+
       const { data: result, error } = await supabase.functions.invoke('process-order', {
         body: {
           items: data.items.map(item => ({
@@ -29,8 +33,22 @@ export function useCreateOrder() {
           })),
           shippingAddress: data.shippingAddress,
           paymentData: {
-            cardLastFour: data.paymentData.cardNumber.slice(-4),
-            cardHolder: data.paymentData.cardHolder,
+            creditCard: {
+              holderName: data.paymentData.cardHolder,
+              number: data.paymentData.cardNumber.replace(/\s/g, ''),
+              expiryMonth: expiryMonth,
+              expiryYear: `20${expiryYear}`,
+              ccv: data.paymentData.cvv,
+            },
+            creditCardHolderInfo: {
+              name: data.paymentData.cardHolder,
+              cpfCnpj: data.paymentData.cpfCnpj.replace(/\D/g, ''),
+              phone: data.paymentData.phone.replace(/\D/g, ''),
+              email: '',
+              postalCode: data.shippingAddress.cep.replace(/\D/g, ''),
+              addressNumber: data.shippingAddress.number,
+              addressComplement: data.shippingAddress.complement || undefined,
+            },
           },
         },
       });
@@ -48,7 +66,7 @@ export function useCreateOrder() {
     onSuccess: (result) => {
       toast({
         title: 'Pedido realizado com sucesso!',
-        description: `${result.equipmentCreated} equipamento(s) adicionado(s) ao seu estoque.`,
+        description: `${result.equipmentTransferred} equipamento(s) adicionado(s) ao seu estoque.`,
       });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['equipment'] });
@@ -74,7 +92,7 @@ export function useOrders() {
           *,
           order_items (
             *,
-            products (title, brand, model)
+            products (title, brand, model, image_url, price)
           )
         `)
         .order('created_at', { ascending: false });

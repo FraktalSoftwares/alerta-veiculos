@@ -20,6 +20,8 @@ export interface PaymentData {
   cardHolder: string;
   expiryDate: string;
   cvv: string;
+  cpfCnpj: string;
+  phone: string;
 }
 
 export interface CartState {

@@ -1,6 +1,28 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { CartItem, ShippingAddress } from '@/types/cart';
 import { ProductDisplay } from '@/types/product';
+
+const CART_STORAGE_KEY = 'alerta-veiculos-cart';
+const ADDRESS_STORAGE_KEY = 'alerta-veiculos-cart-address';
+
+function loadCartFromStorage(): CartItem[] {
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+function loadAddressFromStorage(): ShippingAddress | null {
+  try {
+    const stored = localStorage.getItem(ADDRESS_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return null;
+}
 
 interface CartContextType {
   items: CartItem[];
@@ -17,8 +39,20 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [shippingAddress, setShippingAddress] = useState<ShippingAddress | null>(null);
+  const [items, setItems] = useState<CartItem[]>(loadCartFromStorage);
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddress | null>(loadAddressFromStorage);
+
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  }, [items]);
+
+  useEffect(() => {
+    if (shippingAddress) {
+      localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(shippingAddress));
+    } else {
+      localStorage.removeItem(ADDRESS_STORAGE_KEY);
+    }
+  }, [shippingAddress]);
 
   const addToCart = useCallback((product: ProductDisplay, quantity: number = 1) => {
     setItems(prevItems => {
@@ -58,6 +92,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => {
     setItems([]);
     setShippingAddress(null);
+    localStorage.removeItem(CART_STORAGE_KEY);
+    localStorage.removeItem(ADDRESS_STORAGE_KEY);
   }, []);
 
   const getTotal = useCallback(() => {

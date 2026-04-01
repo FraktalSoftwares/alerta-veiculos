@@ -6,6 +6,7 @@ import {
   formatExpiryDate,
   detectCardBrand,
 } from '@/lib/cardValidation';
+import { formatCPF, formatCNPJ, formatPhone } from '@/lib/formatters';
 import { CreditCard } from 'lucide-react';
 
 interface PaymentFormProps {
@@ -28,6 +29,19 @@ export function PaymentForm({ payment, onChange, errors }: PaymentFormProps) {
   const handleCVVChange = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 4);
     onChange({ ...payment, cvv: digits });
+  };
+
+  const handleCpfCnpjChange = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 11) {
+      onChange({ ...payment, cpfCnpj: formatCPF(value) });
+    } else {
+      onChange({ ...payment, cpfCnpj: formatCNPJ(value) });
+    }
+  };
+
+  const handlePhoneChange = (value: string) => {
+    onChange({ ...payment, phone: formatPhone(value) });
   };
 
   return (
@@ -99,9 +113,35 @@ export function PaymentForm({ payment, onChange, errors }: PaymentFormProps) {
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="cpfCnpj">CPF/CNPJ do Titular *</Label>
+        <Input
+          id="cpfCnpj"
+          value={payment.cpfCnpj}
+          onChange={(e) => handleCpfCnpjChange(e.target.value)}
+          placeholder="000.000.000-00"
+          maxLength={18}
+          className={errors.cpfCnpj ? 'border-destructive' : ''}
+        />
+        {errors.cpfCnpj && <p className="text-xs text-destructive">{errors.cpfCnpj}</p>}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="phone">Telefone *</Label>
+        <Input
+          id="phone"
+          value={payment.phone}
+          onChange={(e) => handlePhoneChange(e.target.value)}
+          placeholder="(00) 00000-0000"
+          maxLength={15}
+          className={errors.phone ? 'border-destructive' : ''}
+        />
+        {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+      </div>
+
       <div className="mt-4 p-3 bg-muted/50 rounded-lg">
         <p className="text-xs text-muted-foreground text-center">
-          🔒 Seus dados de pagamento são processados com segurança
+          Seus dados de pagamento são processados com segurança via Asaas
         </p>
       </div>
     </div>

@@ -22,11 +22,12 @@ import {
 } from "@/components/ui/dialog";
 
 interface AcessoOpcoesTabProps {
-  client: { 
-    id: string; 
+  client: {
+    id: string;
     email?: string | null;
     user_id?: string | null;
     name?: string;
+    client_type?: string;
   };
 }
 
@@ -34,6 +35,8 @@ const DEFAULT_PRIMARY_COLOR = "#F59E0B";
 const DEFAULT_SECONDARY_COLOR = "#FFFFFF";
 
 export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
+  const canCustomize = client.client_type === 'admin' || client.client_type === 'associacao';
+
   // Customization state
   const [isEditingColors, setIsEditingColors] = useState(false);
   const [primaryColor, setPrimaryColor] = useState(DEFAULT_PRIMARY_COLOR);
@@ -163,8 +166,8 @@ export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Customização */}
-      <div className="bg-card rounded-lg border border-border p-6">
+      {/* Customização - apenas para admin e associação */}
+      {canCustomize && <div className="bg-card rounded-lg border border-border p-6">
         <h2 className="text-xl font-semibold text-foreground mb-6">Customização</h2>
         
         <Label className="text-foreground font-medium mb-4 block">Cores</Label>
@@ -314,7 +317,7 @@ export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
             </Button>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Usuário e senha */}
       <div className="bg-card rounded-lg border border-border p-6">

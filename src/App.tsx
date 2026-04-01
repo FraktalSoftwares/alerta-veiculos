@@ -26,6 +26,7 @@ import Notificacoes from "./pages/Notificacoes";
 import Financeiro from "./pages/Financeiro";
 import Despesas from "./pages/Despesas";
 import Loja from "./pages/Loja";
+import MeusPedidos from "./pages/MeusPedidos";
 import Estoque from "./pages/Estoque";
 import Assinaturas from "./pages/Assinaturas";
 import Configuracoes from "./pages/Configuracoes";
@@ -134,6 +135,13 @@ const App = () => (
               <ProtectedRoute>
                 <ProtectedByPermission permissions={[PERMISSIONS.STORE_VIEW]}>
                   <Loja />
+                </ProtectedByPermission>
+              </ProtectedRoute>
+            } />
+            <Route path="/meus-pedidos" element={
+              <ProtectedRoute>
+                <ProtectedByPermission permissions={[PERMISSIONS.STORE_VIEW]}>
+                  <MeusPedidos />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />

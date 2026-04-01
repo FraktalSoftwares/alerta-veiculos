@@ -1,12 +1,16 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { useClientStats } from "@/hooks/useDashboard";
+import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ClientsCard() {
   const { data: stats, isLoading } = useClientStats();
+  const { profile } = useAuth();
+  const isAdmin = profile?.user_type === "admin";
 
   const data = [
-    { name: "Associações", value: stats?.byType.associacao || 0, color: "#1E40AF" },
+    ...(isAdmin ? [{ name: "Associações", value: stats?.byType.associacao || 0, color: "#1E40AF" }] : []),
+    { name: "Associados", value: stats?.byType.associado || 0, color: "#3B82F6" },
     { name: "Motoristas", value: stats?.byType.motorista || 0, color: "#F59E0B" },
     { name: "Franqueados", value: stats?.byType.franqueado || 0, color: "#EA580C" },
     { name: "Frotistas", value: stats?.byType.frotista || 0, color: "#16A34A" },

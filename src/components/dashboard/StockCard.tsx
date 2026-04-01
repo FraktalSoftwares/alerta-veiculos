@@ -1,15 +1,19 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { useEquipmentStats } from "@/hooks/useDashboard";
+import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function StockCard() {
   const { data: stats, isLoading } = useEquipmentStats();
+  const { profile } = useAuth();
+  const isAdmin = profile?.user_type === "admin";
 
   const data = [
     { name: "Disponíveis", value: stats?.available || 0, color: "#16A34A" },
     { name: "Instalados", value: stats?.installed || 0, color: "#374151" },
     { name: "Manutenção", value: stats?.maintenance || 0, color: "#F59E0B" },
     { name: "Defeituosos", value: stats?.defective || 0, color: "#DC2626" },
+    ...(isAdmin ? [{ name: "Na Loja", value: stats?.storeStock || 0, color: "#7C3AED" }] : []),
   ];
 
   const hasData = data.some(d => d.value > 0);
