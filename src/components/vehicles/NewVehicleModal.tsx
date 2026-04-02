@@ -379,7 +379,7 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId, prese
                           className="bg-background pl-10"
                         />
                       </div>
-                      {clientSearch && clientsData?.clients && clientsData.clients.length > 0 && (
+                      {clientsData?.clients && clientsData.clients.length > 0 && (
                         <div className="border border-border rounded-md mt-2 max-h-40 overflow-y-auto">
                           {clientsData.clients.map(client => (
                             <button
@@ -392,6 +392,11 @@ export function NewVehicleModal({ open, onOpenChange, preselectedClientId, prese
                             </button>
                           ))}
                         </div>
+                      )}
+                      {clientSearch && clientsData?.clients && clientsData.clients.length === 0 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Nenhum cliente encontrado
+                        </p>
                       )}
                       {formData.clienteId && (
                         <p className="text-xs text-muted-foreground">Cliente selecionado: {formData.cliente}</p>

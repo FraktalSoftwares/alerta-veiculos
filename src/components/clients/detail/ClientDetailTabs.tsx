@@ -9,7 +9,7 @@ interface ClientDetailTabsProps {
 // Types that can manage sub-clients
 const TYPES_WITH_CLIENTS_TAB = ["admin", "associacao", "franquia", "frotista"];
 // Types that can manage vehicles
-const TYPES_WITH_VEHICLES_TAB = ["admin", "associacao", "franquia", "frotista", "motorista"];
+const TYPES_WITH_VEHICLES_TAB = ["admin", "associacao", "associado", "franquia", "franqueado", "frotista", "motorista"];
 
 export function ClientDetailTabs({ activeTab, onTabChange, clientType }: ClientDetailTabsProps) {
   const allTabs = [
