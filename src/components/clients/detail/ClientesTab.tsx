@@ -35,7 +35,7 @@ export function ClientesTab({ parentClientId }: ClientesTabProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border bg-table-header">
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">#</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Código</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Nome</th>
               <th className="text-center px-4 py-3 text-sm font-medium text-muted-foreground">Veículos Totais</th>
               <th className="text-center px-4 py-3 text-sm font-medium text-muted-foreground">Veículos Rastreados</th>

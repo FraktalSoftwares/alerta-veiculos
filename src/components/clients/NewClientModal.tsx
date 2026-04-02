@@ -41,6 +41,8 @@ interface NewClientModalProps {
   isOpen: boolean;
   onClose: () => void;
   preselectedParentClientId?: string;
+  parentClientType?: "admin" | "associacao" | "associado" | "franquia" | "franqueado" | "frotista" | "motorista";
+  parentClientUserId?: string | null;
 }
 
 const ALL_STEPS = [
@@ -63,7 +65,7 @@ const generateRandomPassword = () => {
   return password;
 };
 
-export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: NewClientModalProps) {
+export function NewClientModal({ isOpen, onClose, preselectedParentClientId, parentClientType, parentClientUserId }: NewClientModalProps) {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
 
@@ -72,13 +74,16 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [isSaving, setIsSaving] = useState(false);
 
+  // When creating from a parent client's detail page, restrict types based on the parent's type
+  const effectiveUserType = parentClientType ?? profile?.user_type;
+
   const allowedUserTypes = useMemo(() => {
-    return getAllowedUserTypesToCreate(profile?.user_type);
-  }, [profile?.user_type]);
+    return getAllowedUserTypesToCreate(effectiveUserType);
+  }, [effectiveUserType]);
 
   const defaultUserType = useMemo(() => {
-    return getDefaultUserTypeForCreation(profile?.user_type);
-  }, [profile?.user_type]);
+    return getDefaultUserTypeForCreation(effectiveUserType);
+  }, [effectiveUserType]);
 
   // Step 1 - Dados Básicos
   const [dadosBasicos, setDadosBasicos] = useState({
@@ -347,7 +352,7 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId }: N
         const { data: client, error: clientError } = await supabase
           .from("clients")
           .insert({
-            owner_id: user.id,
+            owner_id: parentClientUserId || user.id,
             name: dadosBasicos.name.trim(),
             document_type: dadosBasicos.document_type,
             document_number: dadosBasicos.document_number.replace(/\D/g, ""),

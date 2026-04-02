@@ -85,7 +85,7 @@ export default function ClienteDetalhes() {
           client={client}
           action={headerAction}
         />
-        <ClientDetailTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        <ClientDetailTabs activeTab={activeTab} onTabChange={setActiveTab} clientType={client.client_type} />
         {renderTabContent()}
       </main>
 
@@ -100,6 +100,8 @@ export default function ClienteDetalhes() {
         isOpen={isNewClientModalOpen}
         onClose={() => setIsNewClientModalOpen(false)}
         preselectedParentClientId={client.id}
+        parentClientType={client.client_type}
+        parentClientUserId={client.user_id}
       />
     </div>
   );

@@ -3,10 +3,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface ClientDetailTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  clientType?: string;
 }
 
-export function ClientDetailTabs({ activeTab, onTabChange }: ClientDetailTabsProps) {
-  const tabs = [
+// Types that can manage sub-clients
+const TYPES_WITH_CLIENTS_TAB = ["admin", "associacao", "franquia", "frotista"];
+// Types that can manage vehicles
+const TYPES_WITH_VEHICLES_TAB = ["admin", "associacao", "franquia", "frotista", "motorista"];
+
+export function ClientDetailTabs({ activeTab, onTabChange, clientType }: ClientDetailTabsProps) {
+  const allTabs = [
     { id: "dados-basicos", label: "Dados Básicos" },
     { id: "endereco", label: "Endereço" },
     { id: "cobranca", label: "Cobrança" },
@@ -14,6 +20,12 @@ export function ClientDetailTabs({ activeTab, onTabChange }: ClientDetailTabsPro
     { id: "clientes", label: "Clientes" },
     { id: "acesso", label: "Acesso e opções" },
   ];
+
+  const tabs = allTabs.filter((tab) => {
+    if (tab.id === "clientes" && clientType && !TYPES_WITH_CLIENTS_TAB.includes(clientType)) return false;
+    if (tab.id === "veiculos" && clientType && !TYPES_WITH_VEHICLES_TAB.includes(clientType)) return false;
+    return true;
+  });
 
   return (
     <div className="mb-6">
