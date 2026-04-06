@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -41,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const isSigningOut = useRef(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -126,6 +129,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+
+        // Redirect to password reset page on recovery event
+        if (event === 'PASSWORD_RECOVERY') {
+          navigate('/nova-senha', { replace: true });
+        }
 
         // Defer profile fetch with setTimeout to avoid deadlock
         if (currentSession?.user) {
