@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 
 interface VeiculosTabProps {
   clientId: string;
+  clientType?: string;
 }
 
 const statusLabels = {
@@ -38,8 +39,8 @@ function VehicleLastUpdate({ vehicleId }: { vehicleId: string }) {
   );
 }
 
-export function VeiculosTab({ clientId }: VeiculosTabProps) {
-  const { data: vehicles, isLoading } = useClientVehicles(clientId);
+export function VeiculosTab({ clientId, clientType }: VeiculosTabProps) {
+  const { data: vehicles, isLoading } = useClientVehicles(clientId, clientType);
 
   if (isLoading) {
     return (
@@ -69,6 +70,7 @@ export function VeiculosTab({ clientId }: VeiculosTabProps) {
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Modelo</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Ano</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Cor</th>
+            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Cliente</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Última Atualização</th>
             <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
           </tr>
@@ -86,6 +88,7 @@ export function VeiculosTab({ clientId }: VeiculosTabProps) {
               <td className="px-4 py-4 text-sm text-foreground">{vehicle.model || '-'}</td>
               <td className="px-4 py-4 text-sm text-foreground">{vehicle.year || '-'}</td>
               <td className="px-4 py-4 text-sm text-foreground">{vehicle.color || '-'}</td>
+              <td className="px-4 py-4 text-sm text-foreground">{vehicle.clientName || '-'}</td>
               <td className="px-4 py-4 text-sm text-foreground">
                 <VehicleLastUpdate vehicleId={vehicle.id} />
               </td>

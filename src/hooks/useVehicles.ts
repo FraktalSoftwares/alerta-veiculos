@@ -127,13 +127,31 @@ export function useVehicle(vehicleId: string | undefined) {
   });
 }
 
-export function useClientVehicles(clientId: string | undefined) {
+const TYPES_WITH_SUB_CLIENTS = ['admin', 'associacao', 'franquia', 'frotista'];
+
+export function useClientVehicles(clientId: string | undefined, clientType?: string) {
   const { user } = useAuth();
+  const includeSubClients = clientType ? TYPES_WITH_SUB_CLIENTS.includes(clientType) : false;
 
   return useQuery({
-    queryKey: ['client-vehicles', clientId],
+    queryKey: ['client-vehicles', clientId, includeSubClients],
     queryFn: async () => {
       if (!clientId) throw new Error('Client ID required');
+
+      const clientIds = [clientId];
+
+      if (includeSubClients) {
+        const { data: subClients, error: subError } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('parent_client_id', clientId);
+
+        if (subError) throw subError;
+
+        if (subClients) {
+          clientIds.push(...subClients.map((c) => c.id));
+        }
+      }
 
       const { data, error } = await supabase
         .from('vehicles')
@@ -142,7 +160,7 @@ export function useClientVehicles(clientId: string | undefined) {
           clients(id, name),
           equipment(id, serial_number, imei, chip_operator)
         `)
-        .eq('client_id', clientId)
+        .in('client_id', clientIds)
         .order('plate', { ascending: true });
 
       if (error) throw error;

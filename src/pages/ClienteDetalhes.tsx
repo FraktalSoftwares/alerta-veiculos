@@ -43,7 +43,7 @@ export default function ClienteDetalhes() {
       case "cobranca":
         return <CobrancaTab client={client} />;
       case "veiculos":
-        return <VeiculosTab clientId={client.id} />;
+        return <VeiculosTab clientId={client.id} clientType={client.client_type} />;
       case "clientes":
         return <ClientesTab parentClientId={client.id} />;
       case "acesso":

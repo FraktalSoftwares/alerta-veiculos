@@ -16,11 +16,11 @@ interface UseClientsOptions {
 }
 
 export function useClients(options: UseClientsOptions = {}) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { search = '', status, clientType, page = 1, pageSize = 100, dateFrom, dateTo, parentClientId } = options;
 
   return useQuery({
-    queryKey: ['clients', { search, status, clientType, page, pageSize, dateFrom, dateTo, parentClientId, userId: user?.id }],
+    queryKey: ['clients', { search, status, clientType, page, pageSize, dateFrom, dateTo, parentClientId, userId: user?.id, userType: profile?.user_type }],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
@@ -41,6 +41,11 @@ export function useClients(options: UseClientsOptions = {}) {
 
       if (clientType) {
         query = query.eq('client_type', clientType as 'admin' | 'associacao' | 'associado' | 'franquia' | 'franqueado' | 'frotista' | 'motorista');
+      }
+
+      // Admin vê apenas os clientes de nível superior na listagem principal
+      if (!parentClientId && !clientType && profile?.user_type === 'admin') {
+        query = query.in('client_type', ['associacao', 'franquia', 'frotista', 'motorista']);
       }
 
       if (parentClientId) {
@@ -65,14 +70,40 @@ export function useClients(options: UseClientsOptions = {}) {
 
       // Buscar estatísticas dos veículos para cada cliente
       const clientIds = (data || []).map(client => client.id);
-      
+
+      // Identificar clientes-pai (associação, franquia, frotista) para agregar veículos dos sub-clientes
+      const PARENT_TYPES = ['admin', 'associacao', 'franquia', 'frotista'];
+      const parentClientIds = (data || [])
+        .filter(c => PARENT_TYPES.includes(c.client_type))
+        .map(c => c.id);
+
+      // Buscar sub-clientes dos clientes-pai
+      const subClientToParent = new Map<string, string>();
+      if (parentClientIds.length > 0) {
+        const { data: subClients, error: subError } = await supabase
+          .from('clients')
+          .select('id, parent_client_id')
+          .in('parent_client_id', parentClientIds);
+
+        if (subError) throw subError;
+
+        (subClients || []).forEach(sc => {
+          if (sc.parent_client_id) {
+            subClientToParent.set(sc.id, sc.parent_client_id);
+          }
+        });
+      }
+
+      // IDs de todos os clientes cujos veículos precisamos buscar
+      const allClientIds = [...new Set([...clientIds, ...subClientToParent.keys()])];
+
       let vehiclesData: any[] = [];
 
-      if (clientIds.length > 0) {
+      if (allClientIds.length > 0) {
         let vehicleStatsQuery = supabase
           .from('vehicles')
           .select('client_id, status, last_update, equipment(imei)')
-          .in('client_id', clientIds);
+          .in('client_id', allClientIds);
 
         const { data: vehicles, error: vehiclesError } = await vehicleStatsQuery;
 
@@ -92,10 +123,9 @@ export function useClients(options: UseClientsOptions = {}) {
 
       const imeisByClient = new Map<string, string[]>();
 
-      (vehiclesData || []).forEach(vehicle => {
-        const clientId = vehicle.client_id;
-        if (!statsByClient.has(clientId)) {
-          statsByClient.set(clientId, {
+      const addVehicleToStats = (targetClientId: string, vehicle: any) => {
+        if (!statsByClient.has(targetClientId)) {
+          statsByClient.set(targetClientId, {
             total: 0,
             tracked: 0,
             noSignal: 0,
@@ -104,11 +134,11 @@ export function useClients(options: UseClientsOptions = {}) {
             lastUpdate: null,
           });
         }
-        if (!imeisByClient.has(clientId)) {
-          imeisByClient.set(clientId, []);
+        if (!imeisByClient.has(targetClientId)) {
+          imeisByClient.set(targetClientId, []);
         }
 
-        const stats = statsByClient.get(clientId)!;
+        const stats = statsByClient.get(targetClientId)!;
         stats.total++;
 
         if (vehicle.status === 'active') {
@@ -121,21 +151,34 @@ export function useClients(options: UseClientsOptions = {}) {
           stats.blocked++;
         }
 
-        // Coletar IMEIs dos equipamentos vinculados
         const equipment = vehicle.equipment;
         if (Array.isArray(equipment)) {
           equipment.forEach((eq: any) => {
             if (eq.imei) {
-              imeisByClient.get(clientId)!.push(eq.imei);
+              imeisByClient.get(targetClientId)!.push(eq.imei);
             }
           });
         }
 
-        // Atualizar última atualização (mais recente)
         if (vehicle.last_update) {
           if (!stats.lastUpdate || new Date(vehicle.last_update) > new Date(stats.lastUpdate)) {
             stats.lastUpdate = vehicle.last_update;
           }
+        }
+      };
+
+      (vehiclesData || []).forEach(vehicle => {
+        const vehicleClientId = vehicle.client_id;
+
+        // Se o veículo pertence a um cliente que está na lista, agregar diretamente
+        if (clientIds.includes(vehicleClientId)) {
+          addVehicleToStats(vehicleClientId, vehicle);
+        }
+
+        // Se o veículo pertence a um sub-cliente, agregar também no cliente-pai
+        const parentId = subClientToParent.get(vehicleClientId);
+        if (parentId) {
+          addVehicleToStats(parentId, vehicle);
         }
       });
 
