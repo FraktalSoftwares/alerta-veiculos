@@ -22,6 +22,7 @@ import VeiculoMapaPublico from "./pages/VeiculoMapaPublico";
 import VeiculoHistorico from "./pages/VeiculoHistorico";
 import VeiculosMapa from "./pages/VeiculosMapa";
 import VeiculoCercas from "./pages/VeiculoCercas";
+import VeiculoRotas from "./pages/VeiculoRotas";
 import Notificacoes from "./pages/Notificacoes";
 import Financeiro from "./pages/Financeiro";
 import Despesas from "./pages/Despesas";
@@ -107,6 +108,13 @@ const App = () => (
               <ProtectedRoute>
                 <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_VIEW]}>
                   <VeiculoCercas />
+                </ProtectedByPermission>
+              </ProtectedRoute>
+            } />
+            <Route path="/veiculos/:id/rotas" element={
+              <ProtectedRoute>
+                <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_VIEW]}>
+                  <VeiculoRotas />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />

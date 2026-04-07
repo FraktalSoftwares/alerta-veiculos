@@ -274,6 +274,54 @@ class TrackingApiClient {
     return this.executeAction('odometer', { imei, protocolo });
   }
 
+  // ========== Rota Obrigatória ==========
+
+  /**
+   * Lista rotas obrigatórias de um veículo
+   */
+  async listarRotasObrigatorias(imei?: string): Promise<any[]> {
+    return this.request(TRACKING_API_ENDPOINTS.ROTA_OBRIGATORIA_LISTAR(imei), {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Retorna o status do monitoramento de rota para um veículo
+   */
+  async statusRotaObrigatoria(imei: string): Promise<any> {
+    return this.request(TRACKING_API_ENDPOINTS.ROTA_OBRIGATORIA_STATUS(imei), {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Ativa o monitoramento de uma rota para um veículo
+   */
+  async ativarRotaObrigatoria(routeId: number, imei: string, protocol: string): Promise<any> {
+    return this.request(TRACKING_API_ENDPOINTS.ROTA_OBRIGATORIA_ATIVAR, {
+      method: 'POST',
+      body: JSON.stringify({ route_id: routeId, imei, protocol }),
+    });
+  }
+
+  /**
+   * Desativa o monitoramento de rota para um veículo
+   */
+  async desativarRotaObrigatoria(imei: string): Promise<any> {
+    return this.request(TRACKING_API_ENDPOINTS.ROTA_OBRIGATORIA_DESATIVAR(imei), {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * Exclui uma rota obrigatória
+   */
+  async excluirRotaObrigatoria(routeId: number): Promise<any> {
+    return this.request(TRACKING_API_ENDPOINTS.ROTA_OBRIGATORIA_EXCLUIR(routeId), {
+      method: 'DELETE',
+    });
+  }
+
   /**
    * Obtém rotas do veículo
    * @param imei - IMEI/ESN/Identificador do equipamento

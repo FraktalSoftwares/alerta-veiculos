@@ -24,6 +24,7 @@ import {
   Pencil,
   Trash2,
   Radio,
+  Route,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -226,6 +227,10 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/historico`); }} className="cursor-pointer">
               <History className="h-4 w-4 mr-2" />
               Histórico
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/rotas`); }} className="cursor-pointer">
+              <Route className="h-4 w-4 mr-2" />
+              Rotas
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
