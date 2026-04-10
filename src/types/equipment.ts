@@ -55,7 +55,7 @@ export interface EquipmentFormData {
   product_id?: string;
   vehicle_id?: string;
   status?: EquipmentStatus;
-  owner_id?: string;
+  owner_id?: string | null;
 }
 
 // Map DB status to UI status

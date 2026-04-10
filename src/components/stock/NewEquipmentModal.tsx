@@ -138,7 +138,7 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
           chip_operator: formData.chip_operator || undefined,
           model: formData.model_type || undefined,
           status: formData.status as 'available' | 'installed' | 'maintenance' | 'defective',
-          ...(isAdmin && { owner_id: formData.owner_id || profile?.id }),
+          ...(isAdmin && { owner_id: formData.owner_id || null }),
         },
       }, {
         onSuccess: () => {
@@ -153,7 +153,7 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
         chip_operator: formData.chip_operator || undefined,
         model: formData.model_type || undefined,
         status: formData.status as 'available' | 'installed' | 'maintenance' | 'defective',
-        owner_id: formData.owner_id || undefined,
+        ...(isAdmin ? { owner_id: formData.owner_id || null } : {}),
       }, {
         onSuccess: () => {
           onOpenChange(false);

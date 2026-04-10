@@ -74,6 +74,21 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId, par
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [isSaving, setIsSaving] = useState(false);
 
+  // Auto-detectar parent_client_id para não-admins (busca o cliente vinculado ao user logado)
+  const [autoParentClientId, setAutoParentClientId] = useState<string | null>(null);
+  useEffect(() => {
+    if (isOpen && !preselectedParentClientId && profile?.user_type !== 'admin' && user?.id) {
+      supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          setAutoParentClientId(data?.id || null);
+        });
+    }
+  }, [isOpen, preselectedParentClientId, profile?.user_type, user?.id]);
+
   // When creating from a parent client's detail page, restrict types based on the parent's type
   const effectiveUserType = parentClientType ?? profile?.user_type;
 
@@ -361,7 +376,7 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId, par
             birth_date: dadosBasicos.birth_date || null,
             client_type: dadosBasicos.client_type,
             status: dadosBasicos.status,
-            parent_client_id: preselectedParentClientId || null,
+            parent_client_id: preselectedParentClientId || autoParentClientId || null,
           })
           .select()
           .single();

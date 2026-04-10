@@ -249,7 +249,7 @@ export type Database = {
           created_at: string | null
           id: string
           imei: string | null
-          owner_id: string
+          owner_id: string | null
           product_id: string | null
           serial_number: string
           status: Database["public"]["Enums"]["equipment_status"] | null
@@ -262,7 +262,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           imei?: string | null
-          owner_id: string
+          owner_id?: string | null
           product_id?: string | null
           serial_number: string
           status?: Database["public"]["Enums"]["equipment_status"] | null
@@ -275,7 +275,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           imei?: string | null
-          owner_id?: string
+          owner_id?: string | null
           product_id?: string | null
           serial_number?: string
           status?: Database["public"]["Enums"]["equipment_status"] | null

@@ -43,9 +43,9 @@ export function useClients(options: UseClientsOptions = {}) {
         query = query.eq('client_type', clientType as 'admin' | 'associacao' | 'associado' | 'franquia' | 'franqueado' | 'frotista' | 'motorista');
       }
 
-      // Admin vê apenas os clientes de nível superior na listagem principal
+      // Admin vê apenas clientes de nível superior (sem parent) na listagem principal
       if (!parentClientId && !clientType && profile?.user_type === 'admin') {
-        query = query.in('client_type', ['associacao', 'franquia', 'frotista', 'motorista']);
+        query = query.is('parent_client_id', null);
       }
 
       if (parentClientId) {

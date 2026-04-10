@@ -99,7 +99,7 @@ export function useCreateEquipment() {
       const { data, error } = await supabase
         .from('equipment')
         .insert({
-          owner_id: formData.owner_id || user.id,
+          owner_id: formData.owner_id !== undefined ? formData.owner_id : user.id,
           serial_number: formData.serial_number,
           imei: formData.imei || null,
           chip_number: formData.chip_number || null,
