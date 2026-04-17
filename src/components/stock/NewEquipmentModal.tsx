@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { useCreateEquipment, useUpdateEquipment, useDeleteEquipment } from "@/ho
 import { EquipmentDisplay } from "@/types/equipment";
 import { formatIMEI, formatPhone } from "@/lib/formatters";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUsersWithRoles } from "@/hooks/useSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NewEquipmentModalProps {
   open: boolean;
@@ -31,11 +32,57 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
   const isEditing = !!equipment;
   const { profile } = useAuth();
   const isAdmin = profile?.user_type === 'admin';
-  const { data: users } = useUsersWithRoles();
 
-  const assignableUsers = (users || []).filter(
-    (u) => u.user_type === 'associacao' || u.user_type === 'frotista'
-  );
+  const clientTypeLabels: Record<string, string> = {
+    associacao: 'Associação',
+    frotista: 'Frotista',
+    franquia: 'Franquia',
+    franqueado: 'Franqueado',
+  };
+
+  const { data: assignableOwners } = useQuery({
+    queryKey: ['equipment-assignable-owners'],
+    enabled: isAdmin && open,
+    queryFn: async () => {
+      const targetTypes = ['associacao', 'frotista', 'franquia', 'franqueado'];
+
+      const [profilesRes, clientsRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, user_type')
+          .in('user_type', targetTypes as ('associacao' | 'frotista' | 'franquia' | 'franqueado')[]),
+        supabase
+          .from('clients')
+          .select('id, name, client_type, user_id')
+          .in('client_type', targetTypes as ('associacao' | 'frotista' | 'franquia' | 'franqueado')[])
+          .not('user_id', 'is', null),
+      ]);
+
+      if (profilesRes.error) throw profilesRes.error;
+      if (clientsRes.error) throw clientsRes.error;
+
+      const byUserId = new Map<string, { id: string; name: string; type: string }>();
+
+      for (const p of profilesRes.data || []) {
+        byUserId.set(p.id, {
+          id: p.id,
+          name: p.full_name || '(sem nome)',
+          type: p.user_type,
+        });
+      }
+
+      for (const c of clientsRes.data || []) {
+        if (!c.user_id) continue;
+        byUserId.set(c.user_id, {
+          id: c.user_id,
+          name: (c.name || '').trim() || '(sem nome)',
+          type: c.client_type,
+        });
+      }
+
+      return Array.from(byUserId.values()).sort((a, b) => a.name.localeCompare(b.name));
+    },
+  });
 
   const [formData, setFormData] = useState<EquipmentFormData>({
     serial_number: "",
@@ -306,9 +353,9 @@ export function NewEquipmentModal({ open, onOpenChange, equipment }: NewEquipmen
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem vínculo</SelectItem>
-                    {assignableUsers.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.full_name} ({user.user_type === 'associacao' ? 'Associação' : 'Frotista'})
+                    {(assignableOwners || []).map((owner) => (
+                      <SelectItem key={owner.id} value={owner.id}>
+                        {owner.name} ({clientTypeLabels[owner.type] ?? owner.type})
                       </SelectItem>
                     ))}
                   </SelectContent>
