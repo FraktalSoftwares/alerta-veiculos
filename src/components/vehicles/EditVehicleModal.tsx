@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpdateVehicle, useVehicle } from "@/hooks/useVehicles";
 import { useUnlinkEquipmentFromVehicle, useAvailableEquipments, useLinkEquipmentToVehicle } from "@/hooks/useEquipment";
+import { useClients } from "@/hooks/useClients";
 import { VehicleDisplay } from "@/types/vehicle";
-import { Loader2, Unlink, Radio, Link, Search } from "lucide-react";
+import { Loader2, Unlink, Radio, Link, Search, User } from "lucide-react";
 import { toast } from "sonner";
 import { formatPlate } from "@/lib/formatters";
 import {
@@ -36,6 +37,10 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
   const [equipmentSearch, setEquipmentSearch] = useState("");
   const [showEquipmentSearch, setShowEquipmentSearch] = useState(false);
   const { data: availableEquipments } = useAvailableEquipments(showEquipmentSearch ? equipmentSearch : "");
+  const [editingClient, setEditingClient] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
+  const [selectedClient, setSelectedClient] = useState<{ id: string; name: string } | null>(null);
+  const { data: clientsData } = useClients({ search: editingClient ? clientSearch : "" });
   
   const [formData, setFormData] = useState({
     plate: "",
@@ -51,6 +56,9 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
     if (vehicle) {
       setShowEquipmentSearch(false);
       setEquipmentSearch("");
+      setEditingClient(false);
+      setClientSearch("");
+      setSelectedClient({ id: vehicle.clientId, name: vehicle.clientName });
       setFormData({
         plate: vehicle.plate,
         vehicle_type: vehicle.type || "",
@@ -90,8 +98,9 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
     }
 
     try {
-      await updateVehicle.mutateAsync({ 
-        id: vehicle.id, 
+      const clientChanged = selectedClient && selectedClient.id !== vehicle.clientId;
+      await updateVehicle.mutateAsync({
+        id: vehicle.id,
         data: {
           plate: formData.plate,
           vehicle_type: formData.vehicle_type || null,
@@ -100,6 +109,7 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
           year: formData.year ? parseInt(formData.year) : null,
           color: formData.color || null,
           status: formData.status,
+          ...(clientChanged ? { client_id: selectedClient!.id } : {}),
         }
       });
       onClose();
@@ -119,6 +129,93 @@ export function EditVehicleModal({ isOpen, onClose, vehicle }: EditVehicleModalP
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Cliente vinculado */}
+            <div className="p-4 border border-border rounded-lg bg-muted/30">
+              {!editingClient ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Cliente Vinculado</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedClient?.name || vehicle.clientName}
+                        {selectedClient && selectedClient.id !== vehicle.clientId && (
+                          <span className="ml-2 text-amber-600 dark:text-amber-400">
+                            (alterado — salve para confirmar)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingClient(true)}
+                    className="gap-1.5"
+                  >
+                    <Link className="h-4 w-4" />
+                    Alterar Cliente
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">Selecionar Cliente</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingClient(false);
+                        setClientSearch("");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar cliente por nome..."
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {clientsData?.clients && clientsData.clients.length > 0 ? (
+                      clientsData.clients.map((c) => (
+                        <div
+                          key={c.id}
+                          className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                          onClick={() => {
+                            setSelectedClient({ id: c.id, name: c.name });
+                            setEditingClient(false);
+                            setClientSearch("");
+                          }}
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{c.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {c.client_type}
+                            </p>
+                          </div>
+                          <Link className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-2">
+                        {clientSearch ? 'Nenhum cliente encontrado' : 'Digite para buscar'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Rastreador vinculado */}
             {linkedEquipment ? (
               <div className="p-4 border border-border rounded-lg bg-muted/30">
