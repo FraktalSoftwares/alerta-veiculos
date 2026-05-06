@@ -5,6 +5,8 @@ import { StockTable } from "@/components/stock/StockTable";
 import { StockPagination } from "@/components/stock/StockPagination";
 import { NewEquipmentModal } from "@/components/stock/NewEquipmentModal";
 import { DeleteEquipmentDialog } from "@/components/stock/DeleteEquipmentDialog";
+import { EquipmentMapModal } from "@/components/stock/EquipmentMapModal";
+import { EquipmentDetailsModal } from "@/components/stock/EquipmentDetailsModal";
 import { useEquipments } from "@/hooks/useEquipment";
 import { EquipmentDisplay } from "@/types/equipment";
 
@@ -12,7 +14,11 @@ const Estoque = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentDisplay | null>(null);
+  const [mapEquipment, setMapEquipment] = useState<EquipmentDisplay | null>(null);
+  const [detailsEquipment, setDetailsEquipment] = useState<EquipmentDisplay | null>(null);
   
   const itemsPerPage = 100;
   
@@ -41,6 +47,16 @@ const Estoque = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleViewMap = (equipment: EquipmentDisplay) => {
+    setMapEquipment(equipment);
+    setIsMapModalOpen(true);
+  };
+
+  const handleViewDetails = (equipment: EquipmentDisplay) => {
+    setDetailsEquipment(equipment);
+    setIsDetailsModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-muted/30">
       <Header />
@@ -51,11 +67,13 @@ const Estoque = () => {
           onNewClick={handleNewClick}
         />
         
-        <StockTable 
-          equipments={data?.equipments || []} 
+        <StockTable
+          equipments={data?.equipments || []}
           onEquipmentClick={handleEquipmentClick}
           onEditEquipment={handleEditEquipment}
           onDeleteEquipment={handleDeleteEquipment}
+          onViewMap={handleViewMap}
+          onViewDetails={handleViewDetails}
           isLoading={isLoading}
         />
         
@@ -86,6 +104,24 @@ const Estoque = () => {
           setSelectedEquipment(null);
         }}
         equipment={selectedEquipment}
+      />
+
+      <EquipmentMapModal
+        isOpen={isMapModalOpen}
+        onClose={() => {
+          setIsMapModalOpen(false);
+          setMapEquipment(null);
+        }}
+        equipment={mapEquipment}
+      />
+
+      <EquipmentDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setDetailsEquipment(null);
+        }}
+        equipment={detailsEquipment}
       />
     </div>
   );

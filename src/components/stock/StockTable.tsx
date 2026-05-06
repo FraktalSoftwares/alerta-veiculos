@@ -8,10 +8,12 @@ interface StockTableProps {
   onEquipmentClick?: (equipment: EquipmentDisplay) => void;
   onEditEquipment?: (equipment: EquipmentDisplay) => void;
   onDeleteEquipment?: (equipment: EquipmentDisplay) => void;
+  onViewMap?: (equipment: EquipmentDisplay) => void;
+  onViewDetails?: (equipment: EquipmentDisplay) => void;
   isLoading?: boolean;
 }
 
-export function StockTable({ equipments, onEquipmentClick, onEditEquipment, onDeleteEquipment, isLoading }: StockTableProps) {
+export function StockTable({ equipments, onEquipmentClick, onEditEquipment, onDeleteEquipment, onViewMap, onViewDetails, isLoading }: StockTableProps) {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
@@ -50,6 +52,8 @@ export function StockTable({ equipments, onEquipmentClick, onEditEquipment, onDe
               onClick={onEquipmentClick}
               onEdit={onEditEquipment}
               onDelete={onDeleteEquipment}
+              onViewMap={onViewMap}
+              onViewDetails={onViewDetails}
             />
           ))}
         </div>

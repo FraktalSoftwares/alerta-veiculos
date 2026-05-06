@@ -25,7 +25,7 @@ export function useEquipments(options: UseEquipmentOptions = {}) {
         .select(`
           *,
           products(id, title, model),
-          vehicles(id, plate, clients(id, name)),
+          vehicles(id, plate, brand, model, year, clients(id, name)),
           owner:profiles!equipment_owner_id_fkey(id, full_name, email, user_type)
         `, { count: 'exact' });
 
@@ -83,6 +83,51 @@ export function useEquipment(equipmentId: string | undefined) {
       if (!data) throw new Error('Equipment not found');
 
       return data as EquipmentWithDetails;
+    },
+    enabled: !!user && !!equipmentId,
+  });
+}
+
+export interface EquipmentFullDetails {
+  equipment: any;
+  owner: any | null;
+  vehicle: any | null;
+  client: any | null;
+  product: any | null;
+}
+
+export function useEquipmentFullDetails(equipmentId: string | undefined) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['equipment-full-details', equipmentId],
+    queryFn: async (): Promise<EquipmentFullDetails> => {
+      if (!equipmentId) throw new Error('Equipment ID required');
+
+      const { data: equipment, error: eqErr } = await supabase
+        .from('equipment')
+        .select(`
+          *,
+          products(id, title, model, description, price),
+          vehicles(
+            id, plate, brand, model, year, color, vehicle_type, chassis, renavam, status, created_at,
+            clients(id, name, phone, email, document_type, document_number)
+          ),
+          owner:profiles!equipment_owner_id_fkey(id, full_name, email, user_type, phone)
+        `)
+        .eq('id', equipmentId)
+        .maybeSingle();
+
+      if (eqErr) throw eqErr;
+      if (!equipment) throw new Error('Equipment not found');
+
+      return {
+        equipment,
+        owner: (equipment as any).owner || null,
+        vehicle: (equipment as any).vehicles || null,
+        client: (equipment as any).vehicles?.clients || null,
+        product: (equipment as any).products || null,
+      };
     },
     enabled: !!user && !!equipmentId,
   });
@@ -229,6 +274,8 @@ export function useLinkEquipmentToVehicle() {
       queryClient.invalidateQueries({ queryKey: ['equipment'] });
       queryClient.invalidateQueries({ queryKey: ['available-equipment'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicle'] });
+      queryClient.invalidateQueries({ queryKey: ['client-vehicles'] });
       toast.success('Rastreador vinculado com sucesso!');
     },
     onError: (error: Error) => {
@@ -261,6 +308,7 @@ export function useUnlinkEquipmentFromVehicle() {
       queryClient.invalidateQueries({ queryKey: ['available-equipment'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle'] });
+      queryClient.invalidateQueries({ queryKey: ['client-vehicles'] });
       toast.success('Rastreador desvinculado com sucesso!');
     },
     onError: (error: Error) => {

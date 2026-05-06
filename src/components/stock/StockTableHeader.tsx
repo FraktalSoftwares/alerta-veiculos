@@ -5,7 +5,7 @@ export function StockTableHeader() {
   const isAdmin = profile?.user_type === 'admin';
 
   return (
-    <div className={`grid ${isAdmin ? 'grid-cols-[1fr_150px_120px_160px_100px_120px_140px_100px]' : 'grid-cols-[1fr_120px_160px_100px_120px_140px_100px]'} gap-4 px-6 py-4 text-sm font-medium text-muted-foreground border-b border-border`}>
+    <div className={`grid ${isAdmin ? 'grid-cols-[1fr_150px_120px_160px_100px_120px_140px_180px]' : 'grid-cols-[1fr_120px_160px_100px_120px_140px_180px]'} gap-4 px-6 py-4 text-sm font-medium text-muted-foreground border-b border-border`}>
       <div>Nome</div>
       {isAdmin && <div>Proprietário</div>}
       <div>Modelo</div>

@@ -16,6 +16,11 @@ export interface EquipmentDisplay {
   chipNumber: string | null;
   chipOperator: string | null;
   vehicleId: string | null;
+  vehiclePlate?: string | null;
+  vehicleBrand?: string | null;
+  vehicleModel?: string | null;
+  vehicleYear?: number | null;
+  vehicleClientName?: string | null;
   dbStatus?: EquipmentStatus | null;
   ownerId?: string | null;
   ownerName?: string | null;
@@ -32,6 +37,9 @@ export interface EquipmentWithDetails extends EquipmentRow {
   vehicles?: {
     id: string;
     plate: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
     clients?: {
       id: string;
       name: string;
@@ -92,6 +100,11 @@ export function mapEquipmentToDisplay(equipment: EquipmentWithDetails): Equipmen
     chipNumber: equipment.chip_number,
     chipOperator: equipment.chip_operator,
     vehicleId: equipment.vehicle_id,
+    vehiclePlate: equipment.vehicles?.plate || null,
+    vehicleBrand: equipment.vehicles?.brand || null,
+    vehicleModel: equipment.vehicles?.model || null,
+    vehicleYear: equipment.vehicles?.year || null,
+    vehicleClientName: equipment.vehicles?.clients?.name || null,
     dbStatus: equipment.status,
     ownerId: equipment.owner_id || null,
     ownerName: equipment.owner?.full_name || null,
