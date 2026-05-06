@@ -44,7 +44,21 @@
       "mcp__supabase__get_logs",
       "Bash(npx vitest:*)",
       "mcp__supabase__list_edge_functions",
-      "mcp__supabase__deploy_edge_function"
+      "mcp__supabase__deploy_edge_function",
+      "Bash(grep -l \"CREATE TABLE.*clients\" /d/Projetos/Fraktal/alerta-veiculos/supabase/migrations/*.sql)",
+      "Bash(grep -n \"RLS\\\\|row.*level\\\\|policy\\\\|POLICY\" /d/Projetos/Fraktal/alerta-veiculos/supabase/migrations/*.sql)",
+      "Bash(grep -l \"ALTER TABLE.*clients.*ADD.*user_id\" /d/Projetos/Fraktal/alerta-veiculos/supabase/migrations/*.sql)",
+      "Bash(grep -r \"user_id.*clients\\\\|clients.*user_id\" /d/Projetos/Fraktal/alerta-veiculos/supabase/migrations/*.sql)",
+      "Bash(grep -n \"POLICY.*clients\\\\|clients.*POLICY\" /d/Projetos/Fraktal/alerta-veiculos/supabase/migrations/*.sql)",
+      "Bash(grep -l \"user_id\" /d/Projetos/Fraktal/alerta-veiculos/supabase/migrations/*.sql)",
+      "Bash(grep -n \"CREATE TABLE.*clients\\\\|ADD COLUMN.*user_id\" /d/Projetos/Fraktal/alerta-veiculos/supabase/migrations/*.sql)",
+      "Bash(git log:*)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "Bash(grep -n \"user_id\\\\|ALTER TABLE.*clients\" /d/Projetos/Fraktal/alerta-veiculos/supabase/migrations/*.sql)",
+      "mcp__claude_ai_Supabase__get_project",
+      "mcp__claude_ai_Supabase__get_logs",
+      "mcp__claude_ai_Supabase__get_project_url",
+      "mcp__claude_ai_Supabase__list_edge_functions"
     ]
   }
 }
