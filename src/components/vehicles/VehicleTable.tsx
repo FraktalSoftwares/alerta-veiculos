@@ -17,7 +17,7 @@ export function VehicleTable({ vehicles, onVehicleClick, onEditVehicle, onDelete
   if (isLoading) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
-        <div className="min-w-[800px]">
+        <div className="md:min-w-[800px]">
           <VehicleTableHeader />
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -30,7 +30,7 @@ export function VehicleTable({ vehicles, onVehicleClick, onEditVehicle, onDelete
   if (vehicles.length === 0) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
-        <div className="min-w-[800px]">
+        <div className="md:min-w-[800px]">
           <VehicleTableHeader />
           <div className="flex items-center justify-center py-12">
             <p className="text-muted-foreground">Nenhum veículo encontrado</p>
@@ -42,7 +42,7 @@ export function VehicleTable({ vehicles, onVehicleClick, onEditVehicle, onDelete
 
   return (
     <div className="rounded-lg border border-border overflow-x-auto bg-card">
-      <div className="min-w-[800px]">
+      <div className="md:min-w-[800px]">
         <VehicleTableHeader />
         <div className="divide-y divide-border">
           {vehicles.map((vehicle, index) => (

@@ -15,7 +15,7 @@ export function StoreTable({ products, onProductClick, onEditProduct, onDeletePr
   if (isLoading) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
-        <div className="min-w-[800px]">
+        <div className="md:min-w-[800px]">
           <StoreTableHeader />
           <div className="divide-y divide-border">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -32,7 +32,7 @@ export function StoreTable({ products, onProductClick, onEditProduct, onDeletePr
   if (products.length === 0) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
-        <div className="min-w-[800px]">
+        <div className="md:min-w-[800px]">
           <StoreTableHeader />
           <div className="px-6 py-12 text-center text-muted-foreground">
             Nenhum produto encontrado
@@ -44,7 +44,7 @@ export function StoreTable({ products, onProductClick, onEditProduct, onDeletePr
 
   return (
     <div className="rounded-lg border border-border overflow-x-auto bg-card">
-      <div className="min-w-[800px]">
+      <div className="md:min-w-[800px]">
         <StoreTableHeader />
         <div className="divide-y divide-border">
           {products.map((product) => (

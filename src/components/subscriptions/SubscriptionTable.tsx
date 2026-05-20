@@ -19,7 +19,7 @@ export function SubscriptionTable({
   if (isLoading) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
-        <div className="min-w-[750px]">
+        <div className="md:min-w-[750px]">
           <SubscriptionTableHeader />
           <div className="divide-y divide-border">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -36,7 +36,7 @@ export function SubscriptionTable({
   if (subscriptions.length === 0) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
-        <div className="min-w-[750px]">
+        <div className="md:min-w-[750px]">
           <SubscriptionTableHeader />
           <div className="px-6 py-12 text-center text-muted-foreground">
             Nenhuma assinatura encontrada
@@ -48,7 +48,7 @@ export function SubscriptionTable({
 
   return (
     <div className="rounded-lg border border-border overflow-x-auto bg-card">
-      <div className="min-w-[750px]">
+      <div className="md:min-w-[750px]">
         <SubscriptionTableHeader />
         <div className="divide-y divide-border">
           {subscriptions.map((subscription) => (

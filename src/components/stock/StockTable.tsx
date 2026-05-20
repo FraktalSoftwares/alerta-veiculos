@@ -17,7 +17,7 @@ export function StockTable({ equipments, onEquipmentClick, onEditEquipment, onDe
   if (isLoading) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
-        <div className="min-w-[800px]">
+        <div className="md:min-w-[800px]">
           <StockTableHeader />
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -30,7 +30,7 @@ export function StockTable({ equipments, onEquipmentClick, onEditEquipment, onDe
   if (equipments.length === 0) {
     return (
       <div className="rounded-lg border border-border overflow-x-auto bg-card">
-        <div className="min-w-[800px]">
+        <div className="md:min-w-[800px]">
           <StockTableHeader />
           <div className="flex items-center justify-center py-12">
             <p className="text-muted-foreground">Nenhum equipamento encontrado</p>
@@ -42,7 +42,7 @@ export function StockTable({ equipments, onEquipmentClick, onEditEquipment, onDe
 
   return (
     <div className="rounded-lg border border-border overflow-x-auto bg-card">
-      <div className="min-w-[800px]">
+      <div className="md:min-w-[800px]">
         <StockTableHeader />
         <div className="divide-y divide-border">
           {equipments.map((equipment, index) => (

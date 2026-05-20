@@ -12,7 +12,7 @@ interface ClientTableProps {
 export function ClientTable({ clients, onClientClick, onEditClient, onDeleteClient }: ClientTableProps) {
   return (
     <div className="rounded-lg border border-border overflow-x-auto bg-card">
-      <div className="min-w-[960px]">
+      <div className="md:min-w-[960px]">
         <ClientTableHeader />
         <div className="divide-y divide-border">
           {clients.map((client, index) => (

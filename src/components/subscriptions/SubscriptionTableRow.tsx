@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, X } from 'lucide-react';
+import { MoreVertical, X, ChevronRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,11 +68,62 @@ export function SubscriptionTableRow({
     return nextDue.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   };
 
+  const actionsMenu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={handleViewDetails}>
+          Ver detalhes
+        </DropdownMenuItem>
+        {subscription.status === 'active' && (
+          <DropdownMenuItem onClick={handleCancel} className="text-destructive">
+            <X className="h-4 w-4 mr-2" />
+            Cancelar
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
-    <div
-      onClick={handleViewDetails}
-      className="grid grid-cols-[200px_1fr_120px_120px_100px_100px_80px] gap-4 px-6 py-4 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors items-center"
-    >
+    <>
+      {/* Mobile compact card */}
+      <div
+        onClick={handleViewDetails}
+        className="md:hidden flex items-center gap-2 px-3 py-2.5 border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-foreground font-bold text-sm truncate">{subscription.clients?.name || '-'}</span>
+            <Badge variant="outline" className={`${statusColors[subscription.status] || ''} shrink-0`}>
+              {statusLabels[subscription.status] || subscription.status}
+            </Badge>
+          </div>
+          <div className="text-xs text-muted-foreground truncate">
+            {subscription.description || subscription.products?.title || 'Assinatura'}
+          </div>
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <span className="text-xs text-muted-foreground">
+              {periodLabels[subscription.subscription_type] || subscription.subscription_type} · venc. {getNextDueDate()}
+            </span>
+            <span className="text-sm font-semibold text-foreground shrink-0">{formatCurrency(subscription.amount)}</span>
+          </div>
+        </div>
+        <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
+          {actionsMenu}
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+
+      {/* Desktop grid row */}
+      <div
+        onClick={handleViewDetails}
+        className="hidden md:grid grid-cols-[200px_1fr_120px_120px_100px_100px_80px] gap-4 px-6 py-4 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors items-center"
+      >
       <div className="text-foreground font-medium truncate">
         {subscription.clients?.name || '-'}
       </div>
@@ -103,26 +154,10 @@ export function SubscriptionTableRow({
       </div>
       
       <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleViewDetails}>
-              Ver detalhes
-            </DropdownMenuItem>
-            {subscription.status === 'active' && (
-              <DropdownMenuItem onClick={handleCancel} className="text-destructive">
-                <X className="h-4 w-4 mr-2" />
-                Cancelar
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {actionsMenu}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -16,14 +16,14 @@ export function NotificationItem({ notification, onDelete, isDeleting }: Notific
     <div className="border border-border rounded-lg overflow-hidden bg-card">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+        className="w-full flex items-center justify-between gap-2 p-3 md:p-4 hover:bg-muted/50 transition-colors"
       >
-        <div className="flex items-center gap-3">
-          <FileText className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">{notification.title}</span>
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+          <FileText className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm font-medium text-foreground truncate text-left">{notification.title}</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{notification.date}</span>
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <span className="text-xs md:text-sm text-muted-foreground">{notification.date}</span>
           {isExpanded ? (
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
           ) : (
@@ -43,7 +43,7 @@ export function NotificationItem({ notification, onDelete, isDeleting }: Notific
             {notification.message}
           </p>
 
-          <div className="flex gap-8 mb-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-8 mb-4">
             <div>
               <span className="text-sm font-medium text-foreground">Para: </span>
               <span className="text-sm text-muted-foreground">{notification.target}</span>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { FileText, Loader2 } from 'lucide-react';
 import { VehicleTrackingData } from '@/hooks/useVehicleTracking';
@@ -27,6 +28,7 @@ export function ExportPdfButton({
 }: ExportPdfButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState('');
+  const navigate = useNavigate();
 
   const handleExport = async () => {
     if (!data.length) return;
@@ -113,7 +115,18 @@ export function ExportPdfButton({
       const start = format(startDate, 'dd-MM-yyyy');
       const end = format(endDate, 'dd-MM-yyyy');
       const plate = vehiclePlate.replace(/[^a-zA-Z0-9]/g, '_');
-      doc.save(`relatorio_${plate}_${start}_a_${end}.pdf`);
+      const filename = `relatorio_${plate}_${start}_a_${end}.pdf`;
+
+      const blob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+
+      navigate('/relatorio-pdf', {
+        state: {
+          blobUrl,
+          filename,
+          title: `Relatório ${vehiclePlate} · ${format(startDate, 'dd/MM/yyyy')} a ${format(endDate, 'dd/MM/yyyy')}`,
+        },
+      });
     } catch (err) {
       console.error('Erro ao gerar PDF:', err);
     } finally {

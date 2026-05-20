@@ -34,6 +34,7 @@ import Configuracoes from "./pages/Configuracoes";
 import Usuarios from "./pages/Usuarios";
 import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
+import RelatorioPdfViewer from "./pages/RelatorioPdfViewer";
 
 const queryClient = new QueryClient();
 
@@ -170,6 +171,11 @@ const App = () => (
             <Route path="/perfil" element={
               <ProtectedRoute>
                 <Perfil />
+              </ProtectedRoute>
+            } />
+            <Route path="/relatorio-pdf" element={
+              <ProtectedRoute>
+                <RelatorioPdfViewer />
               </ProtectedRoute>
             } />
             <Route path="/configuracoes" element={

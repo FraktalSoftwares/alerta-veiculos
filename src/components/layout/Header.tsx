@@ -48,15 +48,15 @@ export function Header() {
           />
         </div>
         
-        {/* Center Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex-shrink-0">
+        {/* Center Logo - desktop only */}
+        <div className="hidden md:block absolute left-1/2 -translate-x-1/2 flex-shrink-0">
           <img
             src={customization?.logo_url || "/logo_alerta.png"}
             alt="Alerta Rastreamento"
             className="h-7 sm:h-8 max-w-[140px] object-contain"
           />
         </div>
-        
+
         <UserProfile />
       </div>
       

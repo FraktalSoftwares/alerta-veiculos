@@ -139,10 +139,7 @@ export function MainNavSheet({ open, onOpenChange }: MainNavSheetProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-full max-w-[280px] p-0">
         <SheetHeader className="p-4 border-b border-border">
-          <SheetTitle className="text-left flex items-center gap-2">
-            <img src="/logo_alerta.png" alt="Alerta" className="h-6" />
-            Menu
-          </SheetTitle>
+          <SheetTitle className="text-left">Menu</SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col py-2 overflow-y-auto max-h-[calc(100vh-80px)]">
           {navItems.map((item) => (

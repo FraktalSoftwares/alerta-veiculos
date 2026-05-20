@@ -23,15 +23,15 @@ export function NotificationList({
 }: NotificationListProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-xl font-bold font-heading text-foreground">Notificações Enviadas</h2>
-        <div className="relative">
+        <div className="relative w-full sm:w-56">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar notificações"
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 bg-card border-border w-56"
+            className="pl-10 bg-card border-border w-full"
           />
         </div>
       </div>

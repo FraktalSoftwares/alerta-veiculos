@@ -25,6 +25,7 @@ import {
   Trash2,
   Radio,
   Route,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -140,13 +141,128 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
   // Use real connection status from API
   const hasSignal = isConnected;
 
+  const actionsDropdown = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52 bg-popover z-50">
+        <DropdownMenuLabel className="text-xs text-muted-foreground">Localização</DropdownMenuLabel>
+        <DropdownMenuItem onClick={handleShowOnMap} className="cursor-pointer">
+          <MapPin className="h-4 w-4 mr-2" />
+          Mostrar no Mapa
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/historico`); }} className="cursor-pointer">
+          <History className="h-4 w-4 mr-2" />
+          Histórico
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/rotas`); }} className="cursor-pointer">
+          <Route className="h-4 w-4 mr-2" />
+          Rotas
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuLabel className="text-xs text-muted-foreground">Configurações</DropdownMenuLabel>
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/cercas`); }} className="cursor-pointer">
+          <Radio className="h-4 w-4 mr-2" />
+          Cercas Virtuais
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuLabel className="text-xs text-muted-foreground">Comandos</DropdownMenuLabel>
+        <RequirePermission code={PERMISSIONS.VEHICLES_EDIT}>
+          <DropdownMenuItem onClick={handleBlock} className="cursor-pointer">
+            {isBlocked ? (
+              <>
+                <Unlock className="h-4 w-4 mr-2" />
+                Desbloquear veículo
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Bloquear veículo
+              </>
+            )}
+          </DropdownMenuItem>
+        </RequirePermission>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuLabel className="text-xs text-muted-foreground">Outros</DropdownMenuLabel>
+        <DropdownMenuItem onClick={handleAction("Informações do Cliente")} className="cursor-pointer">
+          <User className="h-4 w-4 mr-2" />
+          Informações do Cliente
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
+          <Share2 className="h-4 w-4 mr-2" />
+          Compartilhar
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <RequirePermission code={PERMISSIONS.VEHICLES_EDIT}>
+          <DropdownMenuItem onClick={handleEdit} className="cursor-pointer">
+            <Pencil className="h-4 w-4 mr-2" />
+            Editar
+          </DropdownMenuItem>
+        </RequirePermission>
+        <RequirePermission code={PERMISSIONS.VEHICLES_DELETE}>
+          <DropdownMenuItem onClick={handleDelete} className="cursor-pointer text-destructive focus:text-destructive">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
+          </DropdownMenuItem>
+        </RequirePermission>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
-    <div
-      onClick={() => onClick?.(vehicle)}
-      className={`grid grid-cols-[1fr_80px_130px_110px_100px_100px_120px_100px_60px] gap-3 px-6 py-3 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors ${
-        isBlocked ? 'bg-destructive/5 border-l-4 border-l-destructive' : ''
-      }`}
-    >
+    <>
+      {/* Mobile compact card */}
+      <div
+        onClick={() => onClick?.(vehicle)}
+        className={`md:hidden flex items-center gap-2 px-3 py-2.5 border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors ${
+          isBlocked ? 'bg-destructive/5 border-l-4 border-l-destructive' : ''
+        }`}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-foreground font-bold text-base truncate">{vehicle.plate}</span>
+              {isBlocked && (
+                <Lock className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
+              )}
+            </div>
+            <VehicleBadge variant={displayStatus as any} className="shrink-0">
+              {statusLabels[displayStatus as keyof typeof statusLabels]}
+            </VehicleBadge>
+          </div>
+          <div className="text-xs text-muted-foreground font-mono truncate">{vehicle.imei || '-'}</div>
+          <div className="text-xs text-muted-foreground truncate">
+            {[vehicle.brand, vehicle.model].filter(Boolean).join(' / ') || '-'}
+          </div>
+        </div>
+        <div className="flex items-center shrink-0">
+          {actionsDropdown}
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+
+      {/* Desktop grid row */}
+      <div
+        onClick={() => onClick?.(vehicle)}
+        className={`hidden md:grid grid-cols-[1fr_80px_130px_110px_100px_100px_120px_100px_60px] gap-3 px-6 py-3 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors ${
+          isBlocked ? 'bg-destructive/5 border-l-4 border-l-destructive' : ''
+        }`}
+      >
       {/* Cliente */}
       <div className="flex items-center">
         <span className="text-foreground font-medium truncate">{vehicle.clientName}</span>
@@ -207,93 +323,10 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
 
       {/* Ações Dropdown */}
       <div className="flex items-center justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52 bg-popover z-50">
-            {/* Localização */}
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Localização</DropdownMenuLabel>
-            <DropdownMenuItem onClick={handleShowOnMap} className="cursor-pointer">
-              <MapPin className="h-4 w-4 mr-2" />
-              Mostrar no Mapa
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/historico`); }} className="cursor-pointer">
-              <History className="h-4 w-4 mr-2" />
-              Histórico
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/rotas`); }} className="cursor-pointer">
-              <Route className="h-4 w-4 mr-2" />
-              Rotas
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            {/* Configurações */}
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Configurações</DropdownMenuLabel>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/veiculos/${vehicle.id}/cercas`); }} className="cursor-pointer">
-              <Radio className="h-4 w-4 mr-2" />
-              Cercas Virtuais
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            {/* Comandos */}
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Comandos</DropdownMenuLabel>
-            <RequirePermission code={PERMISSIONS.VEHICLES_EDIT}>
-              <DropdownMenuItem onClick={handleBlock} className="cursor-pointer">
-                {isBlocked ? (
-                  <>
-                    <Unlock className="h-4 w-4 mr-2" />
-                    Desbloquear veículo
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-4 w-4 mr-2" />
-                    Bloquear veículo
-                  </>
-                )}
-              </DropdownMenuItem>
-            </RequirePermission>
-
-            <DropdownMenuSeparator />
-
-            {/* Informações */}
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Outros</DropdownMenuLabel>
-            <DropdownMenuItem onClick={handleAction("Informações do Cliente")} className="cursor-pointer">
-              <User className="h-4 w-4 mr-2" />
-              Informações do Cliente
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
-              <Share2 className="h-4 w-4 mr-2" />
-              Compartilhar
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            {/* Gerenciar */}
-            <RequirePermission code={PERMISSIONS.VEHICLES_EDIT}>
-              <DropdownMenuItem onClick={handleEdit} className="cursor-pointer">
-                <Pencil className="h-4 w-4 mr-2" />
-                Editar
-              </DropdownMenuItem>
-            </RequirePermission>
-            <RequirePermission code={PERMISSIONS.VEHICLES_DELETE}>
-              <DropdownMenuItem onClick={handleDelete} className="cursor-pointer text-destructive focus:text-destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </RequirePermission>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {actionsDropdown}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
