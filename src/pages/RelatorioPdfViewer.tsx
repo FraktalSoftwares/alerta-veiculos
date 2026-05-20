@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Share2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
@@ -20,6 +21,8 @@ export default function RelatorioPdfViewer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRendering, setIsRendering] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!state?.blobUrl) {
@@ -104,20 +107,66 @@ export default function RelatorioPdfViewer() {
     document.body.removeChild(a);
   };
 
+  const handleShare = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+    try {
+      const res = await fetch(state.blobUrl);
+      const blob = await res.blob();
+      const file = new File([blob], state.filename, { type: 'application/pdf' });
+
+      const shareData: ShareData = {
+        files: [file],
+        title: state.title || 'Relatório',
+        text: state.title || 'Relatório PDF',
+      };
+
+      if (typeof navigator.canShare === 'function' && navigator.canShare(shareData) && typeof navigator.share === 'function') {
+        await navigator.share(shareData);
+      } else {
+        toast({
+          title: 'Compartilhamento indisponível',
+          description: 'Seu navegador não suporta compartilhamento direto. O arquivo será baixado.',
+        });
+        handleDownload();
+      }
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') return;
+      console.error('Erro ao compartilhar:', err);
+      toast({
+        title: 'Erro ao compartilhar',
+        description: 'Não foi possível compartilhar. Tente baixar e enviar manualmente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-muted/30">
       <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 border-b bg-background">
         <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
+          <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <h1 className="text-sm sm:text-base font-medium truncate flex-1 text-center hidden sm:block">
+        <h1 className="text-sm sm:text-base font-medium truncate flex-1 text-center hidden md:block">
           {state.title || 'Relatório'}
         </h1>
-        <Button size="sm" onClick={handleDownload}>
-          <Download className="h-4 w-4 mr-2" />
-          Baixar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleShare} disabled={isSharing}>
+            {isSharing ? (
+              <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+            ) : (
+              <Share2 className="h-4 w-4 sm:mr-2" />
+            )}
+            <span className="hidden sm:inline">Compartilhar</span>
+          </Button>
+          <Button size="sm" onClick={handleDownload}>
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Baixar</span>
+          </Button>
+        </div>
       </div>
       <div className="flex-1 overflow-auto p-2 sm:p-4 relative">
         {isRendering && (
