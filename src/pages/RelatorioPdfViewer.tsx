@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Loader2, Share2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Share2, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -9,7 +9,7 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface PdfViewerState {
-  blobUrl: string;
+  url: string;
   filename: string;
   title?: string;
 }
@@ -25,17 +25,17 @@ export default function RelatorioPdfViewer() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!state?.blobUrl) {
+    if (!state?.url) {
       navigate(-1);
       return;
     }
 
     let cancelled = false;
-    const blobUrl = state.blobUrl;
+    const url = state.url;
 
     (async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument(blobUrl);
+        const loadingTask = pdfjsLib.getDocument(url);
         const pdf = await loadingTask.promise;
         if (cancelled) return;
 
@@ -88,54 +88,57 @@ export default function RelatorioPdfViewer() {
     };
   }, [state, navigate]);
 
-  useEffect(() => {
-    return () => {
-      if (state?.blobUrl) {
-        URL.revokeObjectURL(state.blobUrl);
-      }
-    };
-  }, [state]);
+  if (!state?.url) return null;
 
-  if (!state?.blobUrl) return null;
-
-  const handleDownload = () => {
-    const a = document.createElement('a');
-    a.href = state.blobUrl;
-    a.download = state.filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(state.url);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = state.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (err) {
+      console.error('Erro ao baixar:', err);
+      window.open(state.url, '_blank');
+    }
   };
 
   const handleShare = async () => {
     if (isSharing) return;
     setIsSharing(true);
     try {
-      const res = await fetch(state.blobUrl);
-      const blob = await res.blob();
-      const file = new File([blob], state.filename, { type: 'application/pdf' });
-
       const shareData: ShareData = {
-        files: [file],
+        url: state.url,
         title: state.title || 'Relatório',
         text: state.title || 'Relatório PDF',
       };
 
-      if (typeof navigator.canShare === 'function' && navigator.canShare(shareData) && typeof navigator.share === 'function') {
+      if (typeof navigator.share === 'function') {
         await navigator.share(shareData);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(state.url);
+        toast({
+          title: 'Link copiado',
+          description: 'Cole onde quiser compartilhar.',
+        });
       } else {
         toast({
           title: 'Compartilhamento indisponível',
-          description: 'Seu navegador não suporta compartilhamento direto. O arquivo será baixado.',
+          description: 'Seu navegador não suporta compartilhar.',
+          variant: 'destructive',
         });
-        handleDownload();
       }
     } catch (err) {
       if ((err as DOMException)?.name === 'AbortError') return;
       console.error('Erro ao compartilhar:', err);
       toast({
         title: 'Erro ao compartilhar',
-        description: 'Não foi possível compartilhar. Tente baixar e enviar manualmente.',
+        description: 'Tente copiar o link manualmente.',
         variant: 'destructive',
       });
     } finally {
@@ -143,17 +146,29 @@ export default function RelatorioPdfViewer() {
     }
   };
 
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(state.url);
+      toast({ title: 'Link copiado' });
+    } catch {
+      toast({ title: 'Erro ao copiar', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-muted/30">
       <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 border-b bg-background">
         <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         <h1 className="text-sm sm:text-base font-medium truncate flex-1 text-center hidden md:block">
           {state.title || 'Relatório'}
         </h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleCopyLink} title="Copiar link">
+            <Copy className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="sm" onClick={handleShare} disabled={isSharing}>
             {isSharing ? (
               <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />

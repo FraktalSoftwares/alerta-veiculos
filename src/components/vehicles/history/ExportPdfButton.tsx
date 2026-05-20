@@ -8,6 +8,8 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { batchReverseGeocode } from '@/utils/geocoding';
 import { buildReportRows } from '@/utils/trackingReport';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ExportPdfButtonProps {
   data: VehicleTrackingData[];
@@ -29,6 +31,7 @@ export function ExportPdfButton({
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState('');
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleExport = async () => {
     if (!data.length) return;
@@ -118,17 +121,36 @@ export function ExportPdfButton({
       const filename = `relatorio_${plate}_${start}_a_${end}.pdf`;
 
       const blob = doc.output('blob');
-      const blobUrl = URL.createObjectURL(blob);
+
+      setProgress('Salvando no servidor...');
+      const storagePath = `historico/${plate}/${Date.now()}_${filename}`;
+      const { error: uploadError } = await supabase.storage
+        .from('relatorios')
+        .upload(storagePath, blob, {
+          contentType: 'application/pdf',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('relatorios')
+        .getPublicUrl(storagePath);
 
       navigate('/relatorio-pdf', {
         state: {
-          blobUrl,
+          url: publicUrl,
           filename,
           title: `Relatório ${vehiclePlate} · ${format(startDate, 'dd/MM/yyyy')} a ${format(endDate, 'dd/MM/yyyy')}`,
         },
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao gerar PDF:', err);
+      toast({
+        title: 'Erro ao gerar relatório',
+        description: err?.message || 'Tente novamente.',
+        variant: 'destructive',
+      });
     } finally {
       setIsExporting(false);
       setProgress('');
