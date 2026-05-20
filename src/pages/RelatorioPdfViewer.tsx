@@ -1,7 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Loader2 } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface PdfViewerState {
   blobUrl: string;
@@ -13,18 +17,81 @@ export default function RelatorioPdfViewer() {
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as PdfViewerState | null;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isRendering, setIsRendering] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!state?.blobUrl) {
       navigate(-1);
       return;
     }
+
+    let cancelled = false;
+    const blobUrl = state.blobUrl;
+
+    (async () => {
+      try {
+        const loadingTask = pdfjsLib.getDocument(blobUrl);
+        const pdf = await loadingTask.promise;
+        if (cancelled) return;
+
+        const container = containerRef.current;
+        if (!container) return;
+        container.innerHTML = '';
+
+        const containerWidth = container.clientWidth - 16;
+        const dpr = window.devicePixelRatio || 1;
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          if (cancelled) return;
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1 });
+          const scale = containerWidth / viewport.width;
+          const scaledViewport = page.getViewport({ scale });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = scaledViewport.width * dpr;
+          canvas.height = scaledViewport.height * dpr;
+          canvas.style.width = `${scaledViewport.width}px`;
+          canvas.style.height = `${scaledViewport.height}px`;
+          canvas.className = 'shadow-md bg-white mb-3 mx-auto block';
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) continue;
+          ctx.scale(dpr, dpr);
+
+          container.appendChild(canvas);
+
+          await page.render({
+            canvasContext: ctx,
+            viewport: scaledViewport,
+            canvas,
+          }).promise;
+        }
+
+        if (!cancelled) setIsRendering(false);
+      } catch (err) {
+        console.error('Erro ao renderizar PDF:', err);
+        if (!cancelled) {
+          setError('Não foi possível exibir o PDF. Use o botão Baixar.');
+          setIsRendering(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state, navigate]);
+
+  useEffect(() => {
     return () => {
       if (state?.blobUrl) {
         URL.revokeObjectURL(state.blobUrl);
       }
     };
-  }, [state, navigate]);
+  }, [state]);
 
   if (!state?.blobUrl) return null;
 
@@ -52,12 +119,16 @@ export default function RelatorioPdfViewer() {
           Baixar
         </Button>
       </div>
-      <div className="flex-1">
-        <iframe
-          src={state.blobUrl}
-          title={state.title || 'Relatório PDF'}
-          className="w-full h-full border-0"
-        />
+      <div className="flex-1 overflow-auto p-2 sm:p-4 relative">
+        {isRendering && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
+        {error && (
+          <div className="text-center text-destructive py-8">{error}</div>
+        )}
+        <div ref={containerRef} className="max-w-full" />
       </div>
     </div>
   );
