@@ -52,6 +52,7 @@ const App = () => (
             <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
             <Route path="/nova-senha" element={<NovaSenha />} />
             <Route path="/compartilhar/:id" element={<VeiculoMapaPublico />} />
+            <Route path="/historico/relatorio/:id" element={<RelatorioPdfViewer />} />
             <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
             <Route path="/termos-uso" element={<TermosUso />} />
             
@@ -171,11 +172,6 @@ const App = () => (
             <Route path="/perfil" element={
               <ProtectedRoute>
                 <Perfil />
-              </ProtectedRoute>
-            } />
-            <Route path="/relatorio-pdf" element={
-              <ProtectedRoute>
-                <RelatorioPdfViewer />
               </ProtectedRoute>
             } />
             <Route path="/configuracoes" element={

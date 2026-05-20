@@ -146,6 +146,7 @@ const VeiculoHistorico = () => {
               data={historyData}
               vehiclePlate={vehicle.plate}
               vehicleDescription={vehicleDescription}
+              vehicleId={vehicle.id}
               startDate={startDate}
               endDate={endDate}
               disabled={isLoadingHistory}

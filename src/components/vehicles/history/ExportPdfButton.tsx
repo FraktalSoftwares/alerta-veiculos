@@ -15,6 +15,7 @@ interface ExportPdfButtonProps {
   data: VehicleTrackingData[];
   vehiclePlate: string;
   vehicleDescription: string;
+  vehicleId?: string;
   startDate: Date;
   endDate: Date;
   disabled?: boolean;
@@ -24,6 +25,7 @@ export function ExportPdfButton({
   data,
   vehiclePlate,
   vehicleDescription,
+  vehicleId,
   startDate,
   endDate,
   disabled,
@@ -137,11 +139,31 @@ export function ExportPdfButton({
         .from('relatorios')
         .getPublicUrl(storagePath);
 
-      navigate('/relatorio-pdf', {
+      const title = `Relatório ${vehiclePlate} · ${format(startDate, 'dd/MM/yyyy')} a ${format(endDate, 'dd/MM/yyyy')}`;
+
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: report, error: insertError } = await (supabase as any)
+        .from('tracking_reports')
+        .insert({
+          storage_path: storagePath,
+          filename,
+          title,
+          vehicle_id: vehicleId ?? null,
+          vehicle_plate: vehiclePlate,
+          period_start: startDate.toISOString(),
+          period_end: endDate.toISOString(),
+          created_by: userData.user?.id ?? null,
+        })
+        .select('id')
+        .single();
+
+      if (insertError) throw insertError;
+
+      navigate(`/historico/relatorio/${report.id}`, {
         state: {
           url: publicUrl,
           filename,
-          title: `Relatório ${vehiclePlate} · ${format(startDate, 'dd/MM/yyyy')} a ${format(endDate, 'dd/MM/yyyy')}`,
+          title,
         },
       });
     } catch (err: any) {

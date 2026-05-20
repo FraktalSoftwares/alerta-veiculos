@@ -1,41 +1,102 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Loader2, Share2, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface PdfViewerState {
-  url: string;
-  filename: string;
+  url?: string;
+  filename?: string;
   title?: string;
 }
 
+interface ReportData {
+  url: string;
+  filename: string;
+  title: string;
+}
+
 export default function RelatorioPdfViewer() {
+  const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as PdfViewerState | null;
+  const incomingState = location.state as PdfViewerState | null;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isRendering, setIsRendering] = useState(true);
+  const [report, setReport] = useState<ReportData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRendering, setIsRendering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!state?.url) {
-      navigate(-1);
+    if (!id) {
+      setError('Relatório não encontrado.');
+      setIsLoading(false);
       return;
     }
 
     let cancelled = false;
-    const url = state.url;
+
+    (async () => {
+      if (incomingState?.url && incomingState.filename) {
+        if (!cancelled) {
+          setReport({
+            url: incomingState.url,
+            filename: incomingState.filename,
+            title: incomingState.title || 'Relatório',
+          });
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const { data, error: fetchErr } = await (supabase as any)
+          .from('tracking_reports')
+          .select('storage_path, filename, title')
+          .eq('id', id)
+          .single();
+
+        if (fetchErr || !data) throw fetchErr || new Error('not found');
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('relatorios')
+          .getPublicUrl(data.storage_path);
+
+        if (cancelled) return;
+        setReport({
+          url: publicUrl,
+          filename: data.filename,
+          title: data.title || 'Relatório',
+        });
+      } catch (err) {
+        console.error('Erro ao carregar relatório:', err);
+        if (!cancelled) setError('Relatório não encontrado ou expirado.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, incomingState]);
+
+  useEffect(() => {
+    if (!report?.url) return;
+
+    let cancelled = false;
+    setIsRendering(true);
 
     (async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument(url);
+        const loadingTask = pdfjsLib.getDocument(report.url);
         const pdf = await loadingTask.promise;
         if (cancelled) return;
 
@@ -86,46 +147,52 @@ export default function RelatorioPdfViewer() {
     return () => {
       cancelled = true;
     };
-  }, [state, navigate]);
+  }, [report]);
 
-  if (!state?.url) return null;
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
 
   const handleDownload = async () => {
+    if (!report) return;
     try {
-      const res = await fetch(state.url);
+      const res = await fetch(report.url);
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objectUrl;
-      a.download = state.filename;
+      a.download = report.filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     } catch (err) {
       console.error('Erro ao baixar:', err);
-      window.open(state.url, '_blank');
+      window.open(report.url, '_blank');
     }
   };
 
+  const shareUrl = `${window.location.origin}/historico/relatorio/${id}`;
+
   const handleShare = async () => {
-    if (isSharing) return;
+    if (!report || isSharing) return;
     setIsSharing(true);
     try {
       const shareData: ShareData = {
-        url: state.url,
-        title: state.title || 'Relatório',
-        text: state.title || 'Relatório PDF',
+        url: shareUrl,
+        title: report.title,
+        text: report.title,
       };
 
       if (typeof navigator.share === 'function') {
         await navigator.share(shareData);
       } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(state.url);
-        toast({
-          title: 'Link copiado',
-          description: 'Cole onde quiser compartilhar.',
-        });
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: 'Link copiado', description: 'Cole onde quiser compartilhar.' });
       } else {
         toast({
           title: 'Compartilhamento indisponível',
@@ -148,22 +215,42 @@ export default function RelatorioPdfViewer() {
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(state.url);
+      await navigator.clipboard.writeText(shareUrl);
       toast({ title: 'Link copiado' });
     } catch {
       toast({ title: 'Erro ao copiar', variant: 'destructive' });
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-muted/30">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-muted/30 gap-4 px-4 text-center">
+        <p className="text-destructive">{error || 'Relatório não encontrado.'}</p>
+        <Button onClick={handleBack} variant="outline">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-muted/30">
       <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 border-b bg-background">
-        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="outline" size="sm" onClick={handleBack}>
           <ArrowLeft className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         <h1 className="text-sm sm:text-base font-medium truncate flex-1 text-center hidden md:block">
-          {state.title || 'Relatório'}
+          {report.title}
         </h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleCopyLink} title="Copiar link">
@@ -188,9 +275,6 @@ export default function RelatorioPdfViewer() {
           <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        )}
-        {error && (
-          <div className="text-center text-destructive py-8">{error}</div>
         )}
         <div ref={containerRef} className="max-w-full" />
       </div>
