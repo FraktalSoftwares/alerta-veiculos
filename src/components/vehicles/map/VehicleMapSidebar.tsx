@@ -135,7 +135,7 @@ export function VehicleMapSidebar({
         onFilterChange={onFilterChange}
         filterCounts={filterCounts}
       />
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="flex-1 min-h-0 [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
         <div className={`p-3 sm:p-4 space-y-3 ${variant === "sheet" ? "pb-[max(1rem,env(safe-area-inset-bottom,0px))]" : ""}`}>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
