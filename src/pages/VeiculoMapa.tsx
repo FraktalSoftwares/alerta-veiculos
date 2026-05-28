@@ -177,8 +177,8 @@ const VeiculoMapa = () => {
     : 'Sem dados';
 
   // Get equipment data for iframe
-  // Try to get model from product first, then from equipment directly
-  const protocolo = equipment?.products?.model || (equipment as any)?.model || '';
+  // equipment.model carrega o protocolo (J16/8310/310). products.model é SKU (ex: ST8310UM) — não serve à API.
+  const protocolo = (equipment as any)?.model || equipment?.products?.model || '';
   
   // Build iframe URL
   const iframeUrl = imei && protocolo 

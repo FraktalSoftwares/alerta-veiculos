@@ -27,7 +27,7 @@ const VeiculosMapa = () => {
     
     const equipment = selectedVehicle.equipment?.[0];
     const imei = equipment?.imei || null;
-    const protocolo = equipment?.products?.model || (equipment as any)?.model || '';
+    const protocolo = (equipment as any)?.model || equipment?.products?.model || '';
     
     if (!imei || !protocolo) return null;
     
