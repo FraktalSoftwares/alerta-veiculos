@@ -12,10 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useVehicleAlerts,
+  useUserAlerts,
   useMarkAlertAsRead,
   VehicleAlert,
-} from "@/hooks/useVehicleAlerts";
+} from "@/hooks/useAlerts";
 
 interface AlertsDrawerProps {
   open: boolean;
@@ -68,7 +68,7 @@ function AlertItem({
 
 export function AlertsDrawer({ open, onOpenChange }: AlertsDrawerProps) {
   const [activeTab, setActiveTab] = useState("all");
-  const { data: alerts = [], isLoading } = useVehicleAlerts();
+  const { data: alerts = [], isLoading } = useUserAlerts();
   const markAsRead = useMarkAlertAsRead();
 
   const filteredAlerts = alerts.filter((alert) => {

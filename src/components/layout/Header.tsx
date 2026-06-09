@@ -5,7 +5,7 @@ import { HeaderIcon } from "./HeaderIcon";
 import { UserProfile } from "./UserProfile";
 import { AlertsDrawer } from "./AlertsDrawer";
 import { NotificationsDrawer } from "./NotificationsDrawer";
-import { useUnreadAlertsCount } from "@/hooks/useVehicleAlerts";
+import { useUnreadAlertsCount } from "@/hooks/useAlerts";
 import { useUnreadNotificationsCount } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { useClientCustomization } from "@/contexts/ClientCustomizationContext";

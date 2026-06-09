@@ -53,7 +53,7 @@ const ALL_STEPS = [
   { id: 5, label: "Acesso e opções" },
 ];
 
-// Associado inherits customization from parent Associação — skip step 4
+// Não-admin nunca define personalização — sempre herda do pai via parent_client_id.
 const STEPS_WITHOUT_CUSTOMIZATION = ALL_STEPS.filter(s => s.id !== 4);
 
 const generateRandomPassword = () => {
@@ -112,7 +112,8 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId, par
     status: "active" as "active" | "inactive" | "blocked",
   });
 
-  const hasCustomization = dadosBasicos.client_type === "associacao" || dadosBasicos.client_type === "franquia" || dadosBasicos.client_type === "franqueado";
+  // Só admin pode definir personalização. Demais criadores herdam do pai automaticamente.
+  const hasCustomization = profile?.user_type === 'admin';
   const steps = hasCustomization ? ALL_STEPS : STEPS_WITHOUT_CUSTOMIZATION;
   const lastStepId = steps[steps.length - 1].id;
 
@@ -423,42 +424,53 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId, par
       if (billingError) throw new Error(`Erro ao salvar cobrança: ${billingError.message}`);
 
       // 4. Save customization (upload assets first)
-      let logoUrl = customizacao.logo_url;
-      let faviconUrl = customizacao.favicon_url;
+      // Só persiste se usuário modificou algo — senão filho herda do pai via fallback em ClientCustomizationContext.
+      const customizationTouched =
+        customizacao.primary_color !== "#F59E0B" ||
+        customizacao.secondary_color !== "#FFFFFF" ||
+        customizacao.logo_url !== null ||
+        customizacao.favicon_url !== null ||
+        logoFile !== null ||
+        faviconFile !== null;
 
-      if (logoFile) {
-        const fileExt = logoFile.name.split(".").pop();
-        const logoPath = `${clientId}/logo-${Date.now()}.${fileExt}`;
-        const { error: logoUploadError } = await supabase.storage
-          .from("client-assets")
-          .upload(logoPath, logoFile, { upsert: true });
-        if (logoUploadError) throw new Error(`Erro ao fazer upload do logo: ${logoUploadError.message}`);
-        const { data: { publicUrl } } = supabase.storage.from("client-assets").getPublicUrl(logoPath);
-        logoUrl = publicUrl;
+      if (customizationTouched) {
+        let logoUrl = customizacao.logo_url;
+        let faviconUrl = customizacao.favicon_url;
+
+        if (logoFile) {
+          const fileExt = logoFile.name.split(".").pop();
+          const logoPath = `${clientId}/logo-${Date.now()}.${fileExt}`;
+          const { error: logoUploadError } = await supabase.storage
+            .from("client-assets")
+            .upload(logoPath, logoFile, { upsert: true });
+          if (logoUploadError) throw new Error(`Erro ao fazer upload do logo: ${logoUploadError.message}`);
+          const { data: { publicUrl } } = supabase.storage.from("client-assets").getPublicUrl(logoPath);
+          logoUrl = publicUrl;
+        }
+
+        if (faviconFile) {
+          const fileExt = faviconFile.name.split(".").pop();
+          const faviconPath = `${clientId}/favicon-${Date.now()}.${fileExt}`;
+          const { error: faviconUploadError } = await supabase.storage
+            .from("client-assets")
+            .upload(faviconPath, faviconFile, { upsert: true });
+          if (faviconUploadError) throw new Error(`Erro ao fazer upload do favicon: ${faviconUploadError.message}`);
+          const { data: { publicUrl } } = supabase.storage.from("client-assets").getPublicUrl(faviconPath);
+          faviconUrl = publicUrl;
+        }
+
+        const { error: customError } = await supabase
+          .from("client_customization")
+          .upsert({
+            client_id: clientId,
+            primary_color: customizacao.primary_color,
+            secondary_color: customizacao.secondary_color,
+            logo_url: logoUrl,
+            favicon_url: faviconUrl,
+          }, { onConflict: "client_id" });
+
+        if (customError) throw new Error(`Erro ao salvar customização: ${customError.message}`);
       }
-
-      if (faviconFile) {
-        const fileExt = faviconFile.name.split(".").pop();
-        const faviconPath = `${clientId}/favicon-${Date.now()}.${fileExt}`;
-        const { error: faviconUploadError } = await supabase.storage
-          .from("client-assets")
-          .upload(faviconPath, faviconFile, { upsert: true });
-        if (faviconUploadError) throw new Error(`Erro ao fazer upload do favicon: ${faviconUploadError.message}`);
-        const { data: { publicUrl } } = supabase.storage.from("client-assets").getPublicUrl(faviconPath);
-        faviconUrl = publicUrl;
-      }
-
-      const { error: customError } = await supabase
-        .from("client_customization")
-        .upsert({
-          client_id: clientId,
-          primary_color: customizacao.primary_color,
-          secondary_color: customizacao.secondary_color,
-          logo_url: logoUrl,
-          favicon_url: faviconUrl,
-        }, { onConflict: "client_id" });
-
-      if (customError) throw new Error(`Erro ao salvar customização: ${customError.message}`);
 
       // 5. Create user access if enabled
       if (acesso.create_login) {

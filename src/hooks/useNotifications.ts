@@ -22,6 +22,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       let query = supabase
         .from('notifications')
         .select(`*`, { count: 'exact' })
+        .eq('notificacao', true)
         .order('created_at', { ascending: false });
 
       if (search) {
@@ -78,6 +79,7 @@ export function useSentNotifications() {
         .from('notifications')
         .select(`*`)
         .eq('sender_id', user.id)
+        .eq('notificacao', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -108,6 +110,7 @@ export function useCreateNotification() {
           target_user_type: formData.target_user_type || null,
           target_user_ids: formData.target_user_ids || null,
           notification_type: formData.notification_type || 'general',
+          notificacao: true,
           ...(formData.scheduled_at ? { scheduled_at: formData.scheduled_at } : {}),
         })
         .select()
@@ -155,10 +158,11 @@ export function useUnreadNotificationsCount() {
     queryFn: async () => {
       if (!user) return 0;
 
-      // Get notifications that the user can see
+      // Get notifications that the user can see (apenas notificacao=true)
       const { data: notifications, error: notifError } = await supabase
         .from('notifications')
-        .select('id');
+        .select('id')
+        .eq('notificacao', true);
 
       if (notifError) throw notifError;
 

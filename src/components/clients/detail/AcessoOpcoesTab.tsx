@@ -13,6 +13,7 @@ import {
   useUpdateClientEmail 
 } from "@/hooks/useClientAccess";
 import { useAdminRoles } from "@/hooks/useSettings";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,9 @@ const DEFAULT_PRIMARY_COLOR = "#F59E0B";
 const DEFAULT_SECONDARY_COLOR = "#FFFFFF";
 
 export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
-  const canCustomize = client.client_type === 'admin' || client.client_type === 'associacao' || client.client_type === 'franquia';
+  const { profile } = useAuth();
+  // Só admin pode definir personalização. Demais herdam via fallback de parent_client_id.
+  const canCustomize = profile?.user_type === 'admin';
 
   // Customization state
   const [isEditingColors, setIsEditingColors] = useState(false);
