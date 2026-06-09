@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { formatCPF, formatCNPJ, formatPhone, formatCEP, isValidEmail, isValidCPF, isValidCNPJ } from "@/lib/formatters";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllowedUserTypesToCreate, getDefaultUserTypeForCreation } from "@/lib/userTypeHierarchy";
+import { getAllowedUserTypesToCreate, getDefaultUserTypeForCreation, canCustomize } from "@/lib/userTypeHierarchy";
 import { useAdminRoles } from "@/hooks/useSettings";
 
 // IDs fixos das roles padrão por tipo de cliente (criadas na migration)
@@ -112,8 +112,9 @@ export function NewClientModal({ isOpen, onClose, preselectedParentClientId, par
     status: "active" as "active" | "inactive" | "blocked",
   });
 
-  // Só admin pode definir personalização. Demais criadores herdam do pai automaticamente.
-  const hasCustomization = profile?.user_type === 'admin';
+  // Personalização só para clientes que cadastram outros (associacao/franquia/frotista).
+  // Subordinados herdam via parent_client_id no ClientCustomizationContext.
+  const hasCustomization = canCustomize(dadosBasicos.client_type);
   const steps = hasCustomization ? ALL_STEPS : STEPS_WITHOUT_CUSTOMIZATION;
   const lastStepId = steps[steps.length - 1].id;
 

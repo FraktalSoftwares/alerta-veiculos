@@ -14,6 +14,7 @@ import {
 } from "@/hooks/useClientAccess";
 import { useAdminRoles } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { canCustomize as canCustomizeClientType } from "@/lib/userTypeHierarchy";
 import {
   Dialog,
   DialogContent,
@@ -37,8 +38,10 @@ const DEFAULT_SECONDARY_COLOR = "#FFFFFF";
 
 export function AcessoOpcoesTab({ client }: AcessoOpcoesTabProps) {
   const { profile } = useAuth();
-  // Só admin pode definir personalização. Demais herdam via fallback de parent_client_id.
-  const canCustomize = profile?.user_type === 'admin';
+  // Personalização só para clientes que cadastram outros (associacao/franquia/frotista).
+  // Admin também pode editar a personalização desses clientes pela tela de detalhes.
+  // Subordinados (associado/franqueado/motorista) herdam do pai via parent_client_id.
+  const canCustomize = canCustomizeClientType(client.client_type);
 
   // Customization state
   const [isEditingColors, setIsEditingColors] = useState(false);

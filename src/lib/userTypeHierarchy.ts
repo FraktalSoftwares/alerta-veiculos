@@ -54,3 +54,13 @@ export function getDefaultUserTypeForCreation(currentUserType: UserType | undefi
   // Return the last (lowest hierarchy) option as default
   return allowed.length > 0 ? allowed[allowed.length - 1].value : "motorista";
 }
+
+// Tipos que cadastram outros usuários — apenas estes podem definir personalização.
+// Subordinados (associado, franqueado, motorista) herdam do pai via parent_client_id.
+// Admin não tem cliente próprio, gerencia tema padrão do sistema.
+const CUSTOMIZABLE_CLIENT_TYPES: UserType[] = ["associacao", "franquia", "frotista"];
+
+export function canCustomize(clientType: UserType | string | null | undefined): boolean {
+  if (!clientType) return false;
+  return CUSTOMIZABLE_CLIENT_TYPES.includes(clientType as UserType);
+}
