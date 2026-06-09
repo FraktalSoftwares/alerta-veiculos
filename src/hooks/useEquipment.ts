@@ -7,16 +7,18 @@ import { toast } from 'sonner';
 interface UseEquipmentOptions {
   search?: string;
   status?: string;
+  modality?: 'installed' | 'available' | 'in_store' | '';
+  chipOperator?: string;
   page?: number;
   pageSize?: number;
 }
 
 export function useEquipments(options: UseEquipmentOptions = {}) {
   const { user } = useAuth();
-  const { search = '', status, page = 1, pageSize = 100 } = options;
+  const { search = '', status, modality = '', chipOperator = '', page = 1, pageSize = 100 } = options;
 
   return useQuery({
-    queryKey: ['equipment', { search, status, page, pageSize, userId: user?.id }],
+    queryKey: ['equipment', { search, status, modality, chipOperator, page, pageSize, userId: user?.id }],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
@@ -30,11 +32,33 @@ export function useEquipments(options: UseEquipmentOptions = {}) {
         `, { count: 'exact' });
 
       if (search) {
-        query = query.or(`serial_number.ilike.%${search}%,imei.ilike.%${search}%`);
+        const term = search.replace(/[%,]/g, '');
+        query = query.or(`serial_number.ilike.%${term}%,imei.ilike.%${term}%,model.ilike.%${term}%,chip_number.ilike.%${term}%`);
       }
 
-      if (status) {
+      // UI "funcionando" agrupa available + installed; demais mapeiam 1-1.
+      if (status === 'funcionando') {
+        query = query.in('status', ['available', 'installed']);
+      } else if (status === 'manutencao') {
+        query = query.eq('status', 'maintenance');
+      } else if (status === 'defeito') {
+        query = query.eq('status', 'defective');
+      } else if (status === 'na_loja') {
+        query = query.eq('status', 'in_store');
+      } else if (status) {
         query = query.eq('status', status as 'available' | 'installed' | 'maintenance' | 'defective');
+      }
+
+      if (modality === 'installed') {
+        query = query.not('vehicle_id', 'is', null);
+      } else if (modality === 'available') {
+        query = query.is('vehicle_id', null).neq('status', 'in_store');
+      } else if (modality === 'in_store') {
+        query = query.eq('status', 'in_store');
+      }
+
+      if (chipOperator) {
+        query = query.eq('chip_operator', chipOperator);
       }
 
       const from = (page - 1) * pageSize;

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { StockPageHeader } from "@/components/stock/StockPageHeader";
+import { StockFilters, StockFiltersState } from "@/components/stock/StockFilters";
 import { StockTable } from "@/components/stock/StockTable";
 import { StockPagination } from "@/components/stock/StockPagination";
 import { NewEquipmentModal } from "@/components/stock/NewEquipmentModal";
@@ -12,6 +13,8 @@ import { EquipmentDisplay } from "@/types/equipment";
 
 const Estoque = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState<StockFiltersState>({ search: "", status: "", modality: "" });
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
@@ -19,12 +22,26 @@ const Estoque = () => {
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentDisplay | null>(null);
   const [mapEquipment, setMapEquipment] = useState<EquipmentDisplay | null>(null);
   const [detailsEquipment, setDetailsEquipment] = useState<EquipmentDisplay | null>(null);
-  
+
   const itemsPerPage = 100;
-  
+
+  // debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(filters.search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [filters.search]);
+
+  // reset page ao alterar filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filters.status, filters.modality]);
+
   const { data, isLoading } = useEquipments({
     page: currentPage,
     pageSize: itemsPerPage,
+    search: debouncedSearch,
+    status: filters.status,
+    modality: filters.modality,
   });
 
   const handleNewClick = () => {
@@ -66,7 +83,9 @@ const Estoque = () => {
           title="Estoque de equipamentos"
           onNewClick={handleNewClick}
         />
-        
+
+        <StockFilters value={filters} onChange={setFilters} />
+
         <StockTable
           equipments={data?.equipments || []}
           onEquipmentClick={handleEquipmentClick}
