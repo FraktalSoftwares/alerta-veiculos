@@ -35,8 +35,14 @@ import Usuarios from "./pages/Usuarios";
 import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
 import RelatorioPdfViewer from "./pages/RelatorioPdfViewer";
+import { useFcmTokenSync } from "@/hooks/useFcmTokenSync";
 
 const queryClient = new QueryClient();
+
+const FcmTokenBridge = () => {
+  useFcmTokenSync();
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -46,6 +52,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
         <ClientCustomizationProvider>
+          <FcmTokenBridge />
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />

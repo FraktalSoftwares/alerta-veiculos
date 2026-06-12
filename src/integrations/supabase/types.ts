@@ -734,6 +734,7 @@ export type Database = {
           document_number: string | null
           document_type: string | null
           email: string
+          fcm_token: string | null
           full_name: string
           id: string
           is_active: boolean | null
@@ -748,6 +749,7 @@ export type Database = {
           document_number?: string | null
           document_type?: string | null
           email: string
+          fcm_token?: string | null
           full_name: string
           id: string
           is_active?: boolean | null
@@ -762,6 +764,7 @@ export type Database = {
           document_number?: string | null
           document_type?: string | null
           email?: string
+          fcm_token?: string | null
           full_name?: string
           id?: string
           is_active?: boolean | null
