@@ -113,7 +113,7 @@ export function useVehicle(vehicleId: string | undefined) {
         .select(`
           *,
           clients(id, name, phone, email, document_type, document_number, addresses(id, street, number, complement, neighborhood, city, state, zip_code, is_primary)),
-          equipment(id, serial_number, imei, chip_operator, model, products(id, title, model))
+          equipment(id, serial_number, imei, chip_number, chip_operator, model, products(id, title, model))
         `)
         .eq('id', vehicleId)
         .maybeSingle();

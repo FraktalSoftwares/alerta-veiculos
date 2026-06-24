@@ -18,6 +18,7 @@ import Clientes from "./pages/Clientes";
 import ClienteDetalhes from "./pages/ClienteDetalhes";
 import Veiculos from "./pages/Veiculos";
 import VeiculoMapa from "./pages/VeiculoMapa";
+import VeiculoMapaGoogleTeste from "./pages/VeiculoMapaGoogleTeste";
 import VeiculoMapaPublico from "./pages/VeiculoMapaPublico";
 import VeiculoHistorico from "./pages/VeiculoHistorico";
 import VeiculosMapa from "./pages/VeiculosMapa";
@@ -99,7 +100,17 @@ const App = () => (
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
+            {/* VALIDAÇÃO: rota principal abre a versão Google Maps. O VeiculoMapa
+                (Mapbox) segue no código — após aprovação do cliente, decidimos. */}
             <Route path="/veiculos/:id/mapa" element={
+              <ProtectedRoute>
+                <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_TRACK]}>
+                  <VeiculoMapaGoogleTeste />
+                </ProtectedByPermission>
+              </ProtectedRoute>
+            } />
+            {/* Versão Mapbox preservada para comparação */}
+            <Route path="/veiculos/:id/mapa-mapbox" element={
               <ProtectedRoute>
                 <ProtectedByPermission permissions={[PERMISSIONS.VEHICLES_TRACK]}>
                   <VeiculoMapa />
