@@ -6,7 +6,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
  * Importe daqui (`import mapboxgl from '@/lib/mapbox'`) em vez de 'mapbox-gl'
  * direto, para garantir que o token e o CSS estejam sempre carregados.
  */
-export const MAPBOX_TOKEN: string = import.meta.env.VITE_MAPBOX_TOKEN || '';
+// Aceita nome completo ou abreviado (compat. com a config da Vercel).
+const _env = import.meta.env as Record<string, string | undefined>;
+export const MAPBOX_TOKEN: string =
+  _env.VITE_MAPBOX_TOKEN || _env.VITE_MAPBOX || '';
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 

@@ -2,8 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const env = import.meta.env as Record<string, string | undefined>;
+// Aceita nomes completos ou abreviados (compat. com a config da Vercel).
+const SUPABASE_URL = env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY =
+  env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
