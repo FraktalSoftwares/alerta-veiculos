@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Power, Wifi, Lock, Unlock, MoreVertical, History, Share2, Radio } from "lucide-react";
 import { useVehicle, useBlockVehicle } from "@/hooks/useVehicles";
 import { useVehicleTracking } from "@/hooks/useVehicleTracking";
+import { useVehiclePositionRealtime } from "@/hooks/useVehiclePositionRealtime";
 import { useVehicleConnection } from "@/hooks/useVehicleConnection";
 import { Loader2 } from "lucide-react";
 import { VehicleBadge } from "@/components/vehicles/VehicleBadge";
@@ -17,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { VirtualFenceSidebar } from "@/components/vehicles/VirtualFenceSidebar";
 import { VirtualFenceMapView } from "@/components/vehicles/map/VirtualFenceMapView";
+import { SelectedVehicleMap } from "@/components/vehicles/map/SelectedVehicleMap";
 import { useVirtualFences } from "@/hooks/useVirtualFences";
 import { VirtualFenceDisplay } from "@/types/virtualFence";
 
@@ -33,6 +35,7 @@ const VeiculoMapa = () => {
   const { toast } = useToast();
   const { data: vehicle, isLoading: isLoadingVehicle } = useVehicle(id || '');
   const { data: trackingData, isLoading: isLoadingTracking } = useVehicleTracking(id || '');
+  useVehiclePositionRealtime(id); // push de novas posições (substitui o polling)
   const blockVehicle = useBlockVehicle();
   
   // Get equipment data
@@ -176,15 +179,9 @@ const VeiculoMapa = () => {
     ? new Date(trackingData.recorded_at).toLocaleString('pt-BR')
     : 'Sem dados';
 
-  // Get equipment data for iframe
-  // equipment.model carrega o protocolo (J16/8310/310). products.model é SKU (ex: ST8310UM) — não serve à API.
+  // equipment.model carrega o protocolo (J16/8310/310). products.model é SKU (ex: ST8310UM).
   const protocolo = (equipment as any)?.model || equipment?.products?.model || '';
-  
-  // Build iframe URL
-  const iframeUrl = imei && protocolo 
-    ? `https://fraktalsistemas.com.br:8004/mapa/${encodeURIComponent(imei)}?protocolo=${encodeURIComponent(protocolo)}`
-    : null;
-  
+
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background relative">
@@ -264,25 +261,17 @@ const VeiculoMapa = () => {
       </div>
 
 
-      {/* Map - fullscreen */}
-      {iframeUrl ? (
-        <iframe
-          src={iframeUrl}
-          className="w-full h-full border-0"
-          loading="lazy"
-          allowFullScreen
-          title="Mapa do Veículo"
-        />
+      {/* Map - fullscreen (Mapbox lendo de positions) */}
+      {equipment && imei ? (
+        <SelectedVehicleMap vehicleId={id || ''} />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-muted">
           <div className="text-center p-4">
             <p className="text-muted-foreground mb-2 font-semibold">Mapa não disponível</p>
             <p className="text-sm text-muted-foreground mb-4">
-              {!equipment 
+              {!equipment
                 ? "O veículo precisa ter um equipamento vinculado."
-                : !imei 
-                  ? "O equipamento precisa ter um IMEI configurado."
-                  : "O equipamento precisa ter um modelo/protocolo configurado."}
+                : "O equipamento precisa ter um IMEI configurado."}
             </p>
             {equipment && (
               <div className="text-xs text-muted-foreground space-y-1 mt-4">

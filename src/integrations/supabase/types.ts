@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      positions: {
+        Row: {
+          id: number
+          vehicle_id: string | null
+          imei: string
+          modelo: string | null
+          source_table: string
+          source_id: number
+          latitude: number | null
+          longitude: number | null
+          speed: number | null
+          heading: number | null
+          satellites: number | null
+          ignition: boolean | null
+          recorded_at: string | null
+          valid: boolean
+          raw: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          vehicle_id?: string | null
+          imei: string
+          modelo?: string | null
+          source_table: string
+          source_id: number
+          latitude?: number | null
+          longitude?: number | null
+          speed?: number | null
+          heading?: number | null
+          satellites?: number | null
+          ignition?: boolean | null
+          recorded_at?: string | null
+          valid?: boolean
+          raw?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          vehicle_id?: string | null
+          imei?: string
+          modelo?: string | null
+          source_table?: string
+          source_id?: number
+          latitude?: number | null
+          longitude?: number | null
+          speed?: number | null
+          heading?: number | null
+          satellites?: number | null
+          ignition?: boolean | null
+          recorded_at?: string | null
+          valid?: boolean
+          raw?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "positions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       addresses: {
         Row: {
           city: string | null

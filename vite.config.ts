@@ -7,6 +7,11 @@ export default defineConfig({
   server: {
     host: "::",
     port: 8080,
+    // Evita o navegador servir módulos antigos em cache durante o dev
+    // (causava misturar bundle velho com novo e quebrar o 3D/Mapbox).
+    headers: {
+      "Cache-Control": "no-store",
+    },
   },
   plugins: [react()],
   resolve: {
