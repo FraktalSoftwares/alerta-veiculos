@@ -45,7 +45,7 @@ const VeiculoMapaPublico = () => {
   const isConnected = connectionData?.conectado === true;
   const displayStatus = isConnected ? 'rastreando' : 'sem-sinal';
   // Use ignition field from tracking data (0 = desligado, 1 ou maior = ligado)
-  const isPoweredOn = trackingData?.ignition === true || trackingData?.ignition === 1;
+  const isPoweredOn = trackingData?.ignition === true;
   // Use real connection status from API
   const hasSignal = isConnected;
   const isBlocked = vehicle.status === 'blocked';

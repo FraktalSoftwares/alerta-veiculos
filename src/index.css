@@ -91,3 +91,36 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ===== Popup do veículo no Mapbox ===== */
+.vehicle-popup .mapboxgl-popup-content {
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.vehicle-popup .mapboxgl-popup-close-button {
+  width: 30px;
+  height: 30px;
+  top: 8px;
+  right: 8px;
+  font-size: 22px;
+  line-height: 1;
+  color: #374151;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.vehicle-popup .mapboxgl-popup-close-button:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.vehicle-popup .mapboxgl-popup-close-button:active {
+  transform: scale(0.92);
+}

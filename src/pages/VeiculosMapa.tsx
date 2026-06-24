@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { VehicleMapSidebar } from "@/components/vehicles/map/VehicleMapSidebar";
-import { useVehicles, useVehicle } from "@/hooks/useVehicles";
+import { SelectedVehicleMap } from "@/components/vehicles/map/SelectedVehicleMap";
+import { useVehicles } from "@/hooks/useVehicles";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -17,22 +18,6 @@ const VeiculosMapa = () => {
   const { data: vehiclesData, isLoading } = useVehicles({
     pageSize: 1000, // Get all vehicles
   });
-
-  // Get selected vehicle details for map
-  const { data: selectedVehicle } = useVehicle(selectedVehicleId || undefined);
-
-  // Build iframe URL from selected vehicle
-  const iframeUrl = useMemo(() => {
-    if (!selectedVehicle) return null;
-    
-    const equipment = selectedVehicle.equipment?.[0];
-    const imei = equipment?.imei || null;
-    const protocolo = (equipment as any)?.model || equipment?.products?.model || '';
-    
-    if (!imei || !protocolo) return null;
-    
-    return `https://fraktalsistemas.com.br:8004/mapa/${encodeURIComponent(imei)}?protocolo=${encodeURIComponent(protocolo)}`;
-  }, [selectedVehicle]);
 
   const handleShowLocation = (vehicleId: string) => {
     setSelectedVehicleId(vehicleId);
@@ -67,23 +52,8 @@ const VeiculosMapa = () => {
 
         {/* Mapa */}
         <div className="flex-1 min-h-0 flex flex-col relative">
-          {iframeUrl ? (
-            <iframe
-              src={iframeUrl}
-              className="w-full h-full min-h-[240px] border-0"
-              loading="lazy"
-              allowFullScreen
-              title="Mapa do Veículo"
-            />
-          ) : selectedVehicleId ? (
-            <div className="w-full flex-1 min-h-[240px] flex items-center justify-center bg-muted/30">
-              <div className="text-center text-muted-foreground p-4">
-                <p className="text-base sm:text-lg font-semibold mb-2">Mapa não disponível</p>
-                <p className="text-sm">
-                  O veículo precisa ter um equipamento vinculado com IMEI e modelo configurados
-                </p>
-              </div>
-            </div>
+          {selectedVehicleId ? (
+            <SelectedVehicleMap vehicleId={selectedVehicleId} />
           ) : (
             <div className="w-full flex-1 min-h-[240px] flex items-center justify-center bg-muted/30">
               <div className="text-center text-muted-foreground p-4">

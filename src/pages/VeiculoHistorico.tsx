@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, MapPin } from 'lucide-react';
 import { useVehicle } from '@/hooks/useVehicles';
 import { useVehicleTrackingHistory, VehicleTrackingData } from '@/hooks/useVehicleTracking';
+import { useVehiclePositionRealtime } from '@/hooks/useVehiclePositionRealtime';
 import { VehicleBadge } from '@/components/vehicles/VehicleBadge';
 import { mapVehicleStatus } from '@/types/vehicle';
 import { HistoryFilters } from '@/components/vehicles/history/HistoryFilters';
@@ -11,7 +12,7 @@ import { HistoryTrackingCard } from '@/components/vehicles/history/HistoryTracki
 import { HistoryStoppedGroupCard } from '@/components/vehicles/history/HistoryStoppedGroupCard';
 import { ExportButton } from '@/components/vehicles/history/ExportButton';
 import { ExportPdfButton } from '@/components/vehicles/history/ExportPdfButton';
-import { GoogleMapHistoryView } from '@/components/vehicles/history/GoogleMapHistoryView';
+import { MapboxHistoryView } from '@/components/vehicles/history/MapboxHistoryView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { subDays } from 'date-fns';
 import { groupStoppedPoints, HistoryDisplayItem, countOriginalPoints } from '@/utils/groupStoppedPoints';
@@ -40,6 +41,7 @@ const VeiculoHistorico = () => {
   });
   const [selectedPoint, setSelectedPoint] = useState<VehicleTrackingData | null>(null);
 
+  useVehiclePositionRealtime(id); // novos pontos entram no histórico ao vivo
   const { data: vehicle, isLoading: isLoadingVehicle } = useVehicle(id || '');
   const {
     data: trackingHistory,
@@ -208,7 +210,7 @@ const VeiculoHistorico = () => {
 
         {/* Map */}
         <div className="flex-1">
-          <GoogleMapHistoryView 
+          <MapboxHistoryView
             trackingData={historyData}
             selectedPoint={selectedPoint}
           />
