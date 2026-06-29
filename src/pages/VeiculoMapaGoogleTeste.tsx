@@ -43,7 +43,7 @@ const VeiculoMapaGoogleTeste = () => {
 
   const [address, setAddress] = useState('');
   const [showAddress, setShowAddress] = useState(false);
-  const [cardOpen, setCardOpen] = useState(true);
+  const [cardOpen, setCardOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('motorista');
 
   useEffect(() => {
