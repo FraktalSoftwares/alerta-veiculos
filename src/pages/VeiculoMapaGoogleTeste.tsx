@@ -11,8 +11,7 @@ import { useVehicleTracking } from '@/hooks/useVehicleTracking';
 import { useVehiclePositionRealtime } from '@/hooks/useVehiclePositionRealtime';
 import { batchReverseGeocode, getAddress } from '@/utils/geocoding';
 import { GoogleMapTestView } from '@/components/vehicles/map/GoogleMapTestView';
-import carroIcon from '@/assets/Carro.svg';
-import motoIcon from '@/assets/Moto.svg';
+import { vehicleMarkerPin } from '@/lib/vehicleMarker';
 
 type Tab = 'motorista' | 'info' | 'share';
 
@@ -68,7 +67,11 @@ const VeiculoMapaGoogleTeste = () => {
   desc = desc.replace(/\s*\/\s*/g, ' ').replace(/\s+/g, ' ').trim();
   const title = [vehicle?.plate, desc].filter(Boolean).join(' — ');
 
-  const iconUrl = (vehicle?.vehicle_type || '').toLowerCase().includes('moto') ? motoIcon : carroIcon;
+  const iconUrl = vehicleMarkerPin({
+    vehicleType: vehicle?.vehicle_type,
+    speed: tracking?.speed,
+    ignition: tracking?.ignition,
+  });
   const shareUrl = `${window.location.origin}/compartilhar/${id}`;
   const copyShare = async () => {
     try {
@@ -192,7 +195,6 @@ const VeiculoMapaGoogleTeste = () => {
         <GoogleMapTestView
           latitude={tracking.latitude}
           longitude={tracking.longitude}
-          heading={tracking.heading ?? 0}
           iconUrl={iconUrl}
           onMarkerClick={() => setCardOpen(true)}
         />
