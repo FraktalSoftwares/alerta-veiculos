@@ -4,8 +4,7 @@ import { Loader2, Power, Calendar, Gauge, MapPin } from 'lucide-react';
 import { usePublicVehicleMap } from '@/hooks/usePublicVehicleMap';
 import { batchReverseGeocode, getAddress } from '@/utils/geocoding';
 import { GoogleMapTestView } from '@/components/vehicles/map/GoogleMapTestView';
-import carroIcon from '@/assets/Carro.svg';
-import motoIcon from '@/assets/Moto.svg';
+import { vehicleMarkerPin } from '@/lib/vehicleMarker';
 
 const VeiculoMapaPublico = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,7 +36,11 @@ const VeiculoMapaPublico = () => {
     return [data.plate, desc].filter(Boolean).join(' — ') || 'Veículo';
   }, [data]);
 
-  const iconUrl = (data?.vehicle_type || '').toLowerCase().includes('moto') ? motoIcon : carroIcon;
+  const iconUrl = vehicleMarkerPin({
+    vehicleType: data?.vehicle_type,
+    speed: pos?.speed,
+    ignition: pos?.ignition,
+  });
   const isOn = pos?.ignition === true;
 
   if (isLoading) {
@@ -109,7 +112,6 @@ const VeiculoMapaPublico = () => {
         <GoogleMapTestView
           latitude={pos.latitude}
           longitude={pos.longitude}
-          heading={pos.heading ?? 0}
           iconUrl={iconUrl}
         />
       )}
