@@ -12,19 +12,19 @@ interface MarkerInput {
 
 /**
  * Escolhe o PIN do veículo pela regra de ignição/status:
- * - Em movimento (vel > 0)      -> carro/moto (verde)
- * - Parado + ignição LIGADA     -> parada laranja (warning)
- * - Parado + ignição DESLIGADA  -> parada verde (success)
- * - Sem sinal (sem dado de ign.) -> parada vermelha (danger)
+ * - Em movimento (vel > 0)       -> carro/moto (verde)
+ * - Parado + ignição LIGADA      -> parada verde (success)
+ * - Ignição DESLIGADA            -> parada vermelha (danger) = veículo desligado
+ * - Sem sinal (sem dado de ign.) -> parada laranja (warning)
  */
 export function vehicleMarkerPin({ vehicleType, speed, ignition }: MarkerInput): string {
   const isMoto = (vehicleType || '').toLowerCase().includes('moto');
   const moving = (speed ?? 0) > 0;
 
   if (moving) return isMoto ? motoSuccess : carroSuccess;
-  if (ignition == null) return paradaDanger; // sem sinal / sem dado
-  if (ignition) return paradaWarning; // parado, ligado
-  return paradaSuccess; // parado, desligado
+  if (ignition == null) return paradaWarning; // sem sinal / sem dado de ignição
+  if (ignition) return paradaSuccess; // parado, porém ligado
+  return paradaDanger; // ignição desligada = veículo desligado
 }
 
 /** Dimensões originais do PIN (px). */
