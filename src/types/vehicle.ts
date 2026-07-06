@@ -19,6 +19,12 @@ export interface VehicleDisplay {
   year: number | null;
   color: string | null;
   lastUpdate: string;
+  /** Velocidade da última posição (km/h) — regra de status. */
+  speed: number | null;
+  /** Ignição da última posição. */
+  ignition: boolean | null;
+  /** Timestamp cru do último sinal (last_update) — regra de 8h. */
+  lastSignalAt: string | null;
 }
 
 // Extended vehicle type with relationships
@@ -85,7 +91,15 @@ export function mapVehicleStatus(status: VehicleStatus | null): VehicleDisplay['
 // Utility function
 export function mapVehicleToDisplay(vehicle: VehicleWithDetails): VehicleDisplay {
   const equipment = vehicle.equipment?.[0];
-  
+
+  // last_location é mantido pelo trigger: { lat, lng, speed, ignition, heading }
+  const loc = (vehicle.last_location ?? null) as {
+    speed?: number | null;
+    ignition?: boolean | null;
+  } | null;
+  const speed = typeof loc?.speed === 'number' ? loc.speed : null;
+  const ignition = typeof loc?.ignition === 'boolean' ? loc.ignition : null;
+
   return {
     id: vehicle.id,
     clientId: vehicle.client_id,
@@ -100,8 +114,11 @@ export function mapVehicleToDisplay(vehicle: VehicleWithDetails): VehicleDisplay
     model: vehicle.model,
     year: vehicle.year,
     color: vehicle.color,
-    lastUpdate: vehicle.last_update 
+    lastUpdate: vehicle.last_update
       ? new Date(vehicle.last_update).toLocaleDateString('pt-BR')
       : '-',
+    speed,
+    ignition,
+    lastSignalAt: vehicle.last_update ?? null,
   };
 }

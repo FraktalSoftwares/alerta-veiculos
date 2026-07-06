@@ -1,6 +1,11 @@
 import { cn } from "@/lib/utils";
 
-type VehicleBadgeVariant = "rastreando" | "desligado" | "sem-sinal" | "bloqueado";
+type VehicleBadgeVariant =
+  | "rastreando"
+  | "parado"
+  | "desligado"
+  | "sem-sinal"
+  | "bloqueado";
 
 interface VehicleBadgeProps {
   variant: VehicleBadgeVariant;
@@ -10,9 +15,10 @@ interface VehicleBadgeProps {
 
 const variantStyles: Record<VehicleBadgeVariant, string> = {
   rastreando: "bg-success text-success-foreground",
+  parado: "bg-warning text-warning-foreground",
   desligado: "bg-gray-600 text-white",
-  "sem-sinal": "bg-warning text-warning-foreground",
-  bloqueado: "bg-destructive text-destructive-foreground",
+  "sem-sinal": "bg-destructive text-destructive-foreground",
+  bloqueado: "bg-slate-800 text-white",
 };
 
 export function VehicleBadge({ variant, children, className }: VehicleBadgeProps) {

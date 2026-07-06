@@ -1,6 +1,5 @@
 import carroSuccess from '@/assets/marker_carro_success.png';
 import motoSuccess from '@/assets/marker_moto_success.png';
-import paradaSuccess from '@/assets/marker_parada_success.png';
 import paradaWarning from '@/assets/marker_parada_warning.png';
 import paradaDanger from '@/assets/marker_parada_danger.png';
 
@@ -8,23 +7,59 @@ interface MarkerInput {
   vehicleType?: string | null;
   speed?: number | null;
   ignition?: boolean | null;
+  /** Timestamp do último sinal (recorded_at). Base da regra de 8h. */
+  recordedAt?: string | Date | null;
 }
 
-/**
- * Escolhe o PIN do veículo pela regra de ignição/status:
- * - Em movimento (vel > 0)       -> carro/moto (verde)
- * - Parado + ignição LIGADA      -> parada verde (success)
- * - Ignição DESLIGADA            -> parada vermelha (danger) = veículo desligado
- * - Sem sinal (sem dado de ign.) -> parada laranja (warning)
- */
-export function vehicleMarkerPin({ vehicleType, speed, ignition }: MarkerInput): string {
-  const isMoto = (vehicleType || '').toLowerCase().includes('moto');
-  const moving = (speed ?? 0) > 0;
+/** Janela para considerar o sinal "recente" (8 horas). */
+export const SIGNAL_WINDOW_MS = 8 * 60 * 60 * 1000;
 
-  if (moving) return isMoto ? motoSuccess : carroSuccess;
-  if (ignition == null) return paradaWarning; // sem sinal / sem dado de ignição
-  if (ignition) return paradaSuccess; // parado, porém ligado
-  return paradaDanger; // ignição desligada = veículo desligado
+/**
+ * Escolhe o PIN do veículo pela regra de SINAL:
+ * - Em movimento (vel > 0) e sinal recente -> carro/moto (verde) = rastreando
+ * - Parado com sinal nas últimas 8h        -> parada laranja (amarelo)
+ * - Último sinal há mais de 8h             -> parada vermelha = sem sinal
+ */
+export function vehicleMarkerPin({ vehicleType, speed, recordedAt }: MarkerInput): string {
+  const isMoto = (vehicleType || '').toLowerCase().includes('moto');
+
+  const ts = recordedAt ? new Date(recordedAt).getTime() : NaN;
+  const stale = Number.isNaN(ts) || Date.now() - ts > SIGNAL_WINDOW_MS;
+  if (stale) return paradaDanger; // > 8h sem sinal
+
+  const moving = (speed ?? 0) > 0;
+  if (moving) return isMoto ? motoSuccess : carroSuccess; // rastreando
+  return paradaWarning; // parado, mas com sinal recente
+}
+
+/** Status do veículo pela regra de sinal (mesma do app mobile). */
+export type VehicleSignalStatus =
+  | 'rastreando'
+  | 'parado'
+  | 'sem-sinal'
+  | 'bloqueado';
+
+/**
+ * Regra das cores (o "ping"):
+ * - > 8h sem sinal            -> 'sem-sinal'  (vermelho)
+ * - sinal < 8h, mas parado    -> 'parado'     (amarelo)
+ * - em movimento (vel > 0)    -> 'rastreando' (verde)
+ * - comando de bloqueio ativo -> 'bloqueado'  (escuro)
+ */
+export function vehicleSignalStatus({
+  speed,
+  recordedAt,
+  blocked,
+}: {
+  speed?: number | null;
+  recordedAt?: string | Date | null;
+  blocked?: boolean;
+}): VehicleSignalStatus {
+  if (blocked) return 'bloqueado';
+  const ts = recordedAt ? new Date(recordedAt).getTime() : NaN;
+  const stale = Number.isNaN(ts) || Date.now() - ts > SIGNAL_WINDOW_MS;
+  if (stale) return 'sem-sinal';
+  return (speed ?? 0) > 0 ? 'rastreando' : 'parado';
 }
 
 /** Dimensões originais do PIN (px). */

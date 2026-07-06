@@ -59,3 +59,9 @@ Thumbs.db
 # Arquivos sensíveis (chaves de API)
 arquivosApple/
 arquivosGoogle/
+
+# App mobile (repositório Git separado)
+Alerta_Veiculo_Mobile/
+
+# Vídeos / mídia pesada
+*.mp4

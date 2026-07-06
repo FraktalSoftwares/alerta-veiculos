@@ -40,6 +40,7 @@ const VeiculoMapaPublico = () => {
     vehicleType: data?.vehicle_type,
     speed: pos?.speed,
     ignition: pos?.ignition,
+    recordedAt: pos?.recorded_at,
   });
   const isOn = pos?.ignition === true;
 

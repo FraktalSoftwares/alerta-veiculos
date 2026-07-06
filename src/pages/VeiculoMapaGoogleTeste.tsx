@@ -71,6 +71,7 @@ const VeiculoMapaGoogleTeste = () => {
     vehicleType: vehicle?.vehicle_type,
     speed: tracking?.speed,
     ignition: tracking?.ignition,
+    recordedAt: tracking?.recorded_at,
   });
   const shareUrl = `${window.location.origin}/compartilhar/${id}`;
   const copyShare = async () => {
