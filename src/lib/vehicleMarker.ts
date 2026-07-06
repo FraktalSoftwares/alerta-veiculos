@@ -32,5 +32,35 @@ export function vehicleMarkerPin({ vehicleType, speed, recordedAt }: MarkerInput
   return paradaWarning; // parado, mas com sinal recente
 }
 
+/** Status do veículo pela regra de sinal (mesma do app mobile). */
+export type VehicleSignalStatus =
+  | 'rastreando'
+  | 'parado'
+  | 'sem-sinal'
+  | 'bloqueado';
+
+/**
+ * Regra das cores (o "ping"):
+ * - > 8h sem sinal            -> 'sem-sinal'  (vermelho)
+ * - sinal < 8h, mas parado    -> 'parado'     (amarelo)
+ * - em movimento (vel > 0)    -> 'rastreando' (verde)
+ * - comando de bloqueio ativo -> 'bloqueado'  (escuro)
+ */
+export function vehicleSignalStatus({
+  speed,
+  recordedAt,
+  blocked,
+}: {
+  speed?: number | null;
+  recordedAt?: string | Date | null;
+  blocked?: boolean;
+}): VehicleSignalStatus {
+  if (blocked) return 'bloqueado';
+  const ts = recordedAt ? new Date(recordedAt).getTime() : NaN;
+  const stale = Number.isNaN(ts) || Date.now() - ts > SIGNAL_WINDOW_MS;
+  if (stale) return 'sem-sinal';
+  return (speed ?? 0) > 0 ? 'rastreando' : 'parado';
+}
+
 /** Dimensões originais do PIN (px). */
 export const PIN_SIZE = { w: 30, h: 45 };

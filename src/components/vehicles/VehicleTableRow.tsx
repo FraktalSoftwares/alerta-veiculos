@@ -29,8 +29,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { useVehicleConnection } from "@/hooks/useVehicleConnection";
 import { useVehicleBlockStatus } from "@/hooks/useVehicleBlockStatus";
+import { vehicleSignalStatus } from "@/lib/vehicleMarker";
 
 interface VehicleTableRowProps {
   vehicle: VehicleDisplay;
@@ -43,6 +43,7 @@ interface VehicleTableRowProps {
 
 const statusLabels = {
   rastreando: "RASTREANDO",
+  parado: "PARADO",
   desligado: "DESLIGADO",
   "sem-sinal": "SEM SINAL",
   bloqueado: "BLOQUEADO",
@@ -126,20 +127,31 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
     }
   };
 
-  // Check real connection status via API
   const validImei = vehicle.imei && vehicle.imei !== '-' ? vehicle.imei : null;
-  const { data: connectionData } = useVehicleConnection(validImei);
   const { data: blockStatusData } = useVehicleBlockStatus(validImei);
 
-  // Determine status based on API connection and block status
-  // Block status from API takes priority, fallback to DB status
+  // Status pela regra de sinal (mesma do mapa/app): > 8h sem sinal -> vermelho;
+  // sinal < 8h parado -> amarelo; em movimento -> verde; bloqueado -> escuro.
   const isBlocked = blockStatusData?.blocked ?? vehicle.status === 'bloqueado';
-  const isConnected = connectionData?.conectado === true;
-  // If blocked, show blocked status, otherwise use connection status
-  const displayStatus = isBlocked ? 'bloqueado' : (isConnected ? 'rastreando' : 'sem-sinal');
-  const isPoweredOn = isConnected;
-  // Use real connection status from API
-  const hasSignal = isConnected;
+  const displayStatus = vehicleSignalStatus({
+    speed: vehicle.speed,
+    recordedAt: vehicle.lastSignalAt,
+    blocked: isBlocked,
+  });
+  const isPoweredOn = vehicle.ignition === true;
+  // Cor do "ping" (ícone de sinal) conforme o status.
+  const pingColor =
+    displayStatus === 'rastreando'
+      ? 'text-green-500'
+      : displayStatus === 'parado'
+        ? 'text-yellow-500'
+        : 'text-destructive';
+  const pingTitle =
+    displayStatus === 'rastreando'
+      ? 'Rastreando'
+      : displayStatus === 'parado'
+        ? 'Parado (sinal recente)'
+        : 'Sem sinal (+8h)';
 
   const actionsDropdown = (
     <DropdownMenu>
@@ -304,11 +316,11 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-1" title={isPoweredOn ? "Ligado" : "Desligado"}>
+            <div className="flex items-center gap-1" title={isPoweredOn ? "Ignição ligada" : "Ignição desligada"}>
               <Power className={`h-3.5 w-3.5 ${isPoweredOn ? 'text-green-500' : 'text-muted-foreground'}`} />
             </div>
-            <div className="flex items-center" title={hasSignal ? "Com sinal" : "Sem sinal"}>
-              <Wifi className={`h-3.5 w-3.5 ${hasSignal ? 'text-green-500' : 'text-destructive'}`} />
+            <div className="flex items-center" title={pingTitle}>
+              <Wifi className={`h-3.5 w-3.5 ${pingColor}`} />
             </div>
           </>
         )}
