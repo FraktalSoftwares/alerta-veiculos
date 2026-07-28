@@ -14,7 +14,6 @@ import { PERMISSIONS } from "@/hooks/useUserPermissions";
 import {
   MoreVertical,
   MapPin,
-  Power,
   Wifi,
   Lock,
   Unlock,
@@ -30,7 +29,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useVehicleBlockStatus } from "@/hooks/useVehicleBlockStatus";
-import { vehicleSignalStatus } from "@/lib/vehicleMarker";
+import { vehicleListStatus } from "@/lib/vehicleMarker";
 
 interface VehicleTableRowProps {
   vehicle: VehicleDisplay;
@@ -40,14 +39,6 @@ interface VehicleTableRowProps {
   onBlock?: (vehicle: VehicleDisplay) => void;
   onShowDetails?: (vehicle: VehicleDisplay) => void;
 }
-
-const statusLabels = {
-  rastreando: "RASTREANDO",
-  parado: "PARADO",
-  desligado: "DESLIGADO",
-  "sem-sinal": "SEM SINAL",
-  bloqueado: "BLOQUEADO",
-};
 
 export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, onShowDetails }: VehicleTableRowProps) {
   const { toast } = useToast();
@@ -130,28 +121,29 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
   const validImei = vehicle.imei && vehicle.imei !== '-' ? vehicle.imei : null;
   const { data: blockStatusData } = useVehicleBlockStatus(validImei);
 
-  // Status pela regra de sinal (mesma do mapa/app): > 8h sem sinal -> vermelho;
-  // sinal < 8h parado -> amarelo; em movimento -> verde; bloqueado -> escuro.
   const isBlocked = blockStatusData?.blocked ?? vehicle.status === 'bloqueado';
-  const displayStatus = vehicleSignalStatus({
-    speed: vehicle.speed,
+  // Status da LISTA (bloqueio à parte, sinalizado pelo cadeado na placa).
+  // Só DESLIGADO quando +7h sem sinal; recebendo sinal (<7h) é sempre Rastreando.
+  const listStatus = vehicleListStatus({
+    ignition: vehicle.ignition,
     recordedAt: vehicle.lastSignalAt,
-    blocked: isBlocked,
   });
-  const isPoweredOn = vehicle.ignition === true;
-  // Cor do "ping" (ícone de sinal) conforme o status.
+  // SITUAÇÃO (badge): 2 estados — RASTREANDO (verde) / DESLIGADO (vermelho, só +7h sem sinal).
+  const badgeVariant = listStatus === 'sem-sinal' ? 'sem-sinal' : 'rastreando';
+  const badgeLabel = listStatus === 'sem-sinal' ? 'DESLIGADO' : 'RASTREANDO';
+  // STATUS (ícone de sinal): 3 cores — verde=ligada, amarelo=desligada c/ sinal, vermelho=+7h sem sinal.
   const pingColor =
-    displayStatus === 'rastreando'
+    listStatus === 'rastreando'
       ? 'text-green-500'
-      : displayStatus === 'parado'
+      : listStatus === 'ocioso'
         ? 'text-yellow-500'
         : 'text-destructive';
   const pingTitle =
-    displayStatus === 'rastreando'
-      ? 'Rastreando'
-      : displayStatus === 'parado'
-        ? 'Parado (sinal recente)'
-        : 'Sem sinal (+8h)';
+    listStatus === 'rastreando'
+      ? 'Rastreando (ignição ligada)'
+      : listStatus === 'ocioso'
+        ? 'Rastreando (ignição desligada, com sinal <7h)'
+        : 'Desligado (sem sinal +7h)';
 
   const actionsDropdown = (
     <DropdownMenu>
@@ -253,8 +245,8 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
                 <Lock className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
               )}
             </div>
-            <VehicleBadge variant={displayStatus as any} className="shrink-0">
-              {statusLabels[displayStatus as keyof typeof statusLabels]}
+            <VehicleBadge variant={badgeVariant} className="shrink-0">
+              {badgeLabel}
             </VehicleBadge>
           </div>
           <div className="text-xs text-muted-foreground font-mono truncate">{vehicle.imei || '-'}</div>
@@ -308,28 +300,17 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
         <span className="text-muted-foreground text-xs">{vehicle.operator || '-'}</span>
       </div>
 
-      {/* Status Indicators */}
-      <div className="flex items-center gap-3">
-        {isBlocked ? (
-          <div className="flex items-center gap-1" title="Veículo bloqueado">
-            <Lock className="h-3.5 w-3.5 text-destructive" />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-1" title={isPoweredOn ? "Ignição ligada" : "Ignição desligada"}>
-              <Power className={`h-3.5 w-3.5 ${isPoweredOn ? 'text-green-500' : 'text-muted-foreground'}`} />
-            </div>
-            <div className="flex items-center" title={pingTitle}>
-              <Wifi className={`h-3.5 w-3.5 ${pingColor}`} />
-            </div>
-          </>
-        )}
+      {/* Status Indicator (só sinal) */}
+      <div className="flex items-center">
+        <div className="flex items-center" title={pingTitle}>
+          <Wifi className={`h-3.5 w-3.5 ${pingColor}`} />
+        </div>
       </div>
 
       {/* Situação */}
       <div className="flex items-center justify-center">
-        <VehicleBadge variant={displayStatus as any}>
-          {statusLabels[displayStatus as keyof typeof statusLabels]}
+        <VehicleBadge variant={badgeVariant}>
+          {badgeLabel}
         </VehicleBadge>
       </div>
 

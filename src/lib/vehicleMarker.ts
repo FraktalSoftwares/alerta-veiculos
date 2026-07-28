@@ -11,8 +11,11 @@ interface MarkerInput {
   recordedAt?: string | Date | null;
 }
 
-/** Janela para considerar o sinal "recente" (8 horas). */
+/** Janela para considerar o sinal "recente" (8 horas) — usada no PIN do mapa. */
 export const SIGNAL_WINDOW_MS = 8 * 60 * 60 * 1000;
+
+/** Janela de "sinal recente" da LISTA de veículos (7 horas). */
+export const LIST_SIGNAL_WINDOW_MS = 7 * 60 * 60 * 1000;
 
 /**
  * Escolhe o PIN do veículo pela regra de SINAL:
@@ -32,34 +35,29 @@ export function vehicleMarkerPin({ vehicleType, speed, recordedAt }: MarkerInput
   return paradaWarning; // parado, mas com sinal recente
 }
 
-/** Status do veículo pela regra de sinal (mesma do app mobile). */
-export type VehicleSignalStatus =
-  | 'rastreando'
-  | 'parado'
-  | 'sem-sinal'
-  | 'bloqueado';
-
 /**
- * Regra das cores (o "ping"):
- * - > 8h sem sinal            -> 'sem-sinal'  (vermelho)
- * - sinal < 8h, mas parado    -> 'parado'     (amarelo)
- * - em movimento (vel > 0)    -> 'rastreando' (verde)
- * - comando de bloqueio ativo -> 'bloqueado'  (escuro)
+ * Status do veículo na LISTA (Gestão de Veículos). 3 categorias = 3 cores do
+ * ícone de STATUS; o badge de SITUAÇÃO colapsa em 2 (Rastreando / Desligado).
+ * REGRA: só fica DESLIGADO quando passa +7h SEM RECEBER SINAL. Recebendo sinal
+ * (<7h), é sempre Rastreando — a ignição só muda a COR do ícone:
+ * - 'rastreando' (verde)    -> sinal recente (<7h) e ignição LIGADA    -> SITUAÇÃO: RASTREANDO
+ * - 'ocioso'     (amarelo)  -> sinal recente (<7h) e ignição DESLIGADA -> SITUAÇÃO: RASTREANDO
+ * - 'sem-sinal'  (vermelho) -> sem sinal há mais de 7h                  -> SITUAÇÃO: DESLIGADO
+ * O bloqueio NÃO entra aqui — é sinalizado à parte pelo cadeado na placa.
  */
-export function vehicleSignalStatus({
-  speed,
+export type VehicleListStatus = 'rastreando' | 'ocioso' | 'sem-sinal';
+
+export function vehicleListStatus({
+  ignition,
   recordedAt,
-  blocked,
 }: {
-  speed?: number | null;
+  ignition?: boolean | null;
   recordedAt?: string | Date | null;
-  blocked?: boolean;
-}): VehicleSignalStatus {
-  if (blocked) return 'bloqueado';
+}): VehicleListStatus {
   const ts = recordedAt ? new Date(recordedAt).getTime() : NaN;
-  const stale = Number.isNaN(ts) || Date.now() - ts > SIGNAL_WINDOW_MS;
+  const stale = Number.isNaN(ts) || Date.now() - ts > LIST_SIGNAL_WINDOW_MS;
   if (stale) return 'sem-sinal';
-  return (speed ?? 0) > 0 ? 'rastreando' : 'parado';
+  return ignition ? 'rastreando' : 'ocioso';
 }
 
 /** Dimensões originais do PIN (px). */
