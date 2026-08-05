@@ -319,31 +319,22 @@ export function useBlockVehicle() {
       const imei = equipment?.imei || null;
       const protocolo = equipment?.products?.model || (equipment as any)?.model || undefined;
 
-      let apiSuccess = false;
-      let apiError: Error | null = null;
-
-      // Se tiver IMEI, usa a API de ações
+      // A API do rastreador é a FONTE DA VERDADE: se o comando falhar (ex.: rastreador
+      // offline), a mutação falha aqui e NÃO marca "bloqueado" no banco (nada de cadeado
+      // falso). O erro real (404 "não conectado", etc.) sobe para o onError.
       if (imei && imei !== '-') {
         const { trackingApiClient } = await import('@/integrations/tracking-api/client');
-        
-        try {
-          if (block) {
-            await trackingApiClient.blockVehicle(imei, protocolo);
-          } else {
-            await trackingApiClient.unblockVehicle(imei, protocolo);
-          }
-          apiSuccess = true;
-        } catch (error) {
-          apiError = error instanceof Error ? error : new Error(String(error));
-          console.error('Erro na API de ações:', apiError);
-          // Continua para atualizar o banco mesmo se a API falhar
+        if (block) {
+          await trackingApiClient.blockVehicle(imei, protocolo);
+        } else {
+          await trackingApiClient.unblockVehicle(imei, protocolo);
         }
       } else {
-        // Se não tiver IMEI, apenas atualiza o banco
-        console.warn('Veículo sem IMEI, apenas atualizando status no banco');
+        // Sem IMEI não há como comandar o rastreador — só reflete o status no banco.
+        console.warn('Veículo sem IMEI: atualizando apenas o status no banco (sem comando ao rastreador).');
       }
 
-      // Atualiza o status no banco de dados
+      // Só chega aqui se o comando foi aceito pela API (ou não há IMEI).
       const { data, error } = await supabase
         .from('vehicles')
         .update({ status: block ? 'blocked' : 'active' })
@@ -352,11 +343,6 @@ export function useBlockVehicle() {
         .single();
 
       if (error) throw error;
-
-      // Se a API falhou mas o banco foi atualizado, retorna com aviso
-      if (imei && imei !== '-' && !apiSuccess && apiError) {
-        return { ...data, imei, protocolo, apiError: apiError.message };
-      }
 
       return { ...data, imei, protocolo };
     },
@@ -369,20 +355,16 @@ export function useBlockVehicle() {
         queryClient.invalidateQueries({ queryKey: ['vehicle-connection', data.imei] });
       }
       queryClient.invalidateQueries({ queryKey: ['vehicle-connections'] });
-      
-      // Se houve erro na API mas o banco foi atualizado, mostra aviso
-      if ((data as any).apiError) {
-        toast({
-          title: 'Aviso',
-          description: `Status atualizado no sistema, mas houve erro na comunicação com o rastreador: ${(data as any).apiError}`,
-          variant: 'default',
-        });
-      } else {
-        toast({
-          title: 'Sucesso',
-          description: variables.block ? 'Veículo bloqueado com sucesso!' : 'Veículo desbloqueado com sucesso!',
-        });
+      // Atualiza o indicador de bloqueio (cadeado), que lê /bloqueio/status_bloqueio.
+      if (data.imei) {
+        queryClient.invalidateQueries({ queryKey: ['vehicle-block-status', data.imei] });
       }
+      queryClient.invalidateQueries({ queryKey: ['vehicle-block-statuses'] });
+
+      toast({
+        title: 'Sucesso',
+        description: variables.block ? 'Veículo bloqueado com sucesso!' : 'Veículo desbloqueado com sucesso!',
+      });
     },
     onError: (error: Error) => {
       toast({

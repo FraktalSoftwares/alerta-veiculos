@@ -72,16 +72,14 @@ class TrackingApiClient {
     request: VehicleActionRequest
   ): Promise<VehicleActionResponse> {
     const { imei, protocolo, params } = request;
-    
+
+    // Bloqueio/desbloqueio têm contrato próprio (POST com body { protocolo, identificador }).
+    if (action === 'block') return this.blockVehicle(imei, protocolo);
+    if (action === 'unblock') return this.unblockVehicle(imei, protocolo);
+
     // Constrói a URL com parâmetros
     let endpoint = '';
     switch (action) {
-      case 'block':
-        endpoint = TRACKING_API_ENDPOINTS.BLOCK_VEHICLE(imei);
-        break;
-      case 'unblock':
-        endpoint = TRACKING_API_ENDPOINTS.UNBLOCK_VEHICLE(imei);
-        break;
       case 'siren':
         endpoint = TRACKING_API_ENDPOINTS.SIREN(imei);
         break;
@@ -127,21 +125,46 @@ class TrackingApiClient {
   }
 
   /**
-   * Bloqueia um veículo
-   * @param imei - IMEI/ESN/Identificador do equipamento
-   * @param protocolo - Modelo do rastreador (J16, 8310, 310)
+   * Normaliza o protocolo para o valor exato que a API espera: 'j16' | '8310' | '310'.
+   * (O VPS compara em minúsculo; casing/nome comercial errado dá erro no servidor.)
    */
-  async blockVehicle(imei: string, protocolo?: string): Promise<VehicleActionResponse> {
-    return this.executeAction('block', { imei, protocolo });
+  private normalizeProtocolo(raw?: string): string {
+    const s = (raw ?? '').toString().trim().toLowerCase();
+    if (!s) return '';
+    if (s.includes('j16') || s.includes('gt06')) return 'j16';
+    if (s.includes('8310')) return '8310';
+    if (s.includes('310')) return '310';
+    return s;
   }
 
   /**
-   * Desbloqueia um veículo
+   * Bloqueia um veículo — POST /bloqueio/bloquear_veiculo { protocolo, identificador }.
+   * Lança erro se a API recusar (ex.: rastreador offline) — quem chama NÃO deve
+   * marcar "bloqueado" sem sucesso aqui.
    * @param imei - IMEI/ESN/Identificador do equipamento
-   * @param protocolo - Modelo do rastreador (J16, 8310, 310)
+   * @param protocolo - Modelo do rastreador (j16 | 8310 | 310)
+   */
+  async blockVehicle(imei: string, protocolo?: string): Promise<VehicleActionResponse> {
+    const proto = this.normalizeProtocolo(protocolo);
+    if (!proto) throw new Error('Protocolo do rastreador não identificado — não é possível bloquear.');
+    return this.request<VehicleActionResponse>(TRACKING_API_ENDPOINTS.BLOCK_VEHICLE, {
+      method: 'POST',
+      body: JSON.stringify({ protocolo: proto, identificador: imei }),
+    });
+  }
+
+  /**
+   * Desbloqueia um veículo — POST /bloqueio/desbloquear_veiculo { protocolo, identificador }.
+   * @param imei - IMEI/ESN/Identificador do equipamento
+   * @param protocolo - Modelo do rastreador (j16 | 8310 | 310)
    */
   async unblockVehicle(imei: string, protocolo?: string): Promise<VehicleActionResponse> {
-    return this.executeAction('unblock', { imei, protocolo });
+    const proto = this.normalizeProtocolo(protocolo);
+    if (!proto) throw new Error('Protocolo do rastreador não identificado — não é possível desbloquear.');
+    return this.request<VehicleActionResponse>(TRACKING_API_ENDPOINTS.UNBLOCK_VEHICLE, {
+      method: 'POST',
+      body: JSON.stringify({ protocolo: proto, identificador: imei }),
+    });
   }
 
   /**
