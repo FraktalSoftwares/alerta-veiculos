@@ -23,13 +23,13 @@ export const TRACKING_API_ENDPOINTS = {
     return protocolo ? `${base}?protocolo=${encodeURIComponent(protocolo)}` : base;
   },
   
-  // Bloqueio
+  // Bloqueio — POST com body { protocolo, identificador } (protocolo minúsculo: j16 | 8310 | 310)
   BLOCK_STATUS: (imei: string) => `/bloqueio/status_bloqueio?identificador=${imei}`,
+  BLOCK_VEHICLE: '/bloqueio/bloquear_veiculo',
+  UNBLOCK_VEHICLE: '/bloqueio/desbloquear_veiculo',
 
   // Ações de Veículos
-  // Nota: Os endpoints abaixo devem ser ajustados conforme a documentação da API
-  BLOCK_VEHICLE: (imei: string) => `/acoes/bloquear/${imei}`,
-  UNBLOCK_VEHICLE: (imei: string) => `/acoes/desbloquear/${imei}`,
+  // Nota: os endpoints abaixo ainda são placeholders — ajustar conforme a doc da API (:8004/docs)
   SIREN: (imei: string) => `/acoes/sirene/${imei}`,
   RESTART_TRACKER: (imei: string) => `/acoes/reiniciar/${imei}`,
   VIRTUAL_FENCE: (imei: string) => `/acoes/cerca_virtual/${imei}`,
