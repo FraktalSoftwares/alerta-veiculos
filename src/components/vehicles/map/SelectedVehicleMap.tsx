@@ -1,90 +1,63 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { MapboxView } from './MapboxView';
+import { Loader2, X, Calendar, Gauge, Power, MapPin, Fingerprint } from 'lucide-react';
+import { GoogleMapTestView } from './GoogleMapTestView';
 import { useVehicle } from '@/hooks/useVehicles';
 import { useVehicleTracking } from '@/hooks/useVehicleTracking';
 import { useVehiclePositionRealtime } from '@/hooks/useVehiclePositionRealtime';
 import { batchReverseGeocode, getAddress } from '@/utils/geocoding';
-import { useClientCustomization } from '@/contexts/ClientCustomizationContext';
-import motoModel from '@/assets/moto3d.glb?url';
-import carroModel from '@/assets/Carro3d.glb?url';
-
-/** Modelo 3D (GLB) por tipo. */
-function model3dForType(vehicleType?: string | null): { url: string; size: number } {
-  // Por enquanto carro e moto usam o mesmo modelo 3D (Carro3d.glb).
-  // size = tamanho na tela em pixels (constante em qualquer zoom)
-  return { url: carroModel, size: 90 };
-}
+import { vehicleMarkerPin } from '@/lib/vehicleMarker';
 
 interface SelectedVehicleMapProps {
   vehicleId: string;
 }
 
-function row(label: string, value: string): string {
-  return `
-    <div style="display:flex;gap:8px;margin:2px 0;font-size:12px">
-      <span style="color:#6b7280;min-width:78px">${label}</span>
-      <span style="color:#111827;font-weight:500">${value}</span>
-    </div>`;
+function Row({ icon: Icon, label, value, iconClass }: { icon: any; label: string; value: string; iconClass?: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className={`h-4 w-4 ${iconClass || 'text-muted-foreground'}`} />
+      <span className="text-muted-foreground">{label}</span>
+      <span className="ml-auto font-medium text-right">{value}</span>
+    </div>
+  );
 }
 
 /**
- * Mapa do veículo selecionado — lê a última posição válida de `positions`
- * (dados corrigidos), atualiza ao vivo e mostra um popup com os dados ao
- * clicar no marcador (placa, data, IMEI, velocidade, ignição, endereço, lat/lng).
+ * Mapa do veículo selecionado — Google Maps (mesmo mapa da tela pública),
+ * lendo a última posição válida de `positions` (dados corrigidos) e atualizando
+ * ao vivo. O card de dados fica fechado por padrão e abre ao clicar no pino.
  */
 export function SelectedVehicleMap({ vehicleId }: SelectedVehicleMapProps) {
   const { data: tracking, isLoading } = useVehicleTracking(vehicleId);
   const { data: vehicle } = useVehicle(vehicleId);
-  const { customization } = useClientCustomization();
   useVehiclePositionRealtime(vehicleId);
 
-  const [address, setAddress] = useState<string>('');
+  const [cardOpen, setCardOpen] = useState(false);
+  const [address, setAddress] = useState('');
+  const [showAddress, setShowAddress] = useState(false);
 
-  // Geocodifica o endereço da posição atual
+  // Geocodifica o endereço só quando o usuário pede (economiza chamadas).
   useEffect(() => {
-    if (!tracking) return;
+    if (!tracking || !showAddress) return;
     let active = true;
     batchReverseGeocode([{ latitude: tracking.latitude, longitude: tracking.longitude }])
-      .then((map) => {
-        if (active) setAddress(getAddress(tracking.latitude, tracking.longitude, map));
+      .then((m) => {
+        if (active) setAddress(getAddress(tracking.latitude, tracking.longitude, m));
       })
       .catch(() => {});
     return () => {
       active = false;
     };
-  }, [tracking?.latitude, tracking?.longitude]);
+  }, [tracking?.latitude, tracking?.longitude, showAddress]);
 
-  const popupHtml = useMemo(() => {
-    if (!tracking) return undefined;
-    const equip = vehicle?.equipment?.[0];
+  const title = useMemo(() => {
     const brand = (vehicle?.brand || '').trim();
     const model = (vehicle?.model || '').trim();
-    // evita "HONDA//HONDA/CG 160": se o modelo já contém a marca, usa só o modelo
     let desc = model && brand && model.toLowerCase().includes(brand.toLowerCase())
       ? model
       : [brand, model].filter(Boolean).join(' ');
     desc = desc.replace(/\s*\/\s*/g, ' ').replace(/\s+/g, ' ').trim();
-    const title = [vehicle?.plate, desc].filter(Boolean).join(' — ');
-    const data = tracking.recorded_at
-      ? new Date(tracking.recorded_at).toLocaleString('pt-BR')
-      : '—';
-    const speed = tracking.speed != null ? `${tracking.speed.toFixed(2)} km/h` : '—';
-    const ign = tracking.ignition == null ? '—' : tracking.ignition ? 'Ligada' : 'Desligada';
-
-    return `
-      <div style="min-width:236px">
-        <div style="font-weight:700;font-size:14px;color:#111827;margin:0 30px 8px 0;line-height:1.3">${title || 'Veículo'}</div>
-        <div style="height:1px;background:#e5e7eb;margin:0 0 8px"></div>
-        ${row('Data:', data)}
-        ${equip?.imei ? row('IMEI:', equip.imei) : ''}
-        ${row('Velocidade:', speed)}
-        ${row('Ignição:', ign)}
-        ${address ? row('Endereço:', address) : ''}
-        ${row('Latitude:', tracking.latitude.toFixed(6))}
-        ${row('Longitude:', tracking.longitude.toFixed(6))}
-      </div>`;
-  }, [tracking, vehicle, address]);
+    return [vehicle?.plate, desc].filter(Boolean).join(' — ') || 'Veículo';
+  }, [vehicle]);
 
   if (isLoading) {
     return (
@@ -105,19 +78,52 @@ export function SelectedVehicleMap({ vehicleId }: SelectedVehicleMapProps) {
     );
   }
 
-  const model = model3dForType((vehicle as any)?.vehicle_type);
+  const equip = vehicle?.equipment?.[0];
+  const isOn = tracking.ignition === true;
+  const iconUrl = vehicleMarkerPin({
+    vehicleType: (vehicle as any)?.vehicle_type,
+    speed: tracking.speed,
+    ignition: tracking.ignition,
+    recordedAt: tracking.recorded_at,
+  });
 
   return (
-    <MapboxView
-      latitude={tracking.latitude}
-      longitude={tracking.longitude}
-      heading={tracking.heading ?? 0}
-      popupHtml={popupHtml}
-      logoUrl={customization?.logo_url}
-      brandColor={customization?.primary_color}
-      model3dUrl={model.url}
-      modelSizeMeters={model.size}
-      modelHeadingOffset={270}
-    />
+    <div className="w-full h-full flex-1 min-h-[240px] relative">
+      <GoogleMapTestView
+        latitude={tracking.latitude}
+        longitude={tracking.longitude}
+        iconUrl={iconUrl}
+        onMarkerClick={() => setCardOpen((v) => !v)}
+      />
+
+      {cardOpen && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[320px] max-w-[92vw] rounded-xl bg-card shadow-2xl border p-4">
+          <button
+            onClick={() => setCardOpen(false)}
+            className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground"
+            aria-label="Fechar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="font-bold text-sm text-foreground mb-2 pr-6 leading-tight">{title}</div>
+          <div className="h-px bg-border mb-2" />
+          <div className="space-y-1.5 text-sm">
+            <Row icon={Calendar} label="Data:" value={tracking.recorded_at ? new Date(tracking.recorded_at).toLocaleString('pt-BR') : '—'} />
+            {equip?.imei && <Row icon={Fingerprint} label="IMEI:" value={equip.imei} />}
+            <Row icon={Gauge} label="Velocidade:" value={tracking.speed != null ? `${tracking.speed.toFixed(0)} km/h` : '—'} />
+            <Row icon={Power} label="Ignição:" value={tracking.ignition == null ? '—' : isOn ? 'Ligada' : 'Desligada'} iconClass={isOn ? 'text-green-500' : undefined} />
+            <div className="flex items-start gap-2">
+              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
+              <span className="text-muted-foreground">Endereço:</span>
+              <span className="ml-auto font-medium text-right">
+                {showAddress ? (address || 'Buscando…') : (
+                  <button onClick={() => setShowAddress(true)} className="text-primary underline">Ver endereço</button>
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
