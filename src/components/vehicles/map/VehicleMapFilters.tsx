@@ -4,7 +4,7 @@ import { Filter } from "lucide-react";
 interface FilterOption {
   label: string;
   count: number;
-  variant: "todos" | "rastreados" | "semSinal" | "bloqueados" | "desligados";
+  variant: "todos" | "rastreando" | "desligado" | "bloqueado";
 }
 
 interface VehicleMapFiltersProps {
@@ -12,35 +12,31 @@ interface VehicleMapFiltersProps {
   onFilterChange: (filter: string) => void;
   filterCounts?: {
     todos: number;
-    rastreados: number;
-    semSinal: number;
-    bloqueados: number;
-    desligados: number;
+    rastreando: number;
+    desligado: number;
+    bloqueado: number;
   };
 }
 
 export function VehicleMapFilters({ activeFilter, onFilterChange, filterCounts }: VehicleMapFiltersProps) {
   const filterOptions: FilterOption[] = [
     { label: "TODOS", count: filterCounts?.todos || 0, variant: "todos" },
-    { label: "RASTREADOS", count: filterCounts?.rastreados || 0, variant: "rastreados" },
-    { label: "SEM SINAL", count: filterCounts?.semSinal || 0, variant: "semSinal" },
-    { label: "BLOQUEADOS", count: filterCounts?.bloqueados || 0, variant: "bloqueados" },
-    { label: "DESLIGADOS", count: filterCounts?.desligados || 0, variant: "desligados" },
+    { label: "RASTREANDO", count: filterCounts?.rastreando || 0, variant: "rastreando" },
+    { label: "DESLIGADO", count: filterCounts?.desligado || 0, variant: "desligado" },
+    { label: "BLOQUEADO", count: filterCounts?.bloqueado || 0, variant: "bloqueado" },
   ];
   const getFilterStyles = (variant: FilterOption["variant"], isActive: boolean) => {
     const baseStyles = "text-xs font-medium px-2 sm:px-3 py-1.5 rounded-md transition-all";
-    
+
     switch (variant) {
       case "todos":
         return `${baseStyles} ${isActive ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary hover:bg-primary/30"}`;
-      case "rastreados":
-        return `${baseStyles} ${isActive ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary hover:bg-primary/30"}`;
-      case "semSinal":
-        return `${baseStyles} ${isActive ? "bg-muted-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`;
-      case "bloqueados":
+      case "rastreando":
+        return `${baseStyles} ${isActive ? "bg-success text-success-foreground" : "bg-success/20 text-success hover:bg-success/30"}`;
+      case "desligado":
         return `${baseStyles} ${isActive ? "bg-destructive text-destructive-foreground" : "bg-destructive/20 text-destructive hover:bg-destructive/30"}`;
-      case "desligados":
-        return `${baseStyles} ${isActive ? "bg-muted-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`;
+      case "bloqueado":
+        return `${baseStyles} ${isActive ? "bg-warning text-warning-foreground" : "bg-warning/20 text-warning-foreground hover:bg-warning/30"}`;
       default:
         return baseStyles;
     }

@@ -10,7 +10,7 @@ interface VehicleMapCardProps {
   carrier: string;
   system: string;
   tracker: string;
-  status: "semSinal" | "rastreado" | "bloqueado" | "desligado";
+  status: "rastreando" | "desligado" | "bloqueado";
   lastUpdate: string;
   onShowLocation: () => void;
   onMoreInfo: () => void;
@@ -34,14 +34,12 @@ export function VehicleMapCard({
 }: VehicleMapCardProps) {
   const getStatusStyles = () => {
     switch (status) {
-      case "semSinal":
-        return "bg-amber-500";
-      case "rastreado":
+      case "rastreando":
         return "bg-green-500";
-      case "bloqueado":
-        return "bg-destructive";
       case "desligado":
-        return "bg-muted-foreground";
+        return "bg-destructive";
+      case "bloqueado":
+        return "bg-amber-500";
       default:
         return "bg-muted-foreground";
     }
@@ -49,14 +47,12 @@ export function VehicleMapCard({
 
   const getStatusLabel = () => {
     switch (status) {
-      case "semSinal":
-        return "Sem Sinal";
-      case "rastreado":
-        return "Rastreado";
-      case "bloqueado":
-        return "Bloqueado";
+      case "rastreando":
+        return "Rastreando";
       case "desligado":
         return "Desligado";
+      case "bloqueado":
+        return "Bloqueado";
       default:
         return status;
     }

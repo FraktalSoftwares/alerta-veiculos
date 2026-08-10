@@ -5,7 +5,8 @@ import { VehicleMapCard } from "./VehicleMapCard";
 import { VehicleDisplay } from "@/types/vehicle";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useMultipleVehicleConnections } from "@/hooks/useVehicleConnection";
+import { useMultipleVehicleBlockStatuses } from "@/hooks/useVehicleBlockStatus";
+import { vehicleListStatus } from "@/lib/vehicleMarker";
 
 interface VehicleMapSidebarProps {
   vehicles: VehicleDisplay[];
@@ -35,92 +36,37 @@ export function VehicleMapSidebar({
       .filter((imei): imei is string => !!imei);
   }, [vehicles]);
 
-  // Check connection status for all vehicles
-  const { data: connectionsData } = useMultipleVehicleConnections(imeis);
+  // Status de bloqueio AUTORITATIVO (mesma fonte da lista: vehicles.blocked via API).
+  const { data: blockedMap } = useMultipleVehicleBlockStatuses(imeis);
 
-  // Calculate filter counts based on real connection status
+  // Classificação única, alinhada à lista de veículos:
+  //  bloqueado > rastreando (sinal < 7h) > desligado (sem sinal +7h).
+  const classify = (v: VehicleDisplay): 'rastreando' | 'desligado' | 'bloqueado' => {
+    const imei = v.imei && v.imei !== '-' ? v.imei : null;
+    if (imei && blockedMap?.[imei] === true) return 'bloqueado';
+    return vehicleListStatus({ ignition: v.ignition, recordedAt: v.lastSignalAt }) === 'sem-sinal'
+      ? 'desligado'
+      : 'rastreando';
+  };
+
   const filterCounts = useMemo(() => {
-    const total = vehicles.length;
-    let rastreados = 0;
-    let semSinal = 0;
-    let bloqueados = 0;
-    let desligados = 0;
+    const counts = { todos: vehicles.length, rastreando: 0, desligado: 0, bloqueado: 0 };
+    vehicles.forEach((v) => { counts[classify(v)]++; });
+    return counts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicles, blockedMap]);
 
-    vehicles.forEach(vehicle => {
-      const imei = vehicle.imei && vehicle.imei !== '-' ? vehicle.imei : null;
-      const isConnected = imei ? connectionsData?.[imei] === true : false;
-      
-      // Determine status based on API connection
-      if (vehicle.status === 'bloqueado') {
-        bloqueados++;
-      } else if (isConnected) {
-        rastreados++;
-      } else {
-        semSinal++;
-      }
-    });
-
-    return {
-      todos: total,
-      rastreados,
-      semSinal,
-      bloqueados,
-      desligados,
-    };
-  }, [vehicles, connectionsData]);
-
-  // Filter vehicles based on active filter and real connection status
   const filteredVehicles = useMemo(() => {
-    let filtered = vehicles;
-
-    if (activeFilter !== 'todos') {
-      switch (activeFilter) {
-        case 'rastreados':
-          filtered = vehicles.filter(v => {
-            const imei = v.imei && v.imei !== '-' ? v.imei : null;
-            return imei ? connectionsData?.[imei] === true : false;
-          });
-          break;
-        case 'semSinal':
-          filtered = vehicles.filter(v => {
-            const imei = v.imei && v.imei !== '-' ? v.imei : null;
-            const isConnected = imei ? connectionsData?.[imei] === true : false;
-            return !isConnected && v.status !== 'bloqueado';
-          });
-          break;
-        case 'bloqueados':
-          filtered = vehicles.filter(v => v.status === 'bloqueado');
-          break;
-        case 'desligados':
-          filtered = vehicles.filter(v => v.status === 'desligado');
-          break;
-      }
-    }
-
-    return filtered;
-  }, [vehicles, activeFilter, connectionsData]);
+    if (activeFilter === 'todos') return vehicles;
+    return vehicles.filter((v) => classify(v) === activeFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicles, activeFilter, blockedMap]);
 
   const handleMoreInfo = (vehicleId: string) => {
     navigate(`/veiculos/${vehicleId}/mapa`);
   };
 
-  // Map VehicleDisplay status to VehicleMapCard status based on real connection
-  const mapStatus = (vehicle: VehicleDisplay): "semSinal" | "rastreado" | "bloqueado" | "desligado" => {
-    // If blocked, always show blocked
-    if (vehicle.status === 'bloqueado') {
-      return 'bloqueado';
-    }
-    
-    // Check real connection status
-    const imei = vehicle.imei && vehicle.imei !== '-' ? vehicle.imei : null;
-    const isConnected = imei ? connectionsData?.[imei] === true : false;
-    
-    if (isConnected) {
-      return 'rastreado';
-    } else {
-      return 'semSinal';
-    }
-  };
+  const mapStatus = (vehicle: VehicleDisplay) => classify(vehicle);
 
   return (
     <div 
