@@ -301,12 +301,12 @@ export function useBlockVehicle() {
 
   return useMutation({
     mutationFn: async ({ id, block }: { id: string; block: boolean }) => {
-      // Busca o veículo completo para obter IMEI e protocolo
+      // Busca o veículo para obter o IMEI (e o model do produto como fallback de protocolo)
       const { data: vehicle, error: vehicleError } = await supabase
         .from('vehicles')
         .select(`
           id,
-          equipment(id, imei, model, products(model))
+          equipment(imei, products(model))
         `)
         .eq('id', id)
         .maybeSingle();
@@ -314,10 +314,21 @@ export function useBlockVehicle() {
       if (vehicleError) throw vehicleError;
       if (!vehicle) throw new Error('Veículo não encontrado');
 
-      // Obtém IMEI e protocolo do equipamento
       const equipment = vehicle?.equipment?.[0];
       const imei = equipment?.imei || null;
-      const protocolo = equipment?.products?.model || (equipment as any)?.model || undefined;
+
+      // Protocolo AUTORITATIVO: o que a ingestão decodificou (positions.modelo = j16 | 8310 | 310).
+      // products.model é catálogo (texto livre) e serve só de fallback se ainda não houver posições.
+      let protocolo: string | undefined = equipment?.products?.model || undefined;
+      const { data: lastPos } = await supabase
+        .from('positions')
+        .select('modelo')
+        .eq('vehicle_id', id)
+        .not('modelo', 'is', null)
+        .order('recorded_at', { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastPos?.modelo) protocolo = lastPos.modelo;
 
       // A API do rastreador é a FONTE DA VERDADE: se o comando falhar (ex.: rastreador
       // offline), a mutação falha aqui e NÃO marca "bloqueado" no banco (nada de cadeado
