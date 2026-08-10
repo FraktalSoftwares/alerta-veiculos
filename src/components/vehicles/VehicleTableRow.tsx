@@ -128,9 +128,9 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
     ignition: vehicle.ignition,
     recordedAt: vehicle.lastSignalAt,
   });
-  // SITUAÇÃO (badge): 2 estados — RASTREANDO (verde) / DESLIGADO (vermelho, só +7h sem sinal).
-  const badgeVariant = listStatus === 'sem-sinal' ? 'sem-sinal' : 'rastreando';
-  const badgeLabel = listStatus === 'sem-sinal' ? 'DESLIGADO' : 'RASTREANDO';
+  // SITUAÇÃO (badge): BLOQUEADO (amarelo) tem prioridade; senão RASTREANDO (verde) / DESLIGADO (vermelho, +7h sem sinal).
+  const badgeVariant = isBlocked ? 'bloqueado' : (listStatus === 'sem-sinal' ? 'sem-sinal' : 'rastreando');
+  const badgeLabel = isBlocked ? 'BLOQUEADO' : (listStatus === 'sem-sinal' ? 'DESLIGADO' : 'RASTREANDO');
   // STATUS (ícone de sinal): 3 cores — verde=ligada, amarelo=desligada c/ sinal, vermelho=+7h sem sinal.
   const pingColor =
     listStatus === 'rastreando'

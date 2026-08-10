@@ -18,7 +18,7 @@ const variantStyles: Record<VehicleBadgeVariant, string> = {
   parado: "bg-warning text-warning-foreground",
   desligado: "bg-gray-600 text-white",
   "sem-sinal": "bg-destructive text-destructive-foreground",
-  bloqueado: "bg-slate-800 text-white",
+  bloqueado: "bg-warning text-warning-foreground",
 };
 
 export function VehicleBadge({ variant, children, className }: VehicleBadgeProps) {
