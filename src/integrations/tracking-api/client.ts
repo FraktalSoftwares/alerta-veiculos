@@ -339,12 +339,29 @@ class TrackingApiClient {
   }
 
   /**
-   * Ativa o monitoramento de uma rota para um veículo
+   * Traça a rota que segue as ruas (feito no servidor).
+   * Retorna GeoJSON LineString + distância(m) + duração(s).
+   */
+  async previewRota(points: Array<{ lat: number; lon: number }>): Promise<{
+    ok: boolean;
+    geometry?: { type: string; coordinates: Array<[number, number]> };
+    distance?: number;
+    duration?: number;
+  }> {
+    const waypoints = points.map((p) => `${p.lon},${p.lat}`).join(';');
+    return this.request(TRACKING_API_ENDPOINTS.ROTA_OBRIGATORIA_PREVIEW(waypoints), { method: 'GET' });
+  }
+
+  /**
+   * Ativa o monitoramento de uma rota para um veículo.
+   * Protocolo normalizado para o enum aceito pela API (j16 | 8310 | 310).
    */
   async ativarRotaObrigatoria(routeId: number, imei: string, protocol: string): Promise<any> {
+    const proto = this.normalizeProtocolo(protocol);
+    if (!proto) throw new Error('Protocolo do rastreador não identificado.');
     return this.request(TRACKING_API_ENDPOINTS.ROTA_OBRIGATORIA_ATIVAR, {
       method: 'POST',
-      body: JSON.stringify({ route_id: routeId, imei, protocol }),
+      body: JSON.stringify({ route_id: routeId, imei, protocol: proto }),
     });
   }
 

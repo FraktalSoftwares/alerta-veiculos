@@ -12,22 +12,19 @@ export interface RoutePoint {
   name?: string;
 }
 
-export interface RouteInfo {
-  distanceMeters: number;
-  durationText: string;
-}
-
 interface RouteMapGoogleProps {
   /** Centro inicial (posição atual do veículo). */
   center: { lat: number; lng: number };
   /** Pontos da rota (origem, paradas, destino). */
   points: RoutePoint[];
-  /** Clique no mapa adiciona um ponto na posição clicada. */
-  onAddPoint: (lat: number, lng: number) => void;
-  /** Arrastar um marcador reposiciona o ponto. */
-  onMovePoint: (id: string, lat: number, lng: number) => void;
-  /** Informa distância/tempo calculados pelo Google (ou null se rota incompleta). */
-  onRouteInfo?: (info: RouteInfo | null) => void;
+  /** Linha da rota seguindo as ruas (vinda do preview do servidor). */
+  routePath?: Array<{ lat: number; lng: number }>;
+  /** Modo edição: clique adiciona ponto e marcadores são arrastáveis. */
+  editable?: boolean;
+  /** Clique no mapa adiciona um ponto (só no modo edição). */
+  onAddPoint?: (lat: number, lng: number) => void;
+  /** Arrastar um marcador reposiciona o ponto (só no modo edição). */
+  onMovePoint?: (id: string, lat: number, lng: number) => void;
 }
 
 const COLORS: Record<RoutePointType, string> = {
@@ -36,7 +33,6 @@ const COLORS: Record<RoutePointType, string> = {
   destination: '#dc2626', // vermelho
 };
 
-/** Rótulo do marcador: A (origem), 1..N (paradas), B (destino). */
 function markerLabel(points: RoutePoint[], point: RoutePoint): string {
   if (point.type === 'origin') return 'A';
   if (point.type === 'destination') return 'B';
@@ -44,34 +40,33 @@ function markerLabel(points: RoutePoint[], point: RoutePoint): string {
   return String(stopIndex);
 }
 
-/** Ordena para o traçado: origem → paradas (na ordem) → destino. */
-function orderForRoute(points: RoutePoint[]): RoutePoint[] {
-  const origin = points.find((p) => p.type === 'origin');
-  const stops = points.filter((p) => p.type === 'stop');
-  const dest = points.find((p) => p.type === 'destination');
-  return [origin, ...stops, dest].filter(Boolean) as RoutePoint[];
-}
-
 /**
- * Mapa Google para criar rota obrigatória. Centra no veículo, deixa clicar
- * para adicionar pontos (origem/parada/destino) e desenha o trajeto real de
- * carro via DirectionsService quando há origem + destino.
+ * Mapa Google para criar/visualizar rota obrigatória. Centra no veículo,
+ * desenha os pontos (A / paradas / B) e a linha da rota que SEGUE AS RUAS
+ * (recebida via `routePath`, calculada no servidor). No modo edição, clicar
+ * adiciona pontos e os marcadores são arrastáveis.
  */
-export function RouteMapGoogle({ center, points, onAddPoint, onMovePoint, onRouteInfo }: RouteMapGoogleProps) {
+export function RouteMapGoogle({
+  center,
+  points,
+  routePath,
+  editable = false,
+  onAddPoint,
+  onMovePoint,
+}: RouteMapGoogleProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const vehicleRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  const dirServiceRef = useRef<any>(null);
-  const dirRendererRef = useRef<any>(null);
-  const straightLineRef = useRef<any>(null);
+  const lineRef = useRef<any>(null);
+  const didFitRef = useRef(false);
 
   const addRef = useRef(onAddPoint);
   addRef.current = onAddPoint;
   const moveRef = useRef(onMovePoint);
   moveRef.current = onMovePoint;
-  const infoRef = useRef(onRouteInfo);
-  infoRef.current = onRouteInfo;
+  const editableRef = useRef(editable);
+  editableRef.current = editable;
 
   const { isLoaded, hasKey } = useGoogleMapsLoader();
 
@@ -101,14 +96,7 @@ export function RouteMapGoogle({ center, points, onAddPoint, onMovePoint, onRout
       zIndex: 1,
     });
     map.addListener('click', (e: any) => {
-      addRef.current(e.latLng.lat(), e.latLng.lng());
-    });
-    dirServiceRef.current = new g.maps.DirectionsService();
-    dirRendererRef.current = new g.maps.DirectionsRenderer({
-      map,
-      suppressMarkers: true,
-      preserveViewport: true,
-      polylineOptions: { strokeColor: '#2563eb', strokeWeight: 5, strokeOpacity: 0.9 },
+      if (editableRef.current) addRef.current?.(e.latLng.lat(), e.latLng.lng());
     });
     mapRef.current = map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,7 +116,7 @@ export function RouteMapGoogle({ center, points, onAddPoint, onMovePoint, onRout
       const marker = new g.maps.Marker({
         position: { lat: p.lat, lng: p.lng },
         map: mapRef.current,
-        draggable: true,
+        draggable: editable,
         label: { text: markerLabel(points, p), color: '#fff', fontWeight: 'bold', fontSize: '12px' },
         icon: {
           path: g.maps.SymbolPath.CIRCLE,
@@ -140,66 +128,44 @@ export function RouteMapGoogle({ center, points, onAddPoint, onMovePoint, onRout
         },
         zIndex: 2,
       });
-      marker.addListener('dragend', (e: any) => {
-        moveRef.current(p.id, e.latLng.lat(), e.latLng.lng());
-      });
+      if (editable) {
+        marker.addListener('dragend', (e: any) => moveRef.current?.(p.id, e.latLng.lat(), e.latLng.lng()));
+      }
       return marker;
     });
-  }, [points]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points, editable]);
 
-  // traçado da rota (DirectionsService) + info distância/tempo
+  // linha da rota (segue as ruas)
   useEffect(() => {
     const g = (window as any).google;
-    if (!mapRef.current || !g || !dirServiceRef.current) return;
-
-    const ordered = orderForRoute(points);
-    const origin = points.find((p) => p.type === 'origin');
-    const dest = points.find((p) => p.type === 'destination');
-    const stops = points.filter((p) => p.type === 'stop');
-
-    // limpa traçados anteriores
-    dirRendererRef.current.setDirections({ routes: [] });
-    if (straightLineRef.current) {
-      straightLineRef.current.setMap(null);
-      straightLineRef.current = null;
+    if (!mapRef.current || !g) return;
+    if (lineRef.current) {
+      lineRef.current.setMap(null);
+      lineRef.current = null;
     }
-
-    if (!origin || !dest) {
-      infoRef.current?.(null);
-      return;
-    }
-
-    dirServiceRef.current.route(
-      {
-        origin: { lat: origin.lat, lng: origin.lng },
-        destination: { lat: dest.lat, lng: dest.lng },
-        waypoints: stops.map((s) => ({ location: { lat: s.lat, lng: s.lng }, stopover: true })),
-        travelMode: g.maps.TravelMode.DRIVING,
-      },
-      (res: any, status: string) => {
-        if (status === 'OK' && res?.routes?.[0]) {
-          dirRendererRef.current.setDirections(res);
-          const legs = res.routes[0].legs || [];
-          const distanceMeters = legs.reduce((sum: number, l: any) => sum + (l.distance?.value || 0), 0);
-          const durationSecs = legs.reduce((sum: number, l: any) => sum + (l.duration?.value || 0), 0);
-          const mins = Math.round(durationSecs / 60);
-          const durationText = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}min` : `${mins} min`;
-          infoRef.current?.({ distanceMeters, durationText });
-        } else {
-          // fallback: linha reta ligando os pontos na ordem
-          const path = ordered.map((p) => ({ lat: p.lat, lng: p.lng }));
-          straightLineRef.current = new g.maps.Polyline({
-            path,
-            map: mapRef.current,
-            strokeColor: '#2563eb',
-            strokeWeight: 4,
-            strokeOpacity: 0.6,
-          });
-          infoRef.current?.(null);
-        }
+    if (routePath && routePath.length >= 2) {
+      lineRef.current = new g.maps.Polyline({
+        path: routePath,
+        map: mapRef.current,
+        strokeColor: '#2563eb',
+        strokeWeight: 5,
+        strokeOpacity: 0.9,
+      });
+      // Em visualização, enquadra a rota uma vez.
+      if (!editable && !didFitRef.current) {
+        const bounds = new g.maps.LatLngBounds();
+        routePath.forEach((c) => bounds.extend(c));
+        mapRef.current.fitBounds(bounds, 48);
+        didFitRef.current = true;
       }
-    );
-  }, [points]);
+    }
+  }, [routePath, editable]);
+
+  // ao trocar de rota selecionada (viz), permite reenquadrar
+  useEffect(() => {
+    if (!editable) didFitRef.current = false;
+  }, [points, editable]);
 
   if (!hasKey) {
     return (
