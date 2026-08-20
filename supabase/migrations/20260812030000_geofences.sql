@@ -1,8 +1,13 @@
 -- =====================================================================
--- Cercas virtuais (geofence) POR VEÍCULO — detecção SERVER-SIDE.
--- Salva centro (lat/lng) + raio; se o veículo SAI do círculo (estava dentro,
--- agora fora) gera alerta 'cerca_violada' → feed web (realtime) + push mobile.
+-- Cerca virtual (geofence) — detecção SERVER-SIDE de SAÍDA.
+-- Usa a tabela EXISTENTE `virtual_fences` (por equipment_id; o web já faz o CRUD).
+-- Se o veículo SAI do círculo (estava dentro, agora fora) → alerta 'cerca_violada'
+-- → feed web (realtime) + push mobile (edge function já trata cerca_violada).
 -- =====================================================================
+
+-- (limpeza) remove tabela duplicada de uma versão anterior desta migration, se existir.
+drop trigger if exists trg_geofence_exit on public.positions;
+drop table if exists public.geofences cascade;
 
 -- Distância em metros (haversine).
 create or replace function public.geo_distance_m(
@@ -15,31 +20,7 @@ create or replace function public.geo_distance_m(
   ));
 $$;
 
-create table if not exists public.geofences (
-  id             uuid primary key default gen_random_uuid(),
-  vehicle_id     uuid not null references public.vehicles(id) on delete cascade,
-  name           text,
-  center_lat     double precision not null,
-  center_lng     double precision not null,
-  radius_m       integer not null default 100,
-  speed_limit_kmh integer,
-  is_primary     boolean not null default false,
-  notify_on_enter boolean not null default false,
-  notify_on_exit  boolean not null default true,
-  created_by     uuid references auth.users(id),
-  created_at     timestamptz not null default now(),
-  updated_at     timestamptz not null default now()
-);
-create index if not exists idx_geofences_vehicle on public.geofences (vehicle_id);
-
-alter table public.geofences enable row level security;
--- Gerencia cercas só de veículos que enxerga (vehicles já é RLS-scoped).
-drop policy if exists "geo_all" on public.geofences;
-create policy "geo_all" on public.geofences
-  for all using (vehicle_id in (select id from public.vehicles))
-  with check (vehicle_id in (select id from public.vehicles));
-
--- Trigger de SAÍDA da cerca (independente do detect_vehicle_alerts).
+-- Trigger de SAÍDA da cerca, lendo virtual_fences (equipment -> vehicle).
 create or replace function public.detect_geofence_exit()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
@@ -58,11 +39,13 @@ begin
   if prev_lat is null then return new; end if;
 
   for g in
-    select * from public.geofences
-    where vehicle_id = new.vehicle_id and notify_on_exit = true
+    select vf.name, vf.latitude, vf.longitude, vf.radius
+    from public.virtual_fences vf
+    join public.equipment e on e.id = vf.equipment_id
+    where e.vehicle_id = new.vehicle_id and vf.notify_on_exit = true
   loop
-    if public.geo_distance_m(new.latitude, new.longitude, g.center_lat, g.center_lng) > g.radius_m
-       and public.geo_distance_m(prev_lat, prev_lon, g.center_lat, g.center_lng) <= g.radius_m
+    if public.geo_distance_m(new.latitude, new.longitude, g.latitude::double precision, g.longitude::double precision) > g.radius
+       and public.geo_distance_m(prev_lat, prev_lon, g.latitude::double precision, g.longitude::double precision) <= g.radius
        and not exists (
          select 1 from public.vehicle_alerts a
          where a.vehicle_id = new.vehicle_id and a.alert_type = 'cerca_violada'
