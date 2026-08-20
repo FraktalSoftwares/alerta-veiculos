@@ -82,7 +82,7 @@ export default function VeiculoCercas() {
     <div className="h-[100dvh] flex flex-col bg-muted/30">
       <Header />
       <div className="flex items-center gap-3 px-4 sm:px-6 py-3 border-b bg-card">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/veiculos/${id}/mapa`)} className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/veiculos')} className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
         <div className="min-w-0">
           <h1 className="text-base sm:text-lg font-semibold truncate">Cerca Virtual</h1>
           <p className="text-xs text-muted-foreground truncate">{vehicle.plate} - {vehicle.clients?.name || 'Cliente'}</p>
