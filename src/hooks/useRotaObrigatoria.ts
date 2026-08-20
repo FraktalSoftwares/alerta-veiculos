@@ -2,22 +2,26 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { trackingApiClient } from '@/integrations/tracking-api/client';
 import { TRACKING_API_BASE_URL, TRACKING_API_ENDPOINTS } from '@/integrations/tracking-api/config';
 
-export interface RotaObrigatoria {
+export interface RotaPoint {
+  id: string;
+  lat: number;
+  lon: number;
+  name?: string;
+  position: number;
   route_id: number;
+}
+
+export interface RotaObrigatoria {
+  id: number;
   name: string;
   imei: string;
   protocol: string;
-  tolerance: number;
-  confirmation_radius: number;
-  auto_block: boolean;
-  total_distance: number;
+  tolerance_meters: number;
+  confirmation_radius_meters: number;
+  automatic_block: boolean;
   active: boolean;
-  waypoints?: Array<{
-    order: number;
-    latitude: number;
-    longitude: number;
-    name?: string;
-  }>;
+  created_at?: string;
+  route_points: RotaPoint[];
 }
 
 export interface RotaStatus {
@@ -48,6 +52,49 @@ export function useRotaObrigatoriaStatus(imei: string | null | undefined) {
     queryFn: () => trackingApiClient.statusRotaObrigatoria(imei!),
     enabled: !!imei,
     refetchInterval: 30000,
+  });
+}
+
+/**
+ * Traçado da rota seguindo as ruas (servidor). `waypoints` = pontos na ordem.
+ * Retorna a linha em {lat,lng} + distância/tempo.
+ */
+export function useRotaPreview(waypoints: Array<{ lat: number; lon: number }> | null) {
+  const key = waypoints && waypoints.length >= 2 ? waypoints.map((p) => `${p.lon},${p.lat}`).join(';') : null;
+
+  return useQuery({
+    queryKey: ['rota-preview', key],
+    queryFn: async () => {
+      const res = await trackingApiClient.previewRota(waypoints!);
+      const path = (res.geometry?.coordinates || []).map(([lon, lat]) => ({ lat, lng: lon }));
+      return { path, distanceMeters: res.distance ?? 0, durationSecs: res.duration ?? 0 };
+    },
+    enabled: !!key,
+    staleTime: 60_000,
+  });
+}
+
+export interface CriarRotaPayload {
+  name: string;
+  imei: string;
+  protocol: string;
+  points: Array<{ position: number; lat: number; lon: number; name?: string }>;
+  tolerance_meters?: number;
+  confirmation_radius_meters?: number;
+  automatic_block?: boolean;
+}
+
+/**
+ * Hook para criar uma rota obrigatória (tela nativa).
+ */
+export function useCriarRotaObrigatoria() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CriarRotaPayload) => trackingApiClient.criarRotaObrigatoria(payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['rotas-obrigatorias', variables.imei] });
+    },
   });
 }
 

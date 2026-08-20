@@ -25,6 +25,10 @@ export interface VehicleDisplay {
   ignition: boolean | null;
   /** Timestamp cru do último sinal (last_update) — regra de 8h. */
   lastSignalAt: string | null;
+  /** Última latitude conhecida (last_location) — usada no link do Google Maps. */
+  lat: number | null;
+  /** Última longitude conhecida (last_location). */
+  lng: number | null;
 }
 
 // Extended vehicle type with relationships
@@ -94,11 +98,15 @@ export function mapVehicleToDisplay(vehicle: VehicleWithDetails): VehicleDisplay
 
   // last_location é mantido pelo trigger: { lat, lng, speed, ignition, heading }
   const loc = (vehicle.last_location ?? null) as {
+    lat?: number | null;
+    lng?: number | null;
     speed?: number | null;
     ignition?: boolean | null;
   } | null;
   const speed = typeof loc?.speed === 'number' ? loc.speed : null;
   const ignition = typeof loc?.ignition === 'boolean' ? loc.ignition : null;
+  const lat = typeof loc?.lat === 'number' ? loc.lat : null;
+  const lng = typeof loc?.lng === 'number' ? loc.lng : null;
 
   return {
     id: vehicle.id,
@@ -120,5 +128,7 @@ export function mapVehicleToDisplay(vehicle: VehicleWithDetails): VehicleDisplay
     speed,
     ignition,
     lastSignalAt: vehicle.last_update ?? null,
+    lat,
+    lng,
   };
 }

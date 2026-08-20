@@ -7,7 +7,7 @@ import { ChangePasswordModal } from "@/components/profile/ChangePasswordModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, Shield, User, Mail, Phone, FileText, Pencil, Key } from "lucide-react";
 
@@ -71,11 +71,11 @@ const Perfil = () => {
                 </AvatarFallback>
               </Avatar>
               <CardTitle className="text-xl">{profile?.full_name || "Usuário"}</CardTitle>
-              <CardDescription>
+              <div className="flex justify-center">
                 <Badge variant="secondary" className="mt-2">
                   {profile?.user_type ? getUserTypeLabel(profile.user_type) : "Usuário"}
                 </Badge>
-              </CardDescription>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
@@ -106,7 +106,7 @@ const Perfil = () => {
                 <Shield className="h-5 w-5 text-primary" />
                 <CardTitle>Permissões</CardTitle>
               </div>
-              <CardDescription>
+              <div className="text-sm text-muted-foreground">
                 {isLoading ? (
                   <Skeleton className="h-4 w-48" />
                 ) : roleInfo?.roleName ? (
@@ -117,7 +117,7 @@ const Perfil = () => {
                 ) : (
                   "Nenhuma função administrativa atribuída"
                 )}
-              </CardDescription>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (

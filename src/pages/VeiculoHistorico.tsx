@@ -53,7 +53,7 @@ const VeiculoHistorico = () => {
   const totalPoints = useMemo(() => countOriginalPoints(displayItems), [displayItems]);
 
   const handleBack = () => {
-    navigate(`/veiculos/${id}/mapa`);
+    navigate('/veiculos');
   };
 
   const handleFilter = (start: Date, end: Date) => {

@@ -12,6 +12,7 @@ import { useVehiclePositionRealtime } from '@/hooks/useVehiclePositionRealtime';
 import { batchReverseGeocode, getAddress } from '@/utils/geocoding';
 import { GoogleMapTestView } from '@/components/vehicles/map/GoogleMapTestView';
 import { vehicleMarkerPin } from '@/lib/vehicleMarker';
+import { googleMapsLocationUrl } from '@/lib/googleMaps';
 
 type Tab = 'motorista' | 'info' | 'share';
 
@@ -73,11 +74,19 @@ const VeiculoMapaGoogleTeste = () => {
     ignition: tracking?.ignition,
     recordedAt: tracking?.recorded_at,
   });
-  const shareUrl = `${window.location.origin}/compartilhar/${id}`;
+  // Link do Google Maps (abre no mapa do cliente, não na nossa plataforma).
+  const shareUrl =
+    tracking && typeof tracking.latitude === 'number' && typeof tracking.longitude === 'number'
+      ? googleMapsLocationUrl(tracking.latitude, tracking.longitude)
+      : '';
   const copyShare = async () => {
+    if (!shareUrl) {
+      toast.error('Sem localização para compartilhar.');
+      return;
+    }
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success('Link de compartilhamento copiado!');
+      toast.success('Link do Google Maps copiado!');
     } catch {
       toast.error('Não foi possível copiar o link.');
     }
@@ -173,10 +182,10 @@ const VeiculoMapaGoogleTeste = () => {
           )}
           {tab === 'share' && (
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">Link público (sem login):</p>
+              <p className="text-xs text-muted-foreground">Link do Google Maps (abre no mapa do cliente):</p>
               <div className="flex gap-2">
-                <input readOnly value={shareUrl} className="flex-1 text-xs bg-muted rounded px-2 py-1.5 truncate" />
-                <Button size="sm" onClick={copyShare}>Copiar</Button>
+                <input readOnly value={shareUrl || 'Sem localização disponível'} className="flex-1 text-xs bg-muted rounded px-2 py-1.5 truncate" />
+                <Button size="sm" onClick={copyShare} disabled={!shareUrl}>Copiar</Button>
               </div>
             </div>
           )}
