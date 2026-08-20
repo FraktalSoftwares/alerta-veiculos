@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useVehicleBlockStatus } from "@/hooks/useVehicleBlockStatus";
 import { vehicleListStatus } from "@/lib/vehicleMarker";
+import { googleMapsLocationUrl } from "@/lib/googleMaps";
 
 interface VehicleTableRowProps {
   vehicle: VehicleDisplay;
@@ -68,17 +69,25 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
     e.stopPropagation();
     
     if (!vehicle?.id) return;
-    
-    // Generate public share URL using environment variable or fallback to current origin
-    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
-    const shareUrl = `${baseUrl}/compartilhar/${vehicle.id}`;
-    
+
+    // Link do Google Maps com a última posição conhecida — abre no mapa do
+    // cliente (não na nossa plataforma).
+    if (typeof vehicle.lat !== 'number' || typeof vehicle.lng !== 'number') {
+      toast({
+        title: "Sem localização",
+        description: "Este veículo ainda não tem uma posição para compartilhar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const shareUrl = googleMapsLocationUrl(vehicle.lat, vehicle.lng);
+
     try {
       // Try to use the Clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shareUrl);
         toast({
-          title: "Link copiado!",
+          title: "Link do Google Maps copiado!",
           description: "O link foi copiado para a área de transferência.",
         });
       } else {
@@ -92,7 +101,7 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
         document.execCommand("copy");
         document.body.removeChild(textArea);
         toast({
-          title: "Link copiado!",
+          title: "Link do Google Maps copiado!",
           description: "O link foi copiado para a área de transferência.",
         });
       }
