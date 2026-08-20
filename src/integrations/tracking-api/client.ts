@@ -318,6 +318,27 @@ class TrackingApiClient {
   }
 
   /**
+   * Cria uma rota obrigatória (nossa versão nativa da tela `/rota_obrigatoria/nova`).
+   * O protocolo é normalizado para o enum aceito pela API: j16 | 8310 | 310.
+   */
+  async criarRotaObrigatoria(payload: {
+    name: string;
+    imei: string;
+    protocol: string;
+    points: Array<{ position: number; lat: number; lon: number; name?: string }>;
+    tolerance_meters?: number;
+    confirmation_radius_meters?: number;
+    automatic_block?: boolean;
+  }): Promise<any> {
+    const protocol = this.normalizeProtocolo(payload.protocol);
+    if (!protocol) throw new Error('Protocolo do rastreador não identificado.');
+    return this.request(TRACKING_API_ENDPOINTS.ROTA_OBRIGATORIA_CRIAR, {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, protocol }),
+    });
+  }
+
+  /**
    * Ativa o monitoramento de uma rota para um veículo
    */
   async ativarRotaObrigatoria(routeId: number, imei: string, protocol: string): Promise<any> {

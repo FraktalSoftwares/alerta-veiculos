@@ -41,6 +41,7 @@ export const TRACKING_API_ENDPOINTS = {
   ROTA_OBRIGATORIA_LISTAR: (imei?: string) =>
     imei ? `/rota_obrigatoria/listar?imei=${encodeURIComponent(imei)}` : `/rota_obrigatoria/listar`,
   ROTA_OBRIGATORIA_STATUS: (imei: string) => `/rota_obrigatoria/status/${encodeURIComponent(imei)}`,
+  ROTA_OBRIGATORIA_CRIAR: `/rota_obrigatoria/criar`,
   ROTA_OBRIGATORIA_ATIVAR: `/rota_obrigatoria/ativar`,
   ROTA_OBRIGATORIA_DESATIVAR: (imei: string) => `/rota_obrigatoria/desativar?imei=${encodeURIComponent(imei)}`,
   ROTA_OBRIGATORIA_EXCLUIR: (routeId: number) => `/rota_obrigatoria/excluir/${routeId}`,

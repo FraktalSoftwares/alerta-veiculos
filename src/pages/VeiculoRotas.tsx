@@ -33,7 +33,6 @@ import {
   useAtivarRotaObrigatoria,
   useDesativarRotaObrigatoria,
   useExcluirRotaObrigatoria,
-  getNovaRotaUrl,
   getVisualizarRotaUrl,
   RotaObrigatoria,
 } from '@/hooks/useRotaObrigatoria';
@@ -67,7 +66,7 @@ export default function VeiculoRotas() {
       });
       return;
     }
-    window.open(getNovaRotaUrl(imei, protocol), '_blank');
+    navigate(`/veiculos/${id}/rotas/nova`);
   };
 
   const handleVisualizar = (routeId: number) => {

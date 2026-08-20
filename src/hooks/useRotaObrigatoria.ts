@@ -51,6 +51,30 @@ export function useRotaObrigatoriaStatus(imei: string | null | undefined) {
   });
 }
 
+export interface CriarRotaPayload {
+  name: string;
+  imei: string;
+  protocol: string;
+  points: Array<{ position: number; lat: number; lon: number; name?: string }>;
+  tolerance_meters?: number;
+  confirmation_radius_meters?: number;
+  automatic_block?: boolean;
+}
+
+/**
+ * Hook para criar uma rota obrigatória (tela nativa).
+ */
+export function useCriarRotaObrigatoria() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CriarRotaPayload) => trackingApiClient.criarRotaObrigatoria(payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['rotas-obrigatorias', variables.imei] });
+    },
+  });
+}
+
 /**
  * Hook para ativar uma rota obrigatória
  */
