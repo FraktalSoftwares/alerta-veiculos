@@ -7,7 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const LABELS: Record<string, string> = {
   ignicao_ligada: "Ignição ligada",
   ignicao_desligada: "Ignição desligada",
-  movimento: "Rastreador em movimento",
+  movimento: "Veículo em movimento",
   limite_velocidade: "Limite de velocidade",
   cerca_violada: "Cerca violada",
   bateria_fraca: "Bateria fraca",
