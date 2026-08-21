@@ -25,6 +25,7 @@ import {
   Radio,
   Route,
   ChevronRight,
+  Battery,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -299,9 +300,9 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
         )}
       </div>
 
-      {/* Rastreador */}
+      {/* Rastreador (modelo, ex.: J16 / 8310) */}
       <div className="flex items-center">
-        <span className="text-foreground text-xs">{vehicle.tracker || '-'}</span>
+        <span className="text-foreground text-xs font-medium">{vehicle.trackerModel || '-'}</span>
       </div>
 
       {/* Operadora */}
@@ -316,11 +317,17 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
         </div>
       </div>
 
-      {/* Situação */}
-      <div className="flex items-center justify-center">
+      {/* Situação (+ bateria do veículo, quando disponível) */}
+      <div className="flex flex-col items-center justify-center gap-1">
         <VehicleBadge variant={badgeVariant}>
           {badgeLabel}
         </VehicleBadge>
+        {vehicle.voltage != null && (
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium" title="Tensão da bateria do veículo">
+            <Battery className="h-3 w-3" />
+            {vehicle.voltage.toFixed(1).replace('.', ',')}V
+          </span>
+        )}
       </div>
 
       {/* Ações Dropdown */}
