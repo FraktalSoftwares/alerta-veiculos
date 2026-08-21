@@ -1,5 +1,7 @@
-// Edge function: drena a fila de vehicle_alerts (push_status='pending') e envia
-// push via FCM HTTP v1 para os usuários que optaram por aquele alerta NAQUELE veículo.
+// Edge function: drena a fila de vehicle_alerts e envia push via FCM HTTP v1
+// para os usuários que optaram por aquele alerta NAQUELE veículo.
+// Consumo por claim atômico (claim_pending_alerts) + pushed_at para medir latência.
+// rev: event-driven-v2
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const LABELS: Record<string, string> = {
