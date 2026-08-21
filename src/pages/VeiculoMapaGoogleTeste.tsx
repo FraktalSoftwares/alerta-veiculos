@@ -177,7 +177,7 @@ const VeiculoMapaGoogleTeste = () => {
             <div className="space-y-1">
               <Row icon={MapPin} label="Latitude:">{tracking.latitude.toFixed(6)}</Row>
               <Row icon={MapPin} label="Longitude:">{tracking.longitude.toFixed(6)}</Row>
-              <Row icon={Battery} label="Voltagem:">{(tracking as any).voltage ?? '— (não disponível)'}</Row>
+              <Row icon={Battery} label="Voltagem:">{tracking.voltage != null ? `${tracking.voltage.toFixed(1).replace('.', ',')}V` : '— (não disponível)'}</Row>
             </div>
           )}
           {tab === 'share' && (
