@@ -62,13 +62,10 @@ Deno.serve(async () => {
   const projectId = sa.project_id;
   const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
 
-  // 1) pega um lote de alertas pendentes (a "fila")
-  const { data: alerts, error } = await admin
-    .from("vehicle_alerts")
-    .select("id, vehicle_id, alert_type, created_at")
-    .eq("push_status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(50);
+  // 1) reivindica um lote da fila de forma ATÔMICA (pending -> 'sending').
+  // Evita que o webhook (event-driven) e o cron (backstop) enviem o mesmo
+  // alerta duas vezes quando rodam concorrentemente.
+  const { data: alerts, error } = await admin.rpc("claim_pending_alerts", { p_limit: 50 });
   if (error) return new Response("erro fila: " + error.message, { status: 500 });
   if (!alerts?.length) return new Response(JSON.stringify({ processed: 0 }), { status: 200 });
 
@@ -104,6 +101,7 @@ Deno.serve(async () => {
             notification: { title, body },
             data: { alert_type: a.alert_type, vehicle_id: a.vehicle_id },
             apns: { headers: { "apns-priority": "10" } },
+            android: { priority: "high" },
           }}),
         });
         if (r.status === 404) {
@@ -124,5 +122,8 @@ Deno.serve(async () => {
 });
 
 async function mark(admin: any, id: string, status: string) {
-  await admin.from("vehicle_alerts").update({ push_status: status }).eq("id", id);
+  const patch: Record<string, unknown> = { push_status: status };
+  // pushed_at marca quando o push saiu -> usado pra medir a latência banco->push.
+  if (status === "sent") patch.pushed_at = new Date().toISOString();
+  await admin.from("vehicle_alerts").update(patch).eq("id", id);
 }
