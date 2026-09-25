@@ -29,6 +29,10 @@ export interface VehicleDisplay {
   lat: number | null;
   /** Última longitude conhecida (last_location). */
   lng: number | null;
+  /** Modelo/protocolo do rastreador decodificado (J16 | 8310 | 310). */
+  trackerModel: string | null;
+  /** Tensão da bateria do veículo (V) — hoje só Suntech/8310. */
+  voltage: number | null;
 }
 
 // Extended vehicle type with relationships
@@ -102,11 +106,15 @@ export function mapVehicleToDisplay(vehicle: VehicleWithDetails): VehicleDisplay
     lng?: number | null;
     speed?: number | null;
     ignition?: boolean | null;
+    modelo?: string | null;
+    voltage?: number | null;
   } | null;
   const speed = typeof loc?.speed === 'number' ? loc.speed : null;
   const ignition = typeof loc?.ignition === 'boolean' ? loc.ignition : null;
   const lat = typeof loc?.lat === 'number' ? loc.lat : null;
   const lng = typeof loc?.lng === 'number' ? loc.lng : null;
+  const trackerModel = loc?.modelo ? String(loc.modelo).toUpperCase() : null;
+  const voltage = typeof loc?.voltage === 'number' ? loc.voltage : null;
 
   return {
     id: vehicle.id,
@@ -130,5 +138,7 @@ export function mapVehicleToDisplay(vehicle: VehicleWithDetails): VehicleDisplay
     lastSignalAt: vehicle.last_update ?? null,
     lat,
     lng,
+    trackerModel,
+    voltage,
   };
 }

@@ -66,21 +66,21 @@ const App = () => (
             
             {/* Protected Routes */}
             <Route path="/" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'associado', 'franquia', 'franqueado', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.DASHBOARD_VIEW]}>
                   <Index />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/clientes" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.CLIENTS_VIEW]}>
                   <Clientes />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/clientes/:id" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.CLIENTS_VIEW]}>
                   <ClienteDetalhes />
                 </ProtectedByPermission>
@@ -146,35 +146,35 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/financeiro" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.FINANCE_VIEW]}>
                   <Financeiro />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/financeiro/despesas" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.FINANCE_EXPENSES]}>
                   <Despesas />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/loja" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.STORE_VIEW]}>
                   <Loja />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/meus-pedidos" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.STORE_VIEW]}>
                   <MeusPedidos />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/estoque" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.STOCK_VIEW]}>
                   <Estoque />
                 </ProtectedByPermission>

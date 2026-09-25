@@ -10,6 +10,15 @@ export interface VehicleTrackingData {
   heading: number | null;
   ignition: boolean | null;
   recorded_at: string | null;
+  /** Tensão da bateria do veículo (V) — hoje só Suntech/8310 (campo 27 do STT). */
+  voltage: number | null;
+}
+
+/** Extrai a tensão do veículo do raw do Suntech (STT;...;<campo27=voltage>;...). */
+function parseVoltage(raw: unknown): number | null {
+  if (typeof raw !== 'string' || !raw.startsWith('STT;')) return null;
+  const v = parseFloat(raw.split(';')[26]); // campo 27 (1-based) = índice 26
+  return Number.isFinite(v) ? v : null;
 }
 
 /**
@@ -27,6 +36,7 @@ export function mapPositionRow(row: any): VehicleTrackingData {
     heading: row.heading != null ? Number(row.heading) : null,
     ignition: row.ignition,
     recorded_at: row.recorded_at ?? null,
+    voltage: parseVoltage(row.raw),
   };
 }
 
@@ -39,7 +49,7 @@ export function useVehicleTracking(vehicleId: string) {
       // Última posição VÁLIDA do veículo (já decodificada na tabela positions)
       const { data, error } = await supabase
         .from('positions')
-        .select('id, vehicle_id, latitude, longitude, speed, heading, ignition, recorded_at')
+        .select('id, vehicle_id, latitude, longitude, speed, heading, ignition, recorded_at, raw')
         .eq('vehicle_id', vehicleId)
         .eq('valid', true)
         .order('recorded_at', { ascending: false, nullsFirst: false })

@@ -19,12 +19,14 @@ const navItems: NavItemConfig[] = [
     icon: Home,
     label: "Início",
     permissions: [PERMISSIONS.DASHBOARD_VIEW],
+    allowedUserTypes: ["admin", "associacao", "associado", "franquia", "franqueado", "frotista"],
   },
   {
     to: "/clientes",
     icon: Users,
     label: "Clientes",
     permissions: [PERMISSIONS.CLIENTS_VIEW],
+    allowedUserTypes: ["admin", "associacao", "franquia", "frotista"],
   },
   {
     to: "/veiculos",
@@ -47,6 +49,7 @@ const navItems: NavItemConfig[] = [
     icon: TrendingUp,
     label: "Financeiro",
     permissions: [PERMISSIONS.FINANCE_VIEW],
+    allowedUserTypes: ["admin", "associacao", "franquia", "frotista"],
     subItems: [
       { to: "/financeiro", label: "Receitas", permissions: [PERMISSIONS.FINANCE_REVENUE] },
       { to: "/financeiro/despesas", label: "Despesas", permissions: [PERMISSIONS.FINANCE_EXPENSES] },
@@ -57,6 +60,7 @@ const navItems: NavItemConfig[] = [
     icon: Store,
     label: "Loja",
     permissions: [PERMISSIONS.STORE_VIEW],
+    allowedUserTypes: ["admin", "associacao", "franquia"],
     subItems: [
       { to: "/loja", label: "Produtos", permissions: [PERMISSIONS.STORE_VIEW] },
       { to: "/meus-pedidos", label: "Meus Pedidos", permissions: [PERMISSIONS.STORE_VIEW] },
@@ -67,6 +71,7 @@ const navItems: NavItemConfig[] = [
     icon: Package,
     label: "Estoque",
     permissions: [PERMISSIONS.STOCK_VIEW],
+    allowedUserTypes: ["admin", "associacao", "franquia", "frotista"],
   },
   {
     to: "/configuracoes",

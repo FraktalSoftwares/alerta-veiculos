@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ const Login = () => {
   // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -106,13 +107,23 @@ const Login = () => {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-11 h-12"
+                      className="pl-11 pr-11 h-12"
                       disabled={loading}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      disabled={loading}
+                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
                   </div>
                 </div>
 

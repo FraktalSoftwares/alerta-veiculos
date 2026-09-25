@@ -184,9 +184,13 @@ export function EditClientModal({ isOpen, onClose, client }: EditClientModalProp
                 id="edit-email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled
+                className="bg-muted"
                 placeholder="email@exemplo.com"
               />
+              <p className="text-xs text-muted-foreground">
+                O e-mail (login) não pode ser alterado.
+              </p>
             </div>
 
             <div className="space-y-2">
