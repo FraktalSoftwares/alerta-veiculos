@@ -146,14 +146,14 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/financeiro" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.FINANCE_VIEW]}>
                   <Financeiro />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/financeiro/despesas" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.FINANCE_EXPENSES]}>
                   <Despesas />
                 </ProtectedByPermission>
@@ -174,7 +174,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/estoque" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.STOCK_VIEW]}>
                   <Estoque />
                 </ProtectedByPermission>

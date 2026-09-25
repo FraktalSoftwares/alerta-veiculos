@@ -47,6 +47,7 @@ const navItems: NavItemConfig[] = [
     icon: TrendingUp,
     label: "Financeiro",
     permissions: [PERMISSIONS.FINANCE_VIEW],
+    allowedUserTypes: ["admin", "associacao", "franquia", "frotista"],
     subItems: [
       { to: "/financeiro", label: "Receitas", permissions: [PERMISSIONS.FINANCE_REVENUE] },
       { to: "/financeiro/despesas", label: "Despesas", permissions: [PERMISSIONS.FINANCE_EXPENSES] },
@@ -67,6 +68,7 @@ const navItems: NavItemConfig[] = [
     icon: Package,
     label: "Estoque",
     permissions: [PERMISSIONS.STOCK_VIEW],
+    allowedUserTypes: ["admin", "associacao", "franquia", "frotista"],
   },
   {
     to: "/configuracoes",
