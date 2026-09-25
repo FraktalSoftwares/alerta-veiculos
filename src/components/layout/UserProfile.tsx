@@ -6,6 +6,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -36,9 +37,12 @@ export function UserProfile() {
             <p className="text-sm font-semibold text-background truncate max-w-[120px]">{displayName}</p>
             <p className="text-xs text-background/80 truncate max-w-[120px]">{displayEmail}</p>
           </div>
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-background/20 border-2 border-background/40 flex items-center justify-center">
-            <User className="h-4 w-4 sm:h-5 sm:w-5 text-background" />
-          </div>
+          <Avatar className="w-9 h-9 sm:w-10 sm:h-10 border-2 border-background/40">
+            <AvatarImage src={profile?.avatar_url || undefined} alt={displayName} />
+            <AvatarFallback className="bg-background/20 text-background">
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
+            </AvatarFallback>
+          </Avatar>
           <ChevronDown className="h-4 w-4 text-background hidden sm:block" />
         </button>
       </DropdownMenuTrigger>
