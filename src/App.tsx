@@ -66,7 +66,7 @@ const App = () => (
             
             {/* Protected Routes */}
             <Route path="/" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'associado', 'franquia', 'franqueado', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.DASHBOARD_VIEW]}>
                   <Index />
                 </ProtectedByPermission>
@@ -160,14 +160,14 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/loja" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.STORE_VIEW]}>
                   <Loja />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/meus-pedidos" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.STORE_VIEW]}>
                   <MeusPedidos />
                 </ProtectedByPermission>

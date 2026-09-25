@@ -19,6 +19,7 @@ const navItems: NavItemConfig[] = [
     icon: Home,
     label: "Início",
     permissions: [PERMISSIONS.DASHBOARD_VIEW],
+    allowedUserTypes: ["admin", "associacao", "associado", "franquia", "franqueado", "frotista"],
   },
   {
     to: "/clientes",
@@ -58,6 +59,7 @@ const navItems: NavItemConfig[] = [
     icon: Store,
     label: "Loja",
     permissions: [PERMISSIONS.STORE_VIEW],
+    allowedUserTypes: ["admin", "associacao", "franquia"],
     subItems: [
       { to: "/loja", label: "Produtos", permissions: [PERMISSIONS.STORE_VIEW] },
       { to: "/meus-pedidos", label: "Meus Pedidos", permissions: [PERMISSIONS.STORE_VIEW] },
