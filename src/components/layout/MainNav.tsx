@@ -26,6 +26,7 @@ const navItems: NavItemConfig[] = [
     icon: Users,
     label: "Clientes",
     permissions: [PERMISSIONS.CLIENTS_VIEW],
+    allowedUserTypes: ["admin", "associacao", "franquia", "frotista"],
   },
   {
     to: "/veiculos",

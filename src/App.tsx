@@ -73,14 +73,14 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/clientes" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.CLIENTS_VIEW]}>
                   <Clientes />
                 </ProtectedByPermission>
               </ProtectedRoute>
             } />
             <Route path="/clientes/:id" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedUserTypes={['admin', 'associacao', 'franquia', 'frotista']}>
                 <ProtectedByPermission permissions={[PERMISSIONS.CLIENTS_VIEW]}>
                   <ClienteDetalhes />
                 </ProtectedByPermission>

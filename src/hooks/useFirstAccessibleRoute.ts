@@ -20,7 +20,7 @@ const ROUTES_BY_PERMISSION: {
   },
   { path: "/veiculos", permission: PERMISSIONS.VEHICLES_VIEW },
   { path: "/veiculos/mapa", permission: PERMISSIONS.VEHICLES_TRACK },
-  { path: "/clientes", permission: PERMISSIONS.CLIENTS_VIEW },
+  { path: "/clientes", permission: PERMISSIONS.CLIENTS_VIEW, allowedUserTypes: GESTORES },
   { path: "/notificacoes", permission: PERMISSIONS.NOTIFICATIONS_VIEW },
   { path: "/financeiro", permission: PERMISSIONS.FINANCE_VIEW, allowedUserTypes: GESTORES },
   { path: "/loja", permission: PERMISSIONS.STORE_VIEW, allowedUserTypes: ["admin", "associacao", "franquia"] },
