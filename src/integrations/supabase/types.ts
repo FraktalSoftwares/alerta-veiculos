@@ -1057,12 +1057,16 @@ export type Database = {
       }
       vehicles: {
         Row: {
+          battery_level: number | null
+          battery_pct: number | null
+          battery_updated_at: string | null
           brand: string | null
           chassis: string | null
           client_id: string
           color: string | null
           created_at: string | null
           id: string
+          external_power: boolean | null
           last_location: Json | null
           last_update: string | null
           model: string | null
@@ -1074,12 +1078,16 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          battery_level?: number | null
+          battery_pct?: number | null
+          battery_updated_at?: string | null
           brand?: string | null
           chassis?: string | null
           client_id: string
           color?: string | null
           created_at?: string | null
           id?: string
+          external_power?: boolean | null
           last_location?: Json | null
           last_update?: string | null
           model?: string | null
@@ -1091,12 +1099,16 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          battery_level?: number | null
+          battery_pct?: number | null
+          battery_updated_at?: string | null
           brand?: string | null
           chassis?: string | null
           client_id?: string
           color?: string | null
           created_at?: string | null
           id?: string
+          external_power?: boolean | null
           last_location?: Json | null
           last_update?: string | null
           model?: string | null

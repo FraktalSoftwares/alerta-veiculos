@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, X, User, Info, Share2,
   Calendar, Fingerprint, Phone, Gauge, Power, Clock, MapPin, Battery,
+  BatteryCharging, BatteryFull, BatteryLow, BatteryMedium,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,13 @@ const VeiculoMapaGoogleTeste = () => {
 
   const { data: vehicle, isLoading: loadingVehicle } = useVehicle(id || '');
   const { data: tracking, isLoading: loadingTracking } = useVehicleTracking(id || '');
+  // Bateria interna do rastreador em % (J16: nível 0..6 do heartbeat/alarme, convertido no banco)
+  const batteryPct = vehicle?.battery_pct ?? null;
+  const batteryIcon = vehicle?.external_power
+    ? BatteryCharging
+    : batteryPct == null || batteryPct > 67
+      ? BatteryFull
+      : batteryPct > 34 ? BatteryMedium : BatteryLow;
   useVehiclePositionRealtime(id);
 
   const [address, setAddress] = useState('');
@@ -177,7 +185,16 @@ const VeiculoMapaGoogleTeste = () => {
             <div className="space-y-1">
               <Row icon={MapPin} label="Latitude:">{tracking.latitude.toFixed(6)}</Row>
               <Row icon={MapPin} label="Longitude:">{tracking.longitude.toFixed(6)}</Row>
-              <Row icon={Battery} label="Voltagem:">{tracking.voltage != null ? `${tracking.voltage.toFixed(1).replace('.', ',')}V` : '— (não disponível)'}</Row>
+              {batteryPct != null && (
+                <Row icon={batteryIcon} label="Bateria:">
+                  {batteryPct}%
+                  {vehicle?.external_power === true && ' (carregando)'}
+                  {vehicle?.external_power === false && ' (sem energia do veículo)'}
+                </Row>
+              )}
+              {(tracking.voltage != null || batteryPct == null) && (
+                <Row icon={Battery} label="Voltagem:">{tracking.voltage != null ? `${tracking.voltage.toFixed(1).replace('.', ',')}V` : '— (não disponível)'}</Row>
+              )}
             </div>
           )}
           {tab === 'share' && (
