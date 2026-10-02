@@ -205,7 +205,6 @@ const VeiculoMapaGoogleTeste = () => {
                 <Row icon={batteryIcon} label="Bateria:">
                   {batteryPct}%
                   {vehicle?.external_power === true && ' (carregando)'}
-                  {vehicle?.external_power === false && ' (sem energia do veículo)'}
                 </Row>
               )}
               {(tracking.voltage != null || batteryPct == null) && (
