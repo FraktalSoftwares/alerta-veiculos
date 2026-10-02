@@ -25,7 +25,6 @@ import {
   Radio,
   Route,
   ChevronRight,
-  Battery,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -273,7 +272,7 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
       {/* Desktop grid row */}
       <div
         onClick={() => onClick?.(vehicle)}
-        className={`hidden md:grid grid-cols-[1fr_80px_130px_110px_100px_90px_100px_120px_100px_60px] gap-3 px-6 py-3 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors ${
+        className={`hidden md:grid grid-cols-[1fr_80px_130px_110px_100px_100px_120px_100px_60px] gap-3 px-6 py-3 text-sm border-b border-border hover:bg-table-row-hover cursor-pointer transition-colors ${
           isBlocked ? 'bg-destructive/5 border-l-4 border-l-destructive' : ''
         }`}
       >
@@ -303,18 +302,6 @@ export function VehicleTableRow({ vehicle, onClick, onEdit, onDelete, onBlock, o
       {/* Rastreador (modelo, ex.: J16 / 8310) */}
       <div className="flex items-center">
         <span className="text-foreground text-xs font-medium">{vehicle.trackerModel || '-'}</span>
-      </div>
-
-      {/* Bateria (tensão do veículo — hoje só Suntech) */}
-      <div className="flex items-center">
-        {vehicle.voltage != null ? (
-          <span className="flex items-center gap-1 text-xs text-foreground font-medium" title="Tensão da bateria do veículo">
-            <Battery className="h-3.5 w-3.5 text-muted-foreground" />
-            {vehicle.voltage.toFixed(1).replace('.', ',')}V
-          </span>
-        ) : (
-          <span className="text-muted-foreground text-xs">-</span>
-        )}
       </div>
 
       {/* Operadora */}
