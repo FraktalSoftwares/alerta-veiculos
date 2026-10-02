@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, X, User, Info, Share2,
   Calendar, Fingerprint, Phone, Gauge, Power, Clock, MapPin, Battery,
-  BatteryCharging, BatteryFull, BatteryLow, BatteryMedium,
+  BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, History,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -22,9 +22,15 @@ function elapsed(fromIso: string | null): string {
   const ms = Date.now() - new Date(fromIso).getTime();
   if (ms < 0 || Number.isNaN(ms)) return '—';
   const min = Math.floor(ms / 60000);
+  if (min < 1) return 'agora';
+  if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
+  if (h >= 24) {
+    const d = Math.floor(h / 24);
+    return `${d} dia${d === 1 ? '' : 's'}`;
+  }
   const m = min % 60;
-  return h > 0 ? `${h}h ${m}min` : `${m} min`;
+  return m === 0 ? `${h}h` : `${h}h ${m}min`;
 }
 
 const Row = ({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) => (
@@ -67,6 +73,15 @@ const VeiculoMapaGoogleTeste = () => {
   }, [tracking?.latitude, tracking?.longitude, showAddress]);
 
   const equip = vehicle?.equipment?.[0] as any;
+  // Parado = desde que a ignição desligou (mesmo dado da "Última ignição", igual ao app).
+  // Sem esse marco, cai no horário do último sinal.
+  const lastIgnitionOff: string | null = (vehicle as any)?.last_ignition_off ?? null;
+  const stoppedSince = tracking?.ignition !== true && lastIgnitionOff ? lastIgnitionOff : tracking?.recorded_at ?? null;
+  const ignitionLabel = tracking?.ignition
+    ? 'Ignição ligada'
+    : lastIgnitionOff
+      ? (elapsed(lastIgnitionOff) === 'agora' ? 'Desligada agora' : `Desligada há ${elapsed(lastIgnitionOff)}`)
+      : 'Ignição desligada';
   const brand = (vehicle?.brand || '').trim();
   const model = (vehicle?.model || '').trim();
   let desc =
@@ -142,8 +157,9 @@ const VeiculoMapaGoogleTeste = () => {
           <Row icon={Phone} label="Chip:">{equip?.chip_number || equip?.chip_operator || '—'}</Row>
           <Row icon={Gauge} label="Velocidade:">{tracking.speed != null ? `${tracking.speed.toFixed(0)} km/h` : '—'}</Row>
           <Row icon={Power} label="Ignição:">{tracking.ignition == null ? '—' : tracking.ignition ? 'Ligada' : 'Desligada'}</Row>
+          <Row icon={History} label="Última ignição:">{ignitionLabel}</Row>
           {tracking.speed === 0 && (
-            <Row icon={Clock} label="Parado há:">{elapsed(tracking.recorded_at)}</Row>
+            <Row icon={Clock} label="Parado há:">{elapsed(stoppedSince)}</Row>
           )}
           <Row icon={MapPin} label="Endereço:">
             {showAddress ? (address || 'Buscando…') : (
