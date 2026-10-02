@@ -10,13 +10,13 @@ export interface VehicleTrackingData {
   heading: number | null;
   ignition: boolean | null;
   recorded_at: string | null;
-  /** Tensão da bateria do veículo (V) — hoje só Suntech/8310 (campo 27 do STT). */
+  /** Tensão da bateria do veículo (V) — hoje só Suntech/8310 (campo 27 do STT/ALT). */
   voltage: number | null;
 }
 
-/** Extrai a tensão do veículo do raw do Suntech (STT;...;<campo27=voltage>;...). */
+/** Extrai a tensão do veículo do raw do Suntech (STT/ALT;...;<campo27=voltage>;...). */
 function parseVoltage(raw: unknown): number | null {
-  if (typeof raw !== 'string' || !raw.startsWith('STT;')) return null;
+  if (typeof raw !== 'string' || !(raw.startsWith('STT;') || raw.startsWith('ALT;'))) return null;
   const v = parseFloat(raw.split(';')[26]); // campo 27 (1-based) = índice 26
   return Number.isFinite(v) ? v : null;
 }
